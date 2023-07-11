@@ -84,8 +84,7 @@ public class PlayerMovement : MonoBehaviour
         {
             elapsedTime += Time.deltaTime;
             distance = elapsedTime * bulletSpeeed;
-            Vector3 newPosition = initialPosition + direction * distance;
-            bulletTransform.position = newPosition;
+            bulletTransform.position = initialPosition + direction * distance;
             yield return null;
         }
         
