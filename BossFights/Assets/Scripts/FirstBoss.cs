@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UIElements;
 
 public class FirstBoss : MonoBehaviour
 {
     public Transform player;
+    public GameObject jumpingAttackParticlePrefab;
     public float timeBetweenAttacks;
 
     private float auxTimeBetweenAttacks;
@@ -15,7 +15,7 @@ public class FirstBoss : MonoBehaviour
     private NavMeshAgent _playerNavMeshAgent;
     private Animator _anim;
     private List<IEnumerator> _attacks;
-    public bool _jumpingAttack;
+    private bool _jumpingAttack;
 
     private Vector3 Direction;
 
@@ -51,6 +51,7 @@ public class FirstBoss : MonoBehaviour
 
     private IEnumerator JumpAttack()
     {
+        jumpingAttackParticlePrefab.SetActive(false);
         _anim.SetTrigger("JumpAttack");
         yield return new WaitUntil(() => _jumpingAttack);
         _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
@@ -64,4 +65,5 @@ public class FirstBoss : MonoBehaviour
 
     public void JumpAttackStarts() => _jumpingAttack = true;
     public void JumpAttackEnded() => _jumpingAttack = false;
+    public void ActivateJumpingAttackParticles() => jumpingAttackParticlePrefab.SetActive(true);
 }
