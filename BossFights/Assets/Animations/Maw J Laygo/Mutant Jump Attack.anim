@@ -109088,14 +109088,14 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_Events:
   - time: 0.5
-    functionName: JumpAttackStarts
+    functionName: JumpAttackStart
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0
     messageOptions: 0
   - time: 1.5
-    functionName: JumpAttackEnded
+    functionName: JumpAttackEnd
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
@@ -109103,6 +109103,13 @@ AnimationClip:
     messageOptions: 0
   - time: 1.6666666
     functionName: ActivateJumpingAttackParticles
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 2
+    functionName: TriggerTripleSmash
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
