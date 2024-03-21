@@ -1,4 +1,4 @@
-using System;
+using Manager.GameManager;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -15,7 +15,11 @@ public class JumpAttackParticles : MonoBehaviour
 
     private void OnDisable() => _parentParticlesMain.simulationSpeed = originalSimulationSpeed;
 
-    private void OnParticleTrigger() => print("Player hit");
+    private void OnParticleTrigger()
+    {
+        GameManager.Instance.player.DamagePlayer(1);
+        print("Player hit");
+    }
 
     private void OnParticleCollision(GameObject other)
     {

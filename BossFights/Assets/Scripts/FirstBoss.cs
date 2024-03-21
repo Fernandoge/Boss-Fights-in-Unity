@@ -13,7 +13,6 @@ public class FirstBoss : MonoBehaviour
     public float timeBetweenAttacks;
 
     private float auxTimeBetweenAttacks;
-    private NavMeshAgent _navMeshAgent;
     private NavMeshAgent _playerNavMeshAgent;
     private Animator _anim;
     private List<IEnumerator> _attacks;
@@ -23,7 +22,6 @@ public class FirstBoss : MonoBehaviour
 
     private void Awake()
     {
-        _navMeshAgent = GetComponentInChildren<NavMeshAgent>();
         _playerNavMeshAgent = player.GetComponent<NavMeshAgent>();
         _anim = GetComponent<Animator>();
         auxTimeBetweenAttacks = timeBetweenAttacks;
@@ -36,11 +34,6 @@ public class FirstBoss : MonoBehaviour
             PerformAttack();
     }
 
-    private void InitializeAttacks()
-    {
-        
-    }
-    
     private void PerformAttack()
     {
         transform.LookAt(player);
