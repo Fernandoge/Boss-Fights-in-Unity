@@ -21,8 +21,6 @@ public class FirstBoss : MonoBehaviour
     private bool _tripleSmashAttack;
     private int _tripleSmashCount;
 
-    private Vector3 Direction;
-
     private void Awake()
     {
         _navMeshAgent = GetComponentInChildren<NavMeshAgent>();
@@ -110,7 +108,7 @@ public class FirstBoss : MonoBehaviour
         
         _tripleSmashAttack = true;
         tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
-        transform.Rotate(0f, 90f, 0f);
+        StartCoroutine(TripleSmashRotateOverTime());
         _anim.SetTrigger("TripleSmash");
         yield return new WaitUntil(() => _tripleSmashAttack == false);
         timeBetweenAttacks = auxTimeBetweenAttacks;
@@ -119,7 +117,18 @@ public class FirstBoss : MonoBehaviour
         StartCoroutine(TripleSmash());
     }
     
-    public void TripleSmashEnd() => _tripleSmashAttack = false;
+    private IEnumerator TripleSmashRotateOverTime()
+    {
+        Quaternion targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
+        while (Quaternion.Angle(transform.rotation, targetRotation) > 0.01f)
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8);
+            yield return null;
+        }
+        transform.rotation = targetRotation;
+    }
+    
+    public void TripleSmashEnd() => _tripleSmashAttack = false;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     
     public void ActivateTripleSmashParticles()
     {
