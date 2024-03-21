@@ -33,9 +33,7 @@ public class FirstBoss : MonoBehaviour
     {
         timeBetweenAttacks -= Time.deltaTime;
         if (timeBetweenAttacks <= 0)
-        {
             PerformAttack();
-        }
     }
 
     private void InitializeAttacks()
@@ -47,8 +45,10 @@ public class FirstBoss : MonoBehaviour
     {
         transform.LookAt(player);
         StartJumpAttack();
-        timeBetweenAttacks = auxTimeBetweenAttacks;
+        RestartTimeBetweenAttacks();
     }
+    
+    private void RestartTimeBetweenAttacks() => timeBetweenAttacks = auxTimeBetweenAttacks;
     
     // --- Jump Attack ---
 
@@ -111,7 +111,7 @@ public class FirstBoss : MonoBehaviour
         StartCoroutine(TripleSmashRotateOverTime());
         _anim.SetTrigger("TripleSmash");
         yield return new WaitUntil(() => _tripleSmashAttack == false);
-        timeBetweenAttacks = auxTimeBetweenAttacks;
+        RestartTimeBetweenAttacks();
         _tripleSmashCount++;    
         
         StartCoroutine(TripleSmash());
