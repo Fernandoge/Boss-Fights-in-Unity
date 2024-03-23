@@ -12,8 +12,15 @@ namespace Characters
         [SerializeField] private int _health;
         [SerializeField] private TextMeshProUGUI _healthText;
         [SerializeField] private float _damageCooldown;
+        [Header("Skill Heal")]
         [SerializeField] private float _castTimeQ;
+        [SerializeField] private GameObject _healingPrefab;
         [SerializeField] private int _skillHealAmount;
+
+        [Header("Skill Wall")] 
+        [SerializeField] private float _castTimeW;
+        [SerializeField] private GameObject _wallPrefab;
+        private GameObject _wallParticles;
 
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
@@ -27,6 +34,7 @@ namespace Characters
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
+        private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
 
         private void Awake()
         {
@@ -35,6 +43,7 @@ namespace Characters
             _anim = GetComponent<Animator>();
             _healthText.text = _health.ToString();
             _originalDamageCooldown = _damageCooldown;
+            _wallParticles = _wallPrefab.GetComponentInChildren<ParticleSystem>().gameObject;
         }
 
         private void Update()
@@ -67,9 +76,8 @@ namespace Characters
                 if (_anim.GetBool(Casting) || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                     return;
                 
-                Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit))
+                var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out var hit))
                 {
                     if (Input.GetMouseButton(1))
                     {
@@ -84,35 +92,55 @@ namespace Characters
                         _navMeshAgent.isStopped = true;
                         if (_shootDelay <= 0)
                         {
-                            Quaternion targetRotation = Quaternion.LookRotation(hit.point - transform.position);
+                            var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
                             transform.rotation = targetRotation;
                             _anim.SetBool(Running, false);
-                            if (!_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"))
-                                _anim.SetBool(Shooting, true);
-                            else
-                                _anim.SetBool(Shooting, false);
+                            _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
                         }
                     }
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Q))
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.W))
             {
                 if (_anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                     return;
                 
                 _navMeshAgent.isStopped = true;
-                _castTime = _castTimeQ;
                 _anim.SetBool(Casting, true);
                 _anim.SetBool(Shooting, false);
                 _anim.SetBool(Running, false);
-                
+
                 if (Input.GetKeyDown(KeyCode.Q))
+                {
+                    _castTime = _castTimeQ;
                     _anim.SetBool(Skill_Heal, true);
+                }
+                else if (Input.GetKeyDown(KeyCode.W))
+                {
+                    _castTime = _castTimeW;
+                    var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                    _anim.SetBool(Skill_Wall, true);
+                    if (Physics.Raycast(ray, out var hit))
+                    {
+                        var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
+                        transform.rotation = targetRotation;
+                    }
+                }
             }
             
             if (_castTime < 0)
                 _anim.SetBool(Casting, false);
+        }
+        
+        public void DamagePlayer(int damage)
+        {
+            if (_damageCooldown > 0)
+                return;
+            
+            _health -= damage;
+            _healthText.text = _health.ToString();
+            _damageCooldown = _originalDamageCooldown;
         }
     
         // Used in Shoot animation
@@ -127,22 +155,34 @@ namespace Characters
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
 
-        public void DamagePlayer(int damage)
+        
+        // Used in Skill animations
+        public void StopSkill(string animBoolName)
         {
-            if (_damageCooldown > 0)
-                return;
-            
-            _health -= damage;
-            _healthText.text = _health.ToString();
-            _damageCooldown = _originalDamageCooldown;
+            _anim.SetBool(animBoolName, false);
         }
         
         // Used in Skill_Health animation
-        public void Heal()
+        public void SkillHeal()
         {
+            _healingPrefab.SetActive(false);
             _health += _skillHealAmount;
             _healthText.text = _health.ToString();
-            _anim.SetBool(Skill_Heal, false);
+            _healingPrefab.SetActive(true);
         }
+        
+        // Used in Skill_Wall animation
+        public void SkillWall() 
+        {
+            _wallPrefab.transform.parent = transform;
+            _wallPrefab.transform.localPosition = new Vector3();
+            _wallPrefab.transform.localRotation = Quaternion.identity;
+            _wallPrefab.SetActive(false);
+            
+            _wallPrefab.transform.parent = transform.parent;
+            _wallPrefab.SetActive(true);
+            _wallParticles.SetActive(true);
+        }
+
     }
 }

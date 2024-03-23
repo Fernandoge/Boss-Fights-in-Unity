@@ -10,8 +10,9 @@ namespace Characters.Ninja
             base.OnTriggerEnter(other);
             if (!other.GetComponent<NavMeshObstacle>()) 
                 return;
-        
+            
             StopCoroutine(moveBulletCoroutine);
+            transform.parent.SetParent(other.transform);
             Destroy(transform.parent.gameObject, 2f);
             colliderComponent.enabled = false;
             if (animator != null)
