@@ -35,6 +35,6 @@ public class BasicAttack : MonoBehaviour
             yield return null;
         }
         
-        Destroy(transform.gameObject);
+        Destroy(transform.parent.gameObject);
     }
 }

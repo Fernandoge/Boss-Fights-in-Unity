@@ -16,16 +16,14 @@ namespace Characters
         [SerializeField] private float _castTimeQ;
         [SerializeField] private GameObject _healingPrefab;
         [SerializeField] private int _skillHealAmount;
-
         [Header("Skill Wall")] 
         [SerializeField] private float _castTimeW;
         [SerializeField] private GameObject _wallPrefab;
-        private GameObject _wallParticles;
 
+        private GameObject _wallParticles;
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private Animator _anim;
-        private Animation _ninjaThrow;
         private float _shootDelay;
         private float _originalDamageCooldown;
         private float _castTime;
@@ -155,7 +153,8 @@ namespace Characters
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
 
-        
+        #region Skills
+
         // Used in Skill animations
         public void StopSkill(string animBoolName)
         {
@@ -184,5 +183,6 @@ namespace Characters
             _wallParticles.SetActive(true);
         }
 
+        #endregion
     }
 }

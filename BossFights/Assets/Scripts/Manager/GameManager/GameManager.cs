@@ -8,6 +8,7 @@ namespace Manager.GameManager
         public static GameManager Instance;
 
         public PlayerController player;
+        public FirstBoss firstBoss;
     
         private void Awake()
         {

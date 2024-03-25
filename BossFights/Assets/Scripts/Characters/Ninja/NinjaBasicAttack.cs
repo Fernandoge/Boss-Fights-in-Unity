@@ -11,8 +11,12 @@ namespace Characters.Ninja
             if (!other.GetComponent<NavMeshObstacle>()) 
                 return;
             
+            if (other.GetComponent<ParticleSystem>())
+            {
+                Destroy(transform.parent.gameObject);
+            }
+            
             StopCoroutine(moveBulletCoroutine);
-            transform.parent.SetParent(other.transform);
             Destroy(transform.parent.gameObject, 2f);
             colliderComponent.enabled = false;
             if (animator != null)

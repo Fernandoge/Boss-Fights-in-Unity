@@ -8,9 +8,15 @@ using UnityEngine.Serialization;
 public class FirstBoss : MonoBehaviour
 {
     public Transform player;
+    public float timeBetweenAttacks;
+    [Header("EarthShatter")] 
+    public int earthShatterDamage;
     public GameObject jumpingAttackParticlesPrefab;
     public GameObject[] tripleSmashParticlesPrefab;
-    public float timeBetweenAttacks;
+    [Header("Orbs")] 
+    public GameObject orbsPrefab;
+    public int orbsDamage;
+    
 
     private float auxTimeBetweenAttacks;
     private NavMeshAgent _playerNavMeshAgent;
@@ -19,6 +25,12 @@ public class FirstBoss : MonoBehaviour
     private bool _jumpingAttack;
     private bool _tripleSmashAttack;
     private int _tripleSmashCount;
+    private bool _orbsCasted;
+    private bool _stopTimeBetweenAttacks;
+    
+    private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
+    private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
+    private static readonly int Orbs = Animator.StringToHash("Orbs");
 
     private void Awake()
     {
@@ -29,22 +41,45 @@ public class FirstBoss : MonoBehaviour
 
     private void Update()
     {
-        timeBetweenAttacks -= Time.deltaTime;
+        if (!_stopTimeBetweenAttacks)
+        {
+            timeBetweenAttacks -= Time.deltaTime;
+        }
+        
         if (timeBetweenAttacks <= 0)
             PerformAttack();
+
+        // Debugging Only
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            _orbsCasted = false;
+        }
     }
 
     private void PerformAttack()
     {
-        transform.LookAt(player);
-        StartJumpAttack();
-        RestartTimeBetweenAttacks();
+        // TODO: if HP values
+        if (!_orbsCasted)
+        {
+            StartOrbs();
+        }
+        else
+        {
+            transform.LookAt(player);
+            StartJumpAttack();
+            RestartTimeBetweenAttacks();
+            StopTimeBetweenAttacks();
+        }
     }
     
     private void RestartTimeBetweenAttacks() => timeBetweenAttacks = auxTimeBetweenAttacks;
-    
-    // --- Jump Attack ---
+    private void StopTimeBetweenAttacks() => _stopTimeBetweenAttacks = true;
+    private void ActivateTimeBetweenAttacks() => _stopTimeBetweenAttacks = false;
 
+    #region Jump Attack
+    
+    // --- Jump Attack --- //
+    
     private void StartJumpAttack()
     {
         jumpingAttackParticlesPrefab.transform.parent = transform;
@@ -55,13 +90,14 @@ public class FirstBoss : MonoBehaviour
 
     private IEnumerator JumpAttack()
     {
-        _anim.SetTrigger("JumpAttack");
+        _anim.SetTrigger(Jump_Attack);
         jumpingAttackParticlesPrefab.SetActive(false);
         yield return new WaitUntil(() => _jumpingAttack);
         _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         while (_jumpingAttack)
         {
-            transform.position += transform.forward * (Time.deltaTime * 10);
+            var bossTransform = transform;
+            bossTransform.position += bossTransform.forward * (Time.deltaTime * 10);
             yield return null; 
         }
         _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
@@ -69,7 +105,11 @@ public class FirstBoss : MonoBehaviour
 
     public void JumpAttackStart() => _jumpingAttack = true;
     
-    public void JumpAttackEnd() => _jumpingAttack = false;
+    public void JumpAttackEnd()
+    {
+        ActivateTimeBetweenAttacks();
+        _jumpingAttack = false;
+    }
 
     public void ActivateJumpingAttackParticles()
     {
@@ -79,7 +119,11 @@ public class FirstBoss : MonoBehaviour
 
     public void TriggerTripleSmash() => StartTripleSmash();
 
-    // --- Phase 2: Triple Smash ---
+    #endregion
+
+    #region Triple Smash 
+    
+    // --- Phase 2: Triple Smash --- //
 
     private void StartTripleSmash()
     {
@@ -91,20 +135,24 @@ public class FirstBoss : MonoBehaviour
             particlePrefab.transform.localPosition = new Vector3();
             particlePrefab.transform.localRotation = Quaternion.identity;
         }
+        
+        StopTimeBetweenAttacks();
         StartCoroutine(TripleSmash()); 
     }
     
     private IEnumerator TripleSmash()
     {
-        if (_tripleSmashCount == 3) 
+        if (_tripleSmashCount == 3)
+        {
+            ActivateTimeBetweenAttacks();
             yield break;
+        }
         
         _tripleSmashAttack = true;
         tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
         StartCoroutine(TripleSmashRotateOverTime());
-        _anim.SetTrigger("TripleSmash");
+        _anim.SetTrigger(Triple_Smash);
         yield return new WaitUntil(() => _tripleSmashAttack == false);
-        RestartTimeBetweenAttacks();
         _tripleSmashCount++;    
         
         StartCoroutine(TripleSmash());
@@ -128,4 +176,24 @@ public class FirstBoss : MonoBehaviour
         tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(true);
         tripleSmashParticlesPrefab[_tripleSmashCount].transform.parent = transform.parent;
     }
+
+    #endregion
+
+    #region Orbs
+
+    private void StartOrbs()
+    {
+        _anim.SetTrigger(Orbs);
+        RestartTimeBetweenAttacks();
+    }
+
+    private void ActivateOrbs()
+    {
+        orbsPrefab.SetActive(false);
+        orbsPrefab.SetActive(true);
+        _orbsCasted = true;
+    }
+
+    #endregion
+    
 }

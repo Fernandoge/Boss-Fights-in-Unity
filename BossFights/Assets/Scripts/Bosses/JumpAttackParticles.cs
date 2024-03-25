@@ -17,7 +17,7 @@ public class JumpAttackParticles : MonoBehaviour
 
     private void OnParticleTrigger()
     {
-        GameManager.Instance.player.DamagePlayer(1);
+        GameManager.Instance.player.DamagePlayer(GameManager.Instance.firstBoss.earthShatterDamage);
         print("Player hit");
     }
 
