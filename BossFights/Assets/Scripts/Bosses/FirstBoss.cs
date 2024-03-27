@@ -31,7 +31,7 @@ namespace Bosses
         public GameObject orbsPrefab;
         public GameObject jumpingAttackParticlesPrefab;
         public GameObject[] tripleSmashParticlesPrefab;
-        
+
         private Transform _player;
         private float auxTimeBetweenAttacks;
         private NavMeshAgent _navMeshAgent;
@@ -43,12 +43,19 @@ namespace Bosses
         private int _tripleSmashCount;
         private bool _orbsCasted;
         private bool _performingAttack;
+        private float _navMeshOriginalSpeed;
+        private Material _meshMaterial;
+        private Color _meshMaterialOriginalColor;
+        private Collider _collider;
+        private string _colliderOriginalTag;
     
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
         private static readonly int Orbs = Animator.StringToHash("Orbs");
         private static readonly int Walking = Animator.StringToHash("Walking");
-
+        private static readonly int Fast_Run = Animator.StringToHash("FastRun");
+        private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
+        
         private void Start()
         {
             _player = GameManager.Instance.player.transform;
@@ -56,6 +63,11 @@ namespace Bosses
             _playerNavMeshAgent = _player.GetComponent<NavMeshAgent>();
             _anim = GetComponent<Animator>();
             auxTimeBetweenAttacks = timeBetweenAttacks;
+            _navMeshOriginalSpeed = _navMeshAgent.speed;
+            _meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
+            _meshMaterialOriginalColor = _meshMaterial.color;
+            _collider = GetComponentInChildren<Collider>();
+            _colliderOriginalTag = transform.tag;
         }
 
         private void Update()
@@ -99,6 +111,8 @@ namespace Bosses
             timeBetweenAttacks = auxTimeBetweenAttacks;
         
             // TODO: if HP values
+            // REMOVE DEBUG
+            _orbsCasted = true;
             if (!_orbsCasted)
             {
                 StartOrbs();
@@ -106,7 +120,8 @@ namespace Bosses
             else
             {
                 transform.LookAt(_player);
-                StartJumpAttack();
+                StartCoroutine(FastRun());
+                // StartCoroutine(JumpAttack());
             }
         }
     
@@ -116,21 +131,34 @@ namespace Bosses
             if (!_anim.GetCurrentAnimatorStateInfo(0).IsTag("WalkingIdle"))
                 _performingAttack = false;
         }
+        
+        private void ActivateCounterWindow()
+        {
+            _collider.transform.tag = "Counterable";
+            _meshMaterial.SetColor("_Color", Color.green);
+        }
+        
+        private void StopCounterWindow()
+        {
+            _collider.transform.tag = _colliderOriginalTag;
+            _meshMaterial.SetColor("_Color", _meshMaterialOriginalColor);
+        }
+        
+        public void Countered()
+        {
+            StopCounterWindow();
+            _anim.SetTrigger("Countered");
+        }
 
         #region Jump Attack
     
         // --- Jump Attack --- //
-    
-        private void StartJumpAttack()
+
+        private IEnumerator JumpAttack()
         {
             jumpingAttackParticlesPrefab.transform.parent = transform;
             jumpingAttackParticlesPrefab.transform.localPosition = new Vector3();
             jumpingAttackParticlesPrefab.transform.localRotation = Quaternion.identity;
-            StartCoroutine(JumpAttack());
-        }
-
-        private IEnumerator JumpAttack()
-        {
             _anim.SetTrigger(Jump_Attack);
             jumpingAttackParticlesPrefab.SetActive(false);
             yield return new WaitUntil(() => _jumpingAttack);
@@ -156,7 +184,7 @@ namespace Bosses
         }
 
         public void TriggerTripleSmash() => StartTripleSmash();
-
+        
         #endregion
 
         #region Triple Smash 
@@ -226,6 +254,56 @@ namespace Bosses
             _orbsCasted = true;
         }
 
+        #endregion
+        
+        #region FastRun And Melee Attack
+        
+        private IEnumerator FastRun()
+        {
+            _performingAttack = false;
+            _navMeshAgent.isStopped = false;
+            _navMeshAgent.speed = 15;
+            _anim.SetTrigger(Fast_Run);
+            yield return new WaitUntil(() => _anim.GetBool(Walking) == false);
+            StartMeleeAttack();
+        }
+
+        private void StartMeleeAttack()
+        {
+            _performingAttack = true;
+            _navMeshAgent.isStopped = true;
+            _navMeshAgent.speed = _navMeshOriginalSpeed;
+            // We reset the trigger in case Animator transitions to MeleeAttack instantly
+            _anim.ResetTrigger(Fast_Run);
+            _anim.SetTrigger(Melee_Attack);
+        }
+
+        private void StartSecondMelee() => StartCoroutine(SecondMelee());
+
+        private IEnumerator SecondMelee()
+        {
+            Quaternion currentRotation = transform.rotation;
+            Quaternion targetRotation = currentRotation * Quaternion.Euler(0, 180, 0);
+            while (transform.rotation != targetRotation)
+            {
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 600f * Time.deltaTime);
+                yield return null;
+            }
+        }
+        
+        private void StartThirdMelee() => StartCoroutine(ThirdMelee());
+        
+        private IEnumerator ThirdMelee()
+        {
+            Quaternion currentRotation = transform.rotation;
+            Quaternion targetRotation = currentRotation * Quaternion.Euler(0, 180, 0);
+            while (transform.rotation != targetRotation)
+            {
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 600f * Time.deltaTime);
+                yield return null;
+            }
+        }
+        
         #endregion
     
     }
