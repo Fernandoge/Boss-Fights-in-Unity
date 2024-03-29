@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Manager.GameManager;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses
@@ -23,17 +24,24 @@ namespace Bosses
         [SerializeField] private float _rotationSpeed;
         [SerializeField] private float _stopBetweenPlayer;
         public float timeBetweenAttacks;
-        [Header("Skill Values")] 
+        [Header("Jump Attack")]
         public int earthShatterDamage;
-        [SerializeField] private BossValuesRange _jumpAttackDistance;
-        public int orbsDamage; 
-        [Header("Skills Particles")]
-        public GameObject orbsPrefab;
         public GameObject jumpingAttackParticlesPrefab;
         public GameObject[] tripleSmashParticlesPrefab;
+        [SerializeField] private BossValuesRange _jumpAttackDistance;
+        [Header("Orbs")]
+        public int orbsDamage; 
+        public GameObject orbsPrefab;
+        [Header("Fast Run Melees")] 
+        [SerializeField] public int meleesDamage;
+        [SerializeField] private GameObject _meleeHitIndicator;
+        [SerializeField] private GameObject _lastMeleeHitIndicator;
+        [SerializeField] private GameObject _firstMeleeParticles;
+        [SerializeField] private GameObject _SecondMeleeParticles;
+        [SerializeField] private GameObject _lastMeleeParticles;
 
         private Transform _player;
-        private float auxTimeBetweenAttacks;
+        private float auxTimeBetweenAttacks; 
         private NavMeshAgent _navMeshAgent;
         private NavMeshAgent _playerNavMeshAgent;
         private Animator _anim;
@@ -48,6 +56,9 @@ namespace Bosses
         private Color _meshMaterialOriginalColor;
         private Collider _collider;
         private string _colliderOriginalTag;
+        private GameObject _currentSkillIndicator;
+        private GameObject _currentSkillParticles;
+        private Coroutine _skillToCastCoroutine;
     
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
@@ -147,8 +158,37 @@ namespace Bosses
         public void Countered()
         {
             StopCounterWindow();
+            StopCoroutine(_skillToCastCoroutine);
+            _currentSkillIndicator.SetActive(false);
             _anim.SetTrigger("Countered");
         }
+
+        private void ResetParticlesParent(GameObject particlesGameObject)
+        {
+            particlesGameObject.transform.parent = transform;
+            particlesGameObject.transform.localPosition = new Vector3();
+            particlesGameObject.transform.localRotation = Quaternion.identity;
+        }
+
+        private void ActivateSkillIndicator()
+        {
+            _currentSkillIndicator.SetActive(true);
+        }
+
+        private void DeactivateSkillIndicator()
+        {
+            _currentSkillIndicator.SetActive(false);
+            _skillToCastCoroutine = StartCoroutine(ActivateSkillParticles());
+        }
+
+        private IEnumerator ActivateSkillParticles()
+        {
+            yield return new WaitForSeconds(0.2f);
+            _currentSkillParticles.SetActive(false);
+            _currentSkillParticles.SetActive(true);
+        }
+
+        #region Skills
 
         #region Jump Attack
     
@@ -156,9 +196,7 @@ namespace Bosses
 
         private IEnumerator JumpAttack()
         {
-            jumpingAttackParticlesPrefab.transform.parent = transform;
-            jumpingAttackParticlesPrefab.transform.localPosition = new Vector3();
-            jumpingAttackParticlesPrefab.transform.localRotation = Quaternion.identity;
+            ResetParticlesParent(jumpingAttackParticlesPrefab);
             _anim.SetTrigger(Jump_Attack);
             jumpingAttackParticlesPrefab.SetActive(false);
             yield return new WaitUntil(() => _jumpingAttack);
@@ -197,9 +235,7 @@ namespace Bosses
             _tripleSmashCount = 0;
             foreach (GameObject particlePrefab in tripleSmashParticlesPrefab)
             {
-                particlePrefab.transform.parent = transform;
-                particlePrefab.transform.localPosition = new Vector3();
-                particlePrefab.transform.localRotation = Quaternion.identity;
+                ResetParticlesParent(particlePrefab);
             }
             StartCoroutine(TripleSmash()); 
         }
@@ -242,6 +278,8 @@ namespace Bosses
 
         #region Orbs
 
+        // --- Orbs --- //
+        
         private void StartOrbs()
         {
             _anim.SetTrigger(Orbs);
@@ -258,12 +296,15 @@ namespace Bosses
         
         #region FastRun And Melee Attack
         
+        // --- FastRun and Melee Attack --- //
+        
         private IEnumerator FastRun()
         {
             _performingAttack = false;
             _navMeshAgent.isStopped = false;
             _navMeshAgent.speed = 15;
             _anim.SetTrigger(Fast_Run);
+            ResetParticlesParent(_firstMeleeParticles.transform.parent.gameObject);
             yield return new WaitUntil(() => _anim.GetBool(Walking) == false);
             StartMeleeAttack();
         }
@@ -273,6 +314,9 @@ namespace Bosses
             _performingAttack = true;
             _navMeshAgent.isStopped = true;
             _navMeshAgent.speed = _navMeshOriginalSpeed;
+            _currentSkillIndicator = _meleeHitIndicator;
+            _currentSkillParticles = _firstMeleeParticles;
+            _firstMeleeParticles.transform.parent.parent = transform.parent;
             // We reset the trigger in case Animator transitions to MeleeAttack instantly
             _anim.ResetTrigger(Fast_Run);
             _anim.SetTrigger(Melee_Attack);
@@ -282,6 +326,7 @@ namespace Bosses
 
         private IEnumerator SecondMelee()
         {
+            _currentSkillParticles = _SecondMeleeParticles;
             Quaternion currentRotation = transform.rotation;
             Quaternion targetRotation = currentRotation * Quaternion.Euler(0, 180, 0);
             while (transform.rotation != targetRotation)
@@ -295,6 +340,8 @@ namespace Bosses
         
         private IEnumerator ThirdMelee()
         {
+            _currentSkillIndicator = _lastMeleeHitIndicator;
+            _currentSkillParticles = _lastMeleeParticles;
             Quaternion currentRotation = transform.rotation;
             Quaternion targetRotation = currentRotation * Quaternion.Euler(0, 180, 0);
             while (transform.rotation != targetRotation)
@@ -305,6 +352,7 @@ namespace Bosses
         }
         
         #endregion
-    
+
+        #endregion
     }
 }
