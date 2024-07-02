@@ -133,7 +133,7 @@ namespace Bosses
                 transform.LookAt(_player);
                 StartCoroutine(FastRun());
                 // StartCoroutine(JumpAttack());
-            }
+            }   
         }
     
         // Used in Idle animation
@@ -149,7 +149,7 @@ namespace Bosses
             _meshMaterial.SetColor("_Color", Color.green);
         }
         
-        private void StopCounterWindow()
+        private void StopCounterWindow() 
         {
             _collider.transform.tag = _colliderOriginalTag;
             _meshMaterial.SetColor("_Color", _meshMaterialOriginalColor);
@@ -163,7 +163,7 @@ namespace Bosses
             _anim.SetTrigger("Countered");
         }
 
-        private void ResetParticlesParent(GameObject particlesGameObject)
+        private void ResetParticlesToParent(GameObject particlesGameObject)
         {
             particlesGameObject.transform.parent = transform;
             particlesGameObject.transform.localPosition = new Vector3();
@@ -196,7 +196,7 @@ namespace Bosses
 
         private IEnumerator JumpAttack()
         {
-            ResetParticlesParent(jumpingAttackParticlesPrefab);
+            ResetParticlesToParent(jumpingAttackParticlesPrefab);
             _anim.SetTrigger(Jump_Attack);
             jumpingAttackParticlesPrefab.SetActive(false);
             yield return new WaitUntil(() => _jumpingAttack);
@@ -235,7 +235,7 @@ namespace Bosses
             _tripleSmashCount = 0;
             foreach (GameObject particlePrefab in tripleSmashParticlesPrefab)
             {
-                ResetParticlesParent(particlePrefab);
+                ResetParticlesToParent(particlePrefab);
             }
             StartCoroutine(TripleSmash()); 
         }
@@ -304,7 +304,7 @@ namespace Bosses
             _navMeshAgent.isStopped = false;
             _navMeshAgent.speed = 15;
             _anim.SetTrigger(Fast_Run);
-            ResetParticlesParent(_firstMeleeParticles.transform.parent.gameObject);
+            ResetParticlesToParent(_firstMeleeParticles.transform.parent.gameObject);
             yield return new WaitUntil(() => _anim.GetBool(Walking) == false);
             StartMeleeAttack();
         }

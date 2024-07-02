@@ -8,7 +8,6 @@ namespace Bosses
         private void OnParticleTrigger()
         {
             GameManager.Instance.player.DamagePlayer(GameManager.Instance.firstBoss.meleesDamage);
-            print("Player hit");
         }
     }
 }

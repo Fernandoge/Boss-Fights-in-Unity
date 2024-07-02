@@ -42,6 +42,7 @@ namespace Characters
         private static readonly int Casting = Animator.StringToHash("Casting");
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
+        private static readonly int Damaged = Animator.StringToHash("Damaged");
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
@@ -82,58 +83,64 @@ namespace Characters
         
         private void PlayerInputs()
         {
-            if (Input.GetMouseButton(1) || Input.GetMouseButton(0))
-            {
-                if (_anim.GetBool(Casting) || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
-                    return;
-                
-                var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out var hit))
-                {
-                    if (Input.GetMouseButton(1))
-                    {
-                        _anim.SetBool(Running, true);
-                        _anim.SetBool(Shooting, false);
-                        _anim.SetBool(Casting, false);
-                        _navMeshAgent.SetDestination(hit.point);
-                        _navMeshAgent.isStopped = false;
-                    }
-                    if (Input.GetMouseButton(0))
-                    {
-                        _navMeshAgent.isStopped = true;
-                        if (_shootDelay <= 0)
-                        {
-                            var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
-                            transform.rotation = targetRotation;
-                            _anim.SetBool(Running, false);
-                            _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
-                        }
-                    }
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.E))
-            {
-                if (_anim.GetCurrentAnimatorStateInfo(0).IsName("Kick") && Input.GetKeyDown(KeyCode.E))
-                    StartCoroutine(StartSkillFlipKick());
-                
-                if (_anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
-                    return;
-                
-                _navMeshAgent.isStopped = true;
-                _anim.SetBool(Shooting, false);
-                _anim.SetBool(Running, false);
-
-                if (Input.GetKeyDown(KeyCode.Q))
-                    StartSkillHeal();
-                else if (Input.GetKeyDown(KeyCode.W))
-                    StartSkillWall();
-                else if (Input.GetKeyDown(KeyCode.E))
-                    StartCoroutine(StartSkillKick());
-            }
-            
+            MovementAndAttackInput();
+            SkillsInput();
             if (_castTime < 0)
                 _anim.SetBool(Casting, false);
+        }
+
+        private void MovementAndAttackInput()
+        {
+            if (!Input.GetMouseButton(1) && !Input.GetMouseButton(0))
+                return;
+            
+            if (_anim.GetBool(Casting) || _anim.GetBool(Damaged) || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
+                return;
+                
+            var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+            if (!Physics.Raycast(ray, out var hit)) 
+                return;
+            
+            if (Input.GetMouseButton(1))
+            {
+                _anim.SetBool(Running, true);
+                _anim.SetBool(Shooting, false);
+                _anim.SetBool(Casting, false);
+                _navMeshAgent.SetDestination(hit.point);
+                _navMeshAgent.isStopped = false;
+            }
+            if (Input.GetMouseButton(0))
+            {
+                _navMeshAgent.isStopped = true;
+                if (!(_shootDelay <= 0)) 
+                    return;
+                
+                var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
+                transform.rotation = targetRotation;
+                _anim.SetBool(Running, false);
+                _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
+            }
+        }
+        
+        private void SkillsInput()
+        {
+            if (!Input.GetKeyDown(KeyCode.Q) && !Input.GetKeyDown(KeyCode.W) && !Input.GetKeyDown(KeyCode.E)) 
+                return;
+            
+            if (Input.GetKeyDown(KeyCode.E) && _anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
+                StartCoroutine(StartSkillFlipKick());
+                
+            if (_anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
+                return;
+                
+            ResetAnimIdle();
+
+            if (Input.GetKeyDown(KeyCode.Q))
+                StartSkillHeal();
+            else if (Input.GetKeyDown(KeyCode.W))
+                StartSkillWall();
+            else if (Input.GetKeyDown(KeyCode.E))
+                StartCoroutine(StartSkillKick());
         }
 
         private void LookAtMouse()
@@ -144,17 +151,28 @@ namespace Characters
             var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
             transform.rotation = targetRotation;
         }
+
+        private void ResetAnimIdle()
+        {
+            _anim.SetBool(Running, false);
+            _anim.SetBool(Shooting, false);
+            _navMeshAgent.isStopped = true;
+        } 
         
         public void DamagePlayer(int damage)
         {
             if (_damageCooldown > 0)
                 return;
             
+            ResetAnimIdle();
             _health -= damage;
             _healthText.text = _health.ToString();
             _damageCooldown = _originalDamageCooldown;
+            _anim.SetBool(Damaged, true);
         }
-    
+
+        public void DamageAnimStopped() => _anim.SetBool(Damaged, false);
+        
         // Used in Shoot animation
         public void BasicAttack()
         {
@@ -275,7 +293,5 @@ namespace Characters
 #endregion
 
         #endregion
-        
-        
     }
 }

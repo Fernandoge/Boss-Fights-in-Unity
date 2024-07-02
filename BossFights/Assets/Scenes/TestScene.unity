@@ -101998,7 +101998,7 @@ PrefabInstance:
       objectReference: {fileID: 1604862865}
     - target: {fileID: 7865042863690113246, guid: eada9934807abe54080292e62c1df126, type: 3}
       propertyPath: _damageCooldown
-      value: 0.6
+      value: 2.2
       objectReference: {fileID: 0}
     - target: {fileID: 7865042863690113246, guid: eada9934807abe54080292e62c1df126, type: 3}
       propertyPath: _kickHitPosition
