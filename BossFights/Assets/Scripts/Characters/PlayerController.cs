@@ -32,10 +32,9 @@ namespace Characters
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private Animator _anim;
-        private float _shootDelay;
-        private float _originalDamageCooldown;
-        private float _castTime;
-        private bool _isKicking;
+        private bool _isDamageImmune;
+        private bool _isAnimationLocked;
+        private bool _isKickWindowActive;
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
         
@@ -54,15 +53,13 @@ namespace Characters
             _mainCamera = Camera.main;
             _anim = GetComponent<Animator>();
             _healthText.text = _health.ToString();
-            _originalDamageCooldown = _damageCooldown;
             _wallParticles = _wallPrefab.GetComponentInChildren<ParticleSystem>().gameObject;
         }
 
         private void Update()
         {
-            PlayerInputs();
-            PlayerTimers();
             NavMeshAgentPathCheck();
+            PlayerInputs();
         }
 
         private void NavMeshAgentPathCheck()
@@ -73,20 +70,10 @@ namespace Characters
                 _anim.SetBool(Running, false);
         }
         
-        private void PlayerTimers()
-        {
-            _shootDelay -= Time.deltaTime;
-            _castTime -= Time.deltaTime;
-            if (_damageCooldown >= 0)
-                _damageCooldown -= Time.deltaTime;
-        }
-        
         private void PlayerInputs()
         {
             MovementAndAttackInput();
             SkillsInput();
-            if (_castTime < 0)
-                _anim.SetBool(Casting, false);
         }
 
         private void MovementAndAttackInput()
@@ -94,7 +81,7 @@ namespace Characters
             if (!Input.GetMouseButton(1) && !Input.GetMouseButton(0))
                 return;
             
-            if (_anim.GetBool(Casting) || _anim.GetBool(Damaged) || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
+            if (_isAnimationLocked || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                 return;
                 
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -105,18 +92,13 @@ namespace Characters
             {
                 _anim.SetBool(Running, true);
                 _anim.SetBool(Shooting, false);
-                _anim.SetBool(Casting, false);
                 _navMeshAgent.SetDestination(hit.point);
                 _navMeshAgent.isStopped = false;
             }
             if (Input.GetMouseButton(0))
             {
+                LookAtMouse();
                 _navMeshAgent.isStopped = true;
-                if (!(_shootDelay <= 0)) 
-                    return;
-                
-                var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
-                transform.rotation = targetRotation;
                 _anim.SetBool(Running, false);
                 _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
             }
@@ -126,7 +108,7 @@ namespace Characters
         {
             if (!Input.GetKeyDown(KeyCode.Q) && !Input.GetKeyDown(KeyCode.W) && !Input.GetKeyDown(KeyCode.E)) 
                 return;
-            
+
             if (Input.GetKeyDown(KeyCode.E) && _anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
                 StartCoroutine(StartSkillFlipKick());
                 
@@ -136,11 +118,23 @@ namespace Characters
             ResetAnimIdle();
 
             if (Input.GetKeyDown(KeyCode.Q))
-                StartSkillHeal();
+                StartCastingSkill(Skill_Heal, _castTimeQ, false);
             else if (Input.GetKeyDown(KeyCode.W))
-                StartSkillWall();
+                StartCastingSkill(Skill_Wall, _castTimeW, true);
             else if (Input.GetKeyDown(KeyCode.E))
                 StartCoroutine(StartSkillKick());
+        }
+        
+        // Used in Shoot animation
+        public void BasicAttack()
+        {
+            int basicAttackNumber = Random.Range(0, _basicAttackPrefabs.Length);
+            GameObject bullet = Instantiate(_basicAttackPrefabs[basicAttackNumber], _basicAttackSpawnPoint.position, _basicAttackSpawnPoint.rotation);
+            Vector3 bulletPosition = bullet.transform.position;
+            Vector3 bulletDirection = _basicAttackSpawnPoint.forward;
+            _anim.SetBool(Shooting, false);
+            var bulletScript = bullet.GetComponentInChildren<BasicAttack>();
+            bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
 
         private void LookAtMouse()
@@ -159,42 +153,62 @@ namespace Characters
             _navMeshAgent.isStopped = true;
         } 
         
+        #region Damaged Logic
+        
         public void DamagePlayer(int damage)
         {
-            if (_damageCooldown > 0)
+            if (_isDamageImmune)
                 return;
             
             ResetAnimIdle();
+            ResetKickValues();
             _health -= damage;
             _healthText.text = _health.ToString();
-            _damageCooldown = _originalDamageCooldown;
-            _anim.SetBool(Damaged, true);
+            _isDamageImmune = true;
+            _isAnimationLocked = true;
+            _anim.SetTrigger(Damaged);
+            StartCoroutine(StartDamagedCooldown(_damageCooldown));
         }
 
-        public void DamageAnimStopped() => _anim.SetBool(Damaged, false);
-        
-        // Used in Shoot animation
-        public void BasicAttack()
+        private IEnumerator StartDamagedCooldown(float damageCooldown)
         {
-            int basicAttackNumber = Random.Range(0, _basicAttackPrefabs.Length);
-            GameObject bullet = Instantiate(_basicAttackPrefabs[basicAttackNumber], _basicAttackSpawnPoint.position, _basicAttackSpawnPoint.rotation);
-            Vector3 bulletPosition = bullet.transform.position;
-            Vector3 bulletDirection = _basicAttackSpawnPoint.forward;
-            _anim.SetBool(Shooting, false);
-            var bulletScript = bullet.GetComponentInChildren<BasicAttack>();
-            bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
+            while (damageCooldown > 0)
+            {
+                damageCooldown -= Time.deltaTime;
+                yield return null;
+            }
+            _isDamageImmune = false;
         }
+        
 
+        public void DamageAnimStopped() => _isAnimationLocked = false;
+
+        #endregion
+        
         #region Skills
 
-        #region Heal
-
-        private void StartSkillHeal()
+        private void StartCastingSkill(int skillToTrigger, float skillCastTime, bool lookAtMouse)
         {
+            _isAnimationLocked = true;
             _anim.SetBool(Casting, true);
-            _anim.SetTrigger(Skill_Heal);
-            _castTime = _castTimeQ;
+            _anim.SetTrigger(skillToTrigger);
+            StartCoroutine(StartCastTime(skillCastTime));
+            if (lookAtMouse)
+                LookAtMouse();
         }
+        
+        private IEnumerator StartCastTime(float castTime)
+        {
+            while (castTime > 0)
+            {
+                castTime -= Time.deltaTime;
+                yield return null;
+            }
+            _anim.SetBool(Casting, false);
+            _isAnimationLocked = false;
+        }
+        
+        #region Heal
         
         // Used in Skill_Health animation
         private void SkillHeal()
@@ -205,18 +219,9 @@ namespace Characters
             _healingPrefab.SetActive(true);
         }
         
-
         #endregion
 
         #region Wall
-
-        private void StartSkillWall()
-        {
-            _anim.SetBool(Casting, true);
-            _anim.SetTrigger(Skill_Wall);
-            _castTime = _castTimeW;
-            LookAtMouse();
-        }
         
         // Used in Skill_Wall animation
         private void SkillWall() 
@@ -239,9 +244,10 @@ namespace Characters
         {
             LookAtMouse();
             _isAbleToKickFlip = true;
+            _isAnimationLocked = true;
             _anim.SetTrigger(Skill_Kick);
-            yield return new WaitUntil(() => _isKicking);
-            while (_isKicking)
+            yield return new WaitUntil(() => _isKickWindowActive);
+            while (_isKickWindowActive)
             {
                 Collider[] hitColliders = Physics.OverlapSphere(_kickHitPosition.position, _kickHitArea);
                 foreach (Collider hitCollider in hitColliders)
@@ -278,19 +284,33 @@ namespace Characters
         {
             _isKickFlipping = false;
             _isAbleToKickFlip = false;
-            _isKicking = true;
+            _isKickWindowActive = true;
+        }
+
+        // Called in case something cancels a Kick
+        private void ResetKickValues()
+        {
+            _isKickFlipping = false;
+            _isAbleToKickFlip = false;
+            _isKickWindowActive = false;
+            StopCoroutine(StartSkillKick());
+            StopCoroutine(StartSkillFlipKick());
         }
 
         // Used in Kick and FlipKick animation
-        private void StopKickHit() => _isKicking = false;
+        private void StopKickHit()
+        {
+            _isAnimationLocked = false;
+            _isKickWindowActive = false;
+        }
 
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(_kickHitPosition.position, _kickHitArea);
         }
-
-#endregion
+        
+        #endregion
 
         #endregion
     }
