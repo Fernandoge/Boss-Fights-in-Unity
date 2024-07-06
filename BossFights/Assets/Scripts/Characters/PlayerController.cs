@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Bosses;
 using TMPro;
@@ -5,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 namespace Characters
 {
@@ -15,7 +17,12 @@ namespace Characters
         [SerializeField] private float _basicAttackSpeed;
         [SerializeField] private int _health;
         [SerializeField] private TextMeshProUGUI _healthText;
-        [SerializeField] private float _damageCooldown;
+        [SerializeField] private float _damageImmuneCD;
+        [Header("Skill Dash")]
+        [SerializeField] private float _dashDistance;
+        [SerializeField] private float _dashFreezeTime;
+        [SerializeField] private float _dashCD;
+        
         [Header("Skill Heal")]
         [SerializeField] private float _castTimeQ;
         [SerializeField] private GameObject _healingPrefab;
@@ -32,16 +39,18 @@ namespace Characters
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private Animator _anim;
-        private bool _isDamageImmune;
         private bool _isAnimationLocked;
         private bool _isKickWindowActive;
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
+        private float _originalDashCD;
+        private float _originalDamagedImmuneCD;
         
         private static readonly int Casting = Animator.StringToHash("Casting");
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Damaged = Animator.StringToHash("Damaged");
+        private static readonly int Skill_Dash = Animator.StringToHash("Skill_Dash");
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
@@ -54,75 +63,33 @@ namespace Characters
             _anim = GetComponent<Animator>();
             _healthText.text = _health.ToString();
             _wallParticles = _wallPrefab.GetComponentInChildren<ParticleSystem>().gameObject;
+            
+        }
+
+        private void Start()
+        {
+            // Initialize all cooldowns
+            _originalDashCD = _dashCD;
+            _originalDamagedImmuneCD = _damageImmuneCD;
+            _dashCD = 0;
+            _damageImmuneCD = 0;
         }
 
         private void Update()
         {
             NavMeshAgentPathCheck();
             PlayerInputs();
+            PlayerCooldowns();
         }
 
+        #region Base Methods
+        
         private void NavMeshAgentPathCheck()
         {
-            if (_navMeshAgent.pathPending) 
+            if (!_anim.GetBool(Running) || _navMeshAgent.pathPending) 
                 return;
             if (_navMeshAgent.remainingDistance <= _navMeshAgent.stoppingDistance + 0.25f)
                 _anim.SetBool(Running, false);
-        }
-        
-        private void PlayerInputs()
-        {
-            MovementAndAttackInput();
-            SkillsInput();
-        }
-
-        private void MovementAndAttackInput()
-        {
-            if (!Input.GetMouseButton(1) && !Input.GetMouseButton(0))
-                return;
-            
-            if (_isAnimationLocked || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
-                return;
-                
-            var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out var hit)) 
-                return;
-            
-            if (Input.GetMouseButton(1))
-            {
-                _anim.SetBool(Running, true);
-                _anim.SetBool(Shooting, false);
-                _navMeshAgent.SetDestination(hit.point);
-                _navMeshAgent.isStopped = false;
-            }
-            if (Input.GetMouseButton(0))
-            {
-                LookAtMouse();
-                _navMeshAgent.isStopped = true;
-                _anim.SetBool(Running, false);
-                _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
-            }
-        }
-        
-        private void SkillsInput()
-        {
-            if (!Input.GetKeyDown(KeyCode.Q) && !Input.GetKeyDown(KeyCode.W) && !Input.GetKeyDown(KeyCode.E)) 
-                return;
-
-            if (Input.GetKeyDown(KeyCode.E) && _anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
-                StartCoroutine(StartSkillFlipKick());
-                
-            if (_anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
-                return;
-                
-            ResetAnimIdle();
-
-            if (Input.GetKeyDown(KeyCode.Q))
-                StartCastingSkill(Skill_Heal, _castTimeQ, false);
-            else if (Input.GetKeyDown(KeyCode.W))
-                StartCastingSkill(Skill_Wall, _castTimeW, true);
-            else if (Input.GetKeyDown(KeyCode.E))
-                StartCoroutine(StartSkillKick());
         }
         
         // Used in Shoot animation
@@ -136,6 +103,26 @@ namespace Characters
             var bulletScript = bullet.GetComponentInChildren<BasicAttack>();
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
+        
+        
+        // TODO: Modify this to type characters instead of using cast time
+        private IEnumerator CastingSkill(int skillToTrigger, float skillCastTime, bool lookAtMouse)
+        {
+            // May be overkill here, but it is needed to reset some animator booleans 
+            ResetPlayerState(false);
+            if (lookAtMouse)
+                LookAtMouse();
+            _anim.SetTrigger(skillToTrigger);
+            _anim.SetBool(Casting, true);
+            _isAnimationLocked = true;
+            while (skillCastTime > 0)
+            {
+                skillCastTime -= Time.deltaTime;
+                yield return null;
+            }
+            _anim.SetBool(Casting, false);
+            _isAnimationLocked = false;
+        }
 
         private void LookAtMouse()
         {
@@ -146,67 +133,150 @@ namespace Characters
             transform.rotation = targetRotation;
         }
 
-        private void ResetAnimIdle()
+        private void ResetPlayerState(bool includeCoroutines)
         {
+            _navMeshAgent.isStopped = true;
             _anim.SetBool(Running, false);
             _anim.SetBool(Shooting, false);
-            _navMeshAgent.isStopped = true;
+            _anim.SetBool(Casting, false);
+            _anim.ResetTrigger(Skill_Heal);
+            _anim.ResetTrigger(Skill_Wall);
+            _isAnimationLocked = false;
+            _isKickFlipping = false;
+            _isKickWindowActive = false;
+            _isAbleToKickFlip = false;
+            if (includeCoroutines)
+                StopAllCoroutines();
         } 
         
-        #region Damaged Logic
+        #endregion
         
-        public void DamagePlayer(int damage)
+        #region Inputs
+        
+        private void PlayerInputs()
         {
-            if (_isDamageImmune)
+            MovementAndAttackInput();
+            SkillsInput();
+        }
+
+        private void PlayerCooldowns()
+        {
+            if (_dashCD > 0)
+                _dashCD -= Time.deltaTime;
+            if (_damageImmuneCD > 0)
+                _damageImmuneCD -= Time.deltaTime;
+        }
+
+        private void MovementAndAttackInput()
+        {
+            if (_isAnimationLocked || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                 return;
             
-            ResetAnimIdle();
-            ResetKickValues();
-            _health -= damage;
-            _healthText.text = _health.ToString();
-            _isDamageImmune = true;
-            _isAnimationLocked = true;
-            _anim.SetTrigger(Damaged);
-            StartCoroutine(StartDamagedCooldown(_damageCooldown));
-        }
-
-        private IEnumerator StartDamagedCooldown(float damageCooldown)
-        {
-            while (damageCooldown > 0)
+            if (Input.GetMouseButton(1))
             {
-                damageCooldown -= Time.deltaTime;
-                yield return null;
+                var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (!Physics.Raycast(ray, out var hit)) 
+                    return;
+                
+                _navMeshAgent.isStopped = false;
+                _navMeshAgent.SetDestination(hit.point);
+                _anim.SetBool(Running, true);
+                _anim.SetBool(Shooting, false);
             }
-            _isDamageImmune = false;
+            
+            if (Input.GetMouseButton(0))
+            {
+                var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (!Physics.Raycast(ray, out var hit)) 
+                    return;
+                
+                LookAtMouse();
+                _navMeshAgent.isStopped = true;
+                _anim.SetBool(Running, false);
+                _anim.SetBool(Shooting, !_anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
+            }
         }
         
+        private void SkillsInput()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+                SkillDash();
 
+            if (Input.GetKeyDown(KeyCode.E) && _anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
+                StartCoroutine(StartSkillFlipKick());
+            
+            if (_isAnimationLocked || _anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
+                return;
+            
+            if (Input.GetKeyDown(KeyCode.Q))
+                StartCoroutine(CastingSkill(Skill_Heal, _castTimeQ, false));
+            else if (Input.GetKeyDown(KeyCode.W))
+                StartCoroutine(CastingSkill(Skill_Wall, _castTimeW, true));
+            else if (Input.GetKeyDown(KeyCode.E))
+                StartCoroutine(SkillKick());
+        }
+        
+        #endregion
+        
+        #region Damaged Logic
+
+        public void DamagePlayer(int damage)
+        {
+            if (_damageImmuneCD > 0)
+                return;
+
+            // Important to reset player state and coroutines since this method cancels player animations
+            ResetPlayerState(true);
+            _anim.SetTrigger(Damaged);
+            _isAnimationLocked = true;
+            _health -= damage;
+            _healthText.text = _health.ToString();
+            _damageImmuneCD = _originalDamagedImmuneCD;
+        }
+
+        // Used in Damaged animation
         public void DamageAnimStopped() => _isAnimationLocked = false;
 
         #endregion
         
-        #region Skills
+        // **** Skills **** //
 
-        private void StartCastingSkill(int skillToTrigger, float skillCastTime, bool lookAtMouse)
+        #region Dash
+        
+        private void SkillDash()
         {
-            _isAnimationLocked = true;
-            _anim.SetBool(Casting, true);
-            _anim.SetTrigger(skillToTrigger);
-            StartCoroutine(StartCastTime(skillCastTime));
-            if (lookAtMouse)
-                LookAtMouse();
+            if (_dashCD > 0)
+                return;
+            
+            // Important to reset player state and coroutines since this method cancels player animations
+            ResetPlayerState(true); 
+            _anim.SetTrigger(Skill_Dash);
+            var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out var hit))
+            {
+                _navMeshAgent.enabled = false;
+                Vector3 direction = (hit.point - transform.position).normalized;
+                transform.position += direction * _dashDistance;
+                Quaternion lookRotation = Quaternion.LookRotation(direction);
+                transform.rotation = lookRotation;
+                _navMeshAgent.enabled = true;
+            }
+            _dashCD = _originalDashCD;
+            StartCoroutine(StartDashFreezeTime(_dashFreezeTime));
         }
         
-        private IEnumerator StartCastTime(float castTime)
+        private IEnumerator StartDashFreezeTime(float dashFreezeTime)
         {
-            while (castTime > 0)
+            _isAnimationLocked = true;
+            while (dashFreezeTime > 0)
             {
-                castTime -= Time.deltaTime;
+                dashFreezeTime -= Time.deltaTime;
                 yield return null;
             }
-            _anim.SetBool(Casting, false);
             _isAnimationLocked = false;
         }
+        
+        #endregion
         
         #region Heal
         
@@ -240,8 +310,10 @@ namespace Characters
 
         #region Kick
 
-        private IEnumerator StartSkillKick()
+        private IEnumerator SkillKick()
         {
+            // May be overkill here, but it is needed to reset some animator booleans 
+            ResetPlayerState(false);
             LookAtMouse();
             _isAbleToKickFlip = true;
             _isAnimationLocked = true;
@@ -287,16 +359,6 @@ namespace Characters
             _isKickWindowActive = true;
         }
 
-        // Called in case something cancels a Kick
-        private void ResetKickValues()
-        {
-            _isKickFlipping = false;
-            _isAbleToKickFlip = false;
-            _isKickWindowActive = false;
-            StopCoroutine(StartSkillKick());
-            StopCoroutine(StartSkillFlipKick());
-        }
-
         // Used in Kick and FlipKick animation
         private void StopKickHit()
         {
@@ -304,14 +366,13 @@ namespace Characters
             _isKickWindowActive = false;
         }
 
+        // Debug for kick counter collider
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(_kickHitPosition.position, _kickHitArea);
         }
         
-        #endregion
-
         #endregion
     }
 }
