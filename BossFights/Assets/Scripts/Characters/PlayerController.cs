@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Bosses;
 using TMPro;
 using Unity.VisualScripting;
@@ -17,6 +18,7 @@ namespace Characters
         [SerializeField] private float _basicAttackSpeed;
         [SerializeField] private int _health;
         [SerializeField] private TextMeshProUGUI _healthText;
+        [SerializeField] private TextMeshProUGUI _QTEText;
         [SerializeField] private float _damageImmuneCD;
         [Header("Skill Dash")]
         [SerializeField] private float _dashDistance;
@@ -24,11 +26,11 @@ namespace Characters
         [SerializeField] private float _dashCD;
         
         [Header("Skill Heal")]
-        [SerializeField] private float _castTimeQ;
+        [SerializeField] private int _castInputsQ;
         [SerializeField] private GameObject _healingPrefab;
         [SerializeField] private int _skillHealAmount;
         [Header("Skill Wall")] 
-        [SerializeField] private float _castTimeW;
+        [SerializeField] private int _castInputsW;
         [SerializeField] private GameObject _wallPrefab;
         [Header("Skill Kick")] 
         [SerializeField] private Transform _kickHitPosition;
@@ -55,6 +57,7 @@ namespace Characters
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
         private static readonly int Skill_FlipKick = Animator.StringToHash("Skill_FlipKick");
+        private static readonly int CastInput = Animator.StringToHash("CastInput");
 
         private void Awake()
         {
@@ -104,26 +107,6 @@ namespace Characters
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
         
-        
-        // TODO: Modify this to type characters instead of using cast time
-        private IEnumerator CastingSkill(int skillToTrigger, float skillCastTime, bool lookAtMouse)
-        {
-            // May be overkill here, but it is needed to reset some animator booleans 
-            ResetPlayerState(false);
-            if (lookAtMouse)
-                LookAtMouse();
-            _anim.SetTrigger(skillToTrigger);
-            _anim.SetBool(Casting, true);
-            _isAnimationLocked = true;
-            while (skillCastTime > 0)
-            {
-                skillCastTime -= Time.deltaTime;
-                yield return null;
-            }
-            _anim.SetBool(Casting, false);
-            _isAnimationLocked = false;
-        }
-
         private void LookAtMouse()
         {
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -145,6 +128,7 @@ namespace Characters
             _isKickFlipping = false;
             _isKickWindowActive = false;
             _isAbleToKickFlip = false;
+            _QTEText.transform.parent.gameObject.SetActive(false);
             if (includeCoroutines)
                 StopAllCoroutines();
         } 
@@ -209,9 +193,9 @@ namespace Characters
                 return;
             
             if (Input.GetKeyDown(KeyCode.Q))
-                StartCoroutine(CastingSkill(Skill_Heal, _castTimeQ, false));
+                StartCoroutine(CastingSkill(Skill_Heal, _castInputsQ, false, KeyCode.Q));
             else if (Input.GetKeyDown(KeyCode.W))
-                StartCoroutine(CastingSkill(Skill_Wall, _castTimeW, true));
+                StartCoroutine(CastingSkill(Skill_Wall, _castInputsW, true, KeyCode.W));
             else if (Input.GetKeyDown(KeyCode.E))
                 StartCoroutine(SkillKick());
         }
@@ -237,6 +221,90 @@ namespace Characters
         // Used in Damaged animation
         public void DamageAnimStopped() => _isAnimationLocked = false;
 
+        #endregion
+        
+        #region Skill Casting
+        
+        private IEnumerator CastingSkill(int skillToTrigger, int skillCastInputs, bool targetedSkill, KeyCode keycodeToRemove)
+        {
+            // May be overkill here, but it is needed to reset some animator booleans 
+            ResetPlayerState(false);
+            _anim.SetTrigger(skillToTrigger);
+            _anim.SetBool(Casting, true);
+            _isAnimationLocked = true;
+
+            // Prepare random KeyCodes to Cast for the QTE
+            KeyCode[] totalKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
+            var keycodesToCast = GenerateKeycodesToCast(totalKeyCodes, keycodeToRemove, skillCastInputs);
+            
+            // Show QTE Keycodes in Screen
+            _QTEText.text = string.Join(" ", keycodesToCast);
+            _QTEText.text += " ";
+            _QTEText.color = Color.black;
+            _QTEText.transform.parent.gameObject.SetActive(true);
+            
+            // This is so the KeyCode to trigger the Cast doesn't enter the loop
+            yield return new WaitUntil(() => !Input.GetKeyDown(keycodeToRemove));
+            
+            // Start QTE
+            while (keycodesToCast.Count > 0)
+            {
+                if (Input.GetKeyDown(keycodesToCast[0]))
+                {
+                    _anim.SetTrigger(CastInput);
+                    keycodesToCast.RemoveAt(0);
+                    _QTEText.text = _QTEText.text[2..];
+                }
+                else
+                {
+                    foreach (var key in totalKeyCodes)
+                    {
+                        if (!Input.GetKeyDown(key)) 
+                            continue;
+                        FailedQTE();
+                        yield break;
+                    }
+                }
+                yield return null;
+            }
+            StartCoroutine(CompletedQTE(targetedSkill));
+        }
+
+        private List<KeyCode> GenerateKeycodesToCast(KeyCode[] totalKeyCodes, KeyCode keycodeToRemove, int skillCastInputs)
+        {
+            var keycodesList = new List<KeyCode>(totalKeyCodes);
+            keycodesList.Remove(keycodeToRemove);
+            var keycodesToCast = new List<KeyCode>();
+            for (var i = skillCastInputs; i > 0; i--)
+            {
+                var randomCastKey = keycodesList[Random.Range(0, keycodesList.Count)];
+                keycodesToCast.Add(randomCastKey);
+                keycodesList.Remove(randomCastKey);
+            }
+            return keycodesToCast;
+        }
+        
+        private void FailedQTE()
+        {
+            _anim.SetTrigger(Damaged);
+            _anim.SetBool(Casting, false);
+            _QTEText.transform.parent.gameObject.SetActive(false);
+        }
+
+        private IEnumerator CompletedQTE(bool targetedSkill)
+        {
+            if (targetedSkill)
+            {
+                _QTEText.text = "CLICK!";
+                _QTEText.color = Color.red;
+                yield return new WaitUntil(() => Input.GetMouseButton(0));
+                LookAtMouse();
+            }
+            _anim.SetBool(Casting, false);
+            _isAnimationLocked = false;
+            _QTEText.transform.parent.gameObject.SetActive(false);
+        }
+        
         #endregion
         
         // **** Skills **** //
