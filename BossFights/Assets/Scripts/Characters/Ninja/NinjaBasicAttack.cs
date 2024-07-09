@@ -3,24 +3,24 @@ using UnityEngine.AI;
 
 namespace Characters.Ninja
 {
-    public class NinjaBasicAttack : BasicAttack
+    public class NinjaBasicAttack : Projectile
     {
-        protected override void OnTriggerEnter(Collider other)
+        // Override just in case Ninja basic attack collides with an obstacle
+        protected override void OnTriggerEnter(Collider collider)
         {
-            base.OnTriggerEnter(other);
-            if (!other.GetComponent<NavMeshObstacle>()) 
+            base.OnTriggerEnter(collider);
+            if (!collider.GetComponent<NavMeshObstacle>()) 
                 return;
             
-            if (other.GetComponent<ParticleSystem>())
-            {
+            // In case of any particles like walls that destroy Ninja basic attacks
+            if (collider.GetComponent<ParticleSystem>())
                 Destroy(transform.parent.gameObject);
-            }
             
-            StopCoroutine(moveBulletCoroutine);
-            Destroy(transform.parent.gameObject, 2f);
+            // Collided with a solid obstacle
+            animator.enabled = false;
             colliderComponent.enabled = false;
-            if (animator != null)
-                animator.enabled = false;
+            StopCoroutine(moveProjectileCoroutine);
+            Destroy(transform.parent.gameObject, 2f);
         }
     }
 }

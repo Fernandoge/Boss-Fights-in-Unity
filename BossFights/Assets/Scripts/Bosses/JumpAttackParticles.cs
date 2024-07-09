@@ -15,11 +15,8 @@ public class JumpAttackParticles : MonoBehaviour
 
     private void OnDisable() => _parentParticlesMain.simulationSpeed = originalSimulationSpeed;
 
-    private void OnParticleTrigger()
-    {
+    private void OnParticleTrigger() => 
         GameManager.Instance.player.DamagePlayer(GameManager.Instance.firstBoss.earthShatterDamage);
-        print("Player hit");
-    }
 
     private void OnParticleCollision(GameObject other)
     {

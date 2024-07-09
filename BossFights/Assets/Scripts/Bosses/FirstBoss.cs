@@ -41,24 +41,24 @@ namespace Bosses
         [SerializeField] private GameObject _lastMeleeParticles;
 
         private Transform _player;
-        private float auxTimeBetweenAttacks; 
         private NavMeshAgent _navMeshAgent;
         private NavMeshAgent _playerNavMeshAgent;
         private Animator _anim;
-        private List<IEnumerator> _attacks;
-        private bool _jumpingAttack;
-        private bool _tripleSmashAttack;
-        private int _tripleSmashCount;
-        private bool _orbsCasted;
-        private bool _performingAttack;
-        private float _navMeshOriginalSpeed;
         private Material _meshMaterial;
-        private Color _meshMaterialOriginalColor;
         private Collider _collider;
-        private string _colliderOriginalTag;
         private GameObject _currentSkillIndicator;
         private GameObject _currentSkillParticles;
         private Coroutine _skillToCastCoroutine;
+        private List<IEnumerator> _attacks;
+        private Color _meshMaterialOriginalColor;
+        private string _colliderOriginalTag;
+        private float auxTimeBetweenAttacks; 
+        private float _navMeshOriginalSpeed;
+        private int _tripleSmashCount;
+        private bool _isJumpingAttacking;
+        private bool _isTripleSmashAttacking;
+        private bool _isOrbsCasted;
+        private bool _isPerformingAttack;
     
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
@@ -73,11 +73,11 @@ namespace Bosses
             _navMeshAgent = GetComponent<NavMeshAgent>();
             _playerNavMeshAgent = _player.GetComponent<NavMeshAgent>();
             _anim = GetComponent<Animator>();
+            _meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
+            _collider = GetComponentInChildren<Collider>();
             auxTimeBetweenAttacks = timeBetweenAttacks;
             _navMeshOriginalSpeed = _navMeshAgent.speed;
-            _meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
             _meshMaterialOriginalColor = _meshMaterial.color;
-            _collider = GetComponentInChildren<Collider>();
             _colliderOriginalTag = transform.tag;
         }
 
@@ -85,8 +85,8 @@ namespace Bosses
         {
             if (timeBetweenAttacks <= 0)
                 PerformAttack();
-
-            if (!_performingAttack)
+            
+            if (!_isPerformingAttack)
             {
                 timeBetweenAttacks -= Time.deltaTime;
                 IdleMovement();
@@ -117,14 +117,14 @@ namespace Bosses
         
         private void PerformAttack()
         {
-            _performingAttack = true;
+            _isPerformingAttack = true;
             _navMeshAgent.isStopped = true;
             timeBetweenAttacks = auxTimeBetweenAttacks;
         
             // TODO: if HP values
             // REMOVE DEBUG
-            _orbsCasted = true;
-            if (!_orbsCasted)
+            _isOrbsCasted = true;
+            if (!_isOrbsCasted)
             {
                 StartOrbs();
             }
@@ -140,7 +140,7 @@ namespace Bosses
         private void StoppedPerformingAttack()
         {
             if (!_anim.GetCurrentAnimatorStateInfo(0).IsTag("WalkingIdle"))
-                _performingAttack = false;
+                _isPerformingAttack = false;
         }
         
         private void ActivateCounterWindow()
@@ -188,7 +188,7 @@ namespace Bosses
             _currentSkillParticles.SetActive(true);
         }
 
-        #region Skills
+        // **** Skills **** //
 
         #region Jump Attack
     
@@ -199,10 +199,10 @@ namespace Bosses
             ResetParticlesToParent(jumpingAttackParticlesPrefab);
             _anim.SetTrigger(Jump_Attack);
             jumpingAttackParticlesPrefab.SetActive(false);
-            yield return new WaitUntil(() => _jumpingAttack);
+            yield return new WaitUntil(() => _isJumpingAttacking);
             _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
             var jumpAttackDistance = Random.Range(_jumpAttackDistance.minValue, _jumpAttackDistance.maxValue);
-            while (_jumpingAttack)
+            while (_isJumpingAttacking)
             {
                 var bossTransform = transform;
                 bossTransform.position += bossTransform.forward * (Time.deltaTime * jumpAttackDistance);
@@ -211,9 +211,9 @@ namespace Bosses
             _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
         }
 
-        public void JumpAttackStart() => _jumpingAttack = true;
+        public void JumpAttackStart() => _isJumpingAttacking = true;
     
-        public void JumpAttackEnd() => _jumpingAttack = false;
+        public void JumpAttackEnd() => _isJumpingAttacking = false;
 
         public void ActivateJumpingAttackParticles()
         {
@@ -221,6 +221,7 @@ namespace Bosses
             jumpingAttackParticlesPrefab.transform.parent = transform.parent;
         }
 
+        // Used in Mutant Jump Attack
         public void TriggerTripleSmash() => StartTripleSmash();
         
         #endregion
@@ -245,11 +246,11 @@ namespace Bosses
             if (_tripleSmashCount == 3)
                 yield break;
 
-            _tripleSmashAttack = true;
+            _isTripleSmashAttacking = true;
             tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
             StartCoroutine(TripleSmashRotateOverTime());
             _anim.SetTrigger(Triple_Smash);
-            yield return new WaitUntil(() => _tripleSmashAttack == false);
+            yield return new WaitUntil(() => _isTripleSmashAttacking == false);
             _tripleSmashCount++;    
         
             StartCoroutine(TripleSmash());
@@ -266,7 +267,7 @@ namespace Bosses
             transform.rotation = targetRotation;
         }
     
-        public void TripleSmashEnd() => _tripleSmashAttack = false;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+        public void TripleSmashEnd() => _isTripleSmashAttacking = false;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     
         public void ActivateTripleSmashParticles()
         {
@@ -289,7 +290,7 @@ namespace Bosses
         {
             orbsPrefab.SetActive(false);
             orbsPrefab.SetActive(true);
-            _orbsCasted = true;
+            _isOrbsCasted = true;
         }
 
         #endregion
@@ -300,7 +301,7 @@ namespace Bosses
         
         private IEnumerator FastRun()
         {
-            _performingAttack = false;
+            _isPerformingAttack = false;
             _navMeshAgent.isStopped = false;
             _navMeshAgent.speed = 15;
             _anim.SetTrigger(Fast_Run);
@@ -311,7 +312,7 @@ namespace Bosses
 
         private void StartMeleeAttack()
         {
-            _performingAttack = true;
+            _isPerformingAttack = true;
             _navMeshAgent.isStopped = true;
             _navMeshAgent.speed = _navMeshOriginalSpeed;
             _currentSkillIndicator = _meleeHitIndicator;
@@ -351,8 +352,6 @@ namespace Bosses
             }
         }
         
-        #endregion
-
         #endregion
     }
 }

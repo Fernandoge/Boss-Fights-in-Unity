@@ -19,34 +19,40 @@ namespace Characters
         [SerializeField] private int _health;
         [SerializeField] private TextMeshProUGUI _healthText;
         [SerializeField] private TextMeshProUGUI _QTEText;
+        [SerializeField] private TextMeshProUGUI _QTEAlert;
         [SerializeField] private float _damageImmuneCD;
         [Header("Skill Dash")]
         [SerializeField] private float _dashDistance;
         [SerializeField] private float _dashFreezeTime;
         [SerializeField] private float _dashCD;
-        
         [Header("Skill Heal")]
-        [SerializeField] private int _castInputsQ;
         [SerializeField] private GameObject _healingPrefab;
+        [SerializeField] private int _castInputsHeal;
         [SerializeField] private int _skillHealAmount;
         [Header("Skill Wall")] 
-        [SerializeField] private int _castInputsW;
         [SerializeField] private GameObject _wallPrefab;
+        [SerializeField] private int _castInputsWall;
         [Header("Skill Kick")] 
         [SerializeField] private Transform _kickHitPosition;
         [SerializeField] private float _kickHitArea;
         [SerializeField] private float _flipKickDistance;
+        [Header("Skill Katon")] 
+        [SerializeField] private GameObject _katonPrefab;
+        [SerializeField] private Transform _fireballSpawnPoint;
+        [SerializeField] private float _fireballSpeed;
+        [SerializeField] private int[] _castInputsKaton;
+        [SerializeField] private int[] _katonDamage;
 
         private GameObject _wallParticles;
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private Animator _anim;
+        private float _originalDashCD;
+        private float _originalDamagedImmuneCD;
         private bool _isAnimationLocked;
         private bool _isKickWindowActive;
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
-        private float _originalDashCD;
-        private float _originalDamagedImmuneCD;
         
         private static readonly int Casting = Animator.StringToHash("Casting");
         private static readonly int Running = Animator.StringToHash("Running");
@@ -56,9 +62,12 @@ namespace Characters
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
+        private static readonly int Skill_Katon = Animator.StringToHash("Skill_Katon");
         private static readonly int Skill_FlipKick = Animator.StringToHash("Skill_FlipKick");
         private static readonly int CastInput = Animator.StringToHash("CastInput");
 
+        /// *** Unity Events *** ///
+        
         private void Awake()
         {
             _navMeshAgent = GetComponent<NavMeshAgent>();
@@ -85,7 +94,7 @@ namespace Characters
             PlayerCooldowns();
         }
 
-        #region Base Methods
+        /// *** Base Methods *** ///
         
         private void NavMeshAgentPathCheck()
         {
@@ -103,7 +112,7 @@ namespace Characters
             Vector3 bulletPosition = bullet.transform.position;
             Vector3 bulletDirection = _basicAttackSpawnPoint.forward;
             _anim.SetBool(Shooting, false);
-            var bulletScript = bullet.GetComponentInChildren<BasicAttack>();
+            var bulletScript = bullet.GetComponentInChildren<Projectile>();
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
         
@@ -128,14 +137,13 @@ namespace Characters
             _isKickFlipping = false;
             _isKickWindowActive = false;
             _isAbleToKickFlip = false;
+            _QTEAlert.gameObject.SetActive(false);
             _QTEText.transform.parent.gameObject.SetActive(false);
             if (includeCoroutines)
                 StopAllCoroutines();
         } 
         
-        #endregion
-        
-        #region Inputs
+        /// *** Inputs *** ///
         
         private void PlayerInputs()
         {
@@ -193,16 +201,17 @@ namespace Characters
                 return;
             
             if (Input.GetKeyDown(KeyCode.Q))
-                StartCoroutine(CastingSkill(Skill_Heal, _castInputsQ, false, KeyCode.Q));
+                StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, KeyCode.Q));
             else if (Input.GetKeyDown(KeyCode.W))
-                StartCoroutine(CastingSkill(Skill_Wall, _castInputsW, true, KeyCode.W));
+                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.W));
             else if (Input.GetKeyDown(KeyCode.E))
                 StartCoroutine(SkillKick());
+            else if (Input.GetKeyDown(KeyCode.A))
+                StartCoroutine(CastingSkill(Skill_Katon, _castInputsKaton[0], true, KeyCode.A, 
+                    _castInputsKaton.Length));
         }
         
-        #endregion
-        
-        #region Damaged Logic
+        /// *** Damaged Logic *** ///
 
         public void DamagePlayer(int damage)
         {
@@ -220,12 +229,11 @@ namespace Characters
 
         // Used in Damaged animation
         public void DamageAnimStopped() => _isAnimationLocked = false;
-
-        #endregion
         
-        #region Skill Casting
+        /// *** Skill Casting *** ///
         
-        private IEnumerator CastingSkill(int skillToTrigger, int skillCastInputs, bool targetedSkill, KeyCode keycodeToRemove)
+        private IEnumerator CastingSkill(int skillToTrigger, int skillCastInputs, bool targetedSkill, 
+            KeyCode keycodeToRemove, int chargesRemaining = 0)
         {
             // May be overkill here, but it is needed to reset some animator booleans 
             ResetPlayerState(false);
@@ -267,7 +275,15 @@ namespace Characters
                 }
                 yield return null;
             }
-            StartCoroutine(CompletedQTE(targetedSkill));
+
+            if (skillToTrigger == Skill_Katon && chargesRemaining > 1)
+            {
+                var katonQTE= StartCoroutine(CastingSkill(skillToTrigger, _castInputsKaton[_castInputsKaton.Length - chargesRemaining + 1], 
+                    targetedSkill, keycodeToRemove, chargesRemaining - 1));
+                StartCoroutine(ChargedKatonQTE(_castInputsKaton.Length - chargesRemaining + 1, katonQTE));
+            }
+            else
+                StartCoroutine(CompletedQTE(targetedSkill));
         }
 
         private List<KeyCode> GenerateKeycodesToCast(KeyCode[] totalKeyCodes, KeyCode keycodeToRemove, int skillCastInputs)
@@ -275,7 +291,7 @@ namespace Characters
             var keycodesList = new List<KeyCode>(totalKeyCodes);
             keycodesList.Remove(keycodeToRemove);
             var keycodesToCast = new List<KeyCode>();
-            for (var i = skillCastInputs; i > 0; i--)
+            for (var inputCount = skillCastInputs; inputCount > 0; inputCount--)
             {
                 var randomCastKey = keycodesList[Random.Range(0, keycodesList.Count)];
                 keycodesToCast.Add(randomCastKey);
@@ -286,30 +302,35 @@ namespace Characters
         
         private void FailedQTE()
         {
+            // To cancel QTE Coroutines
+            ResetPlayerState(true);
             _anim.SetTrigger(Damaged);
             _anim.SetBool(Casting, false);
             _QTEText.transform.parent.gameObject.SetActive(false);
+            _QTEAlert.gameObject.SetActive(false);
         }
 
         private IEnumerator CompletedQTE(bool targetedSkill)
         {
+            _QTEText.transform.parent.gameObject.SetActive(false);
             if (targetedSkill)
             {
-                _QTEText.text = "CLICK!";
-                _QTEText.color = Color.red;
+                _QTEAlert.gameObject.SetActive(true);
+                _QTEAlert.text = "Click!";
                 yield return new WaitUntil(() => Input.GetMouseButton(0));
                 LookAtMouse();
+                
+                //Debug
+                print("click completed coroutine");
             }
+            _QTEAlert.gameObject.SetActive(false);
             _anim.SetBool(Casting, false);
             _isAnimationLocked = false;
-            _QTEText.transform.parent.gameObject.SetActive(false);
         }
         
-        #endregion
-        
-        // **** Skills **** //
+        /// ***** Skills ***** ///
 
-        #region Dash
+        /// *** Dash *** ///
         
         private void SkillDash()
         {
@@ -344,9 +365,7 @@ namespace Characters
             _isAnimationLocked = false;
         }
         
-        #endregion
-        
-        #region Heal
+        /// *** Heal *** ///
         
         // Used in Skill_Health animation
         private void SkillHeal()
@@ -356,10 +375,8 @@ namespace Characters
             _healthText.text = _health.ToString();
             _healingPrefab.SetActive(true);
         }
-        
-        #endregion
 
-        #region Wall
+        /// *** Wall *** ///
         
         // Used in Skill_Wall animation
         private void SkillWall() 
@@ -373,10 +390,8 @@ namespace Characters
             _wallPrefab.SetActive(true);
             _wallParticles.SetActive(true);
         }
-        
-        #endregion
 
-        #region Kick
+        /// *** Kick *** ///
 
         private IEnumerator SkillKick()
         {
@@ -440,7 +455,42 @@ namespace Characters
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(_kickHitPosition.position, _kickHitArea);
         }
+
+        /// *** Katon *** ///
         
-        #endregion
+        private IEnumerator ChargedKatonQTE(int chargeCount, Coroutine QTEInProgress = null)
+        {
+            _QTEAlert.gameObject.SetActive(true);
+            _QTEAlert.text = chargeCount switch
+            {
+                1 => "Click! (1/3)",
+                2 => "Click! (2/3)",
+                _ => _QTEAlert.text
+            };
+            yield return new WaitUntil(() => Input.GetMouseButton(0));
+            
+            _QTEText.transform.parent.gameObject.SetActive(false);
+            LookAtMouse();
+            _QTEAlert.gameObject.SetActive(false);
+            _anim.SetBool(Casting, false);
+            _isAnimationLocked = false;
+            if (QTEInProgress != null)
+                StopCoroutine(QTEInProgress);
+            
+            //Debug
+            print("click completed Katon coroutine");
+        }
+        
+        // Used in Skill_Katon animation
+        // TODO: Make different sizes of fireball depending on the charge
+        // TODO: Add damage collision and different damage values depending on the charge
+        private void SkillKaton()
+        {
+            GameObject fireball = Instantiate(_katonPrefab, _fireballSpawnPoint.position, _fireballSpawnPoint.rotation);
+            Vector3 fireballPosition = fireball.transform.position;
+            Vector3 fireballDirection = _fireballSpawnPoint.forward;
+            var fireballScript = fireball.GetComponentInChildren<Projectile>();
+            fireballScript.Shoot(_fireballSpeed, fireballPosition, fireballDirection);
+        }
     }
 }
