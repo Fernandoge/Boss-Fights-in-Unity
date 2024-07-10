@@ -1,18 +1,21 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
-public class AdjustBackgroundSize : MonoBehaviour
+namespace UI
 {
-    public RectTransform backgroundRectTransform;
-    public TextMeshProUGUI textMeshProUGUI;
-    private const float padding = -50f;
-
-    private void OnEnable()
+    public class AdjustBackgroundSize : MonoBehaviour
     {
-        // Get the preferred width of the text
-        var preferredWidth = textMeshProUGUI.preferredWidth;
+        public RectTransform backgroundRectTransform;
+        public TextMeshProUGUI textMeshProUGUI;
+        private const float padding = -50f;
 
-        // Set the width of the background RectTransform to the preferred width of the text plus padding
-        backgroundRectTransform.sizeDelta = new Vector2(preferredWidth + padding, backgroundRectTransform.sizeDelta.y);
+        private void OnEnable()
+        {
+            // Get the preferred width of the text
+            var preferredWidth = textMeshProUGUI.preferredWidth;
+
+            // Set the width of the background RectTransform to the preferred width of the text plus padding
+            backgroundRectTransform.sizeDelta = new Vector2(preferredWidth + padding, backgroundRectTransform.sizeDelta.y);
+        }
     }
 }

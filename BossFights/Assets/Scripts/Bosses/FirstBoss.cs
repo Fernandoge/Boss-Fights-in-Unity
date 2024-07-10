@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Manager.GameManager;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses
@@ -66,7 +65,7 @@ namespace Bosses
         private static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Fast_Run = Animator.StringToHash("FastRun");
         private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
-        
+
         private void Start()
         {
             _player = GameManager.Instance.player.transform;
