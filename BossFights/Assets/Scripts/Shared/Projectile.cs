@@ -1,9 +1,8 @@
-using System;
 using System.Collections;
 using JetBrains.Annotations;
 using UnityEngine;
 
-namespace Characters
+namespace Shared
 {
     public class Projectile : MonoBehaviour
     {
@@ -19,7 +18,7 @@ namespace Characters
 
         private void OnBecameInvisible() => Destroy(transform.parent.gameObject);
 
-        protected virtual void OnTriggerEnter(Collider collider) => print($"Projectile {transform.parent.name} collides");
+        protected virtual void OnTriggerEnter(Collider col) => print($"Projectile {transform.parent.name} collides");
 
         public void Shoot(float projectileSpeed, Vector3 initialPosition, Vector3 direction, float lifetime = 0)
         {

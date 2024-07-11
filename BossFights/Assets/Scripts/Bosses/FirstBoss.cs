@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Characters;
 using Manager.GameManager;
+using Shared;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses
@@ -25,20 +28,29 @@ namespace Bosses
         public float timeBetweenAttacks;
         [Header("Jump Attack")]
         public int earthShatterDamage;
-        public GameObject jumpingAttackParticlesPrefab;
-        public GameObject[] tripleSmashParticlesPrefab;
+        [SerializeField] private GameObject _jumpingAttackParticlesPrefab;
+        [SerializeField] private GameObject[] _tripleSmashParticlesPrefab;
         [SerializeField] private BossValuesRange _jumpAttackDistance;
         [Header("Orbs")]
         public int orbsDamage; 
         public GameObject orbsPrefab;
         [Header("Fast Run Melees")] 
-        [SerializeField] public int meleesDamage;
+        public int meleesDamage;
         [SerializeField] private GameObject _meleeHitIndicator;
         [SerializeField] private GameObject _lastMeleeHitIndicator;
         [SerializeField] private GameObject _firstMeleeParticles;
         [SerializeField] private GameObject _SecondMeleeParticles;
         [SerializeField] private GameObject _lastMeleeParticles;
 
+        [Header("Rock Throwing")] 
+        public int rockDamage;
+        [SerializeField] private GameObject _rock;
+        [SerializeField] private GameObject _rockThrowSkillIndicator;
+        [SerializeField] private Transform _rockShootPosition;
+        [SerializeField] private float _rockSpeed;
+        [SerializeField] private int _rocksToThrow;
+        [SerializeField] private float _rockAimVariance;
+        
         private Transform _player;
         private NavMeshAgent _navMeshAgent;
         private NavMeshAgent _playerNavMeshAgent;
@@ -54,6 +66,7 @@ namespace Bosses
         private float auxTimeBetweenAttacks; 
         private float _navMeshOriginalSpeed;
         private int _tripleSmashCount;
+        private int _originalRocksToThrow;
         private bool _isJumpingAttacking;
         private bool _isTripleSmashAttacking;
         private bool _isOrbsCasted;
@@ -65,6 +78,7 @@ namespace Bosses
         private static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Fast_Run = Animator.StringToHash("FastRun");
         private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
+        private static readonly int Rock_Throw = Animator.StringToHash("RockThrow");
 
         private void Start()
         {
@@ -78,6 +92,7 @@ namespace Bosses
             _navMeshOriginalSpeed = _navMeshAgent.speed;
             _meshMaterialOriginalColor = _meshMaterial.color;
             _colliderOriginalTag = transform.tag;
+            _originalRocksToThrow = _rocksToThrow;
         }
 
         private void Update()
@@ -130,8 +145,9 @@ namespace Bosses
             else
             {
                 transform.LookAt(_player);
-                StartCoroutine(FastRun());
+                // StartCoroutine(FastRun());
                 // StartCoroutine(JumpAttack());
+                StartThrowingRocks();
             }   
         }
     
@@ -177,7 +193,8 @@ namespace Bosses
         private void DeactivateSkillIndicator()
         {
             _currentSkillIndicator.SetActive(false);
-            _skillToCastCoroutine = StartCoroutine(ActivateSkillParticles());
+            if (_currentSkillParticles)
+                _skillToCastCoroutine = StartCoroutine(ActivateSkillParticles());
         }
 
         private IEnumerator ActivateSkillParticles()
@@ -195,9 +212,9 @@ namespace Bosses
 
         private IEnumerator JumpAttack()
         {
-            ResetParticlesToParent(jumpingAttackParticlesPrefab);
+            ResetParticlesToParent(_jumpingAttackParticlesPrefab);
             _anim.SetTrigger(Jump_Attack);
-            jumpingAttackParticlesPrefab.SetActive(false);
+            _jumpingAttackParticlesPrefab.SetActive(false);
             yield return new WaitUntil(() => _isJumpingAttacking);
             _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
             var jumpAttackDistance = Random.Range(_jumpAttackDistance.minValue, _jumpAttackDistance.maxValue);
@@ -216,8 +233,8 @@ namespace Bosses
 
         public void ActivateJumpingAttackParticles()
         {
-            jumpingAttackParticlesPrefab.SetActive(true);
-            jumpingAttackParticlesPrefab.transform.parent = transform.parent;
+            _jumpingAttackParticlesPrefab.SetActive(true);
+            _jumpingAttackParticlesPrefab.transform.parent = transform.parent;
         }
 
         // Used in Mutant Jump Attack
@@ -233,7 +250,7 @@ namespace Bosses
         {
             // if phase 2
             _tripleSmashCount = 0;
-            foreach (GameObject particlePrefab in tripleSmashParticlesPrefab)
+            foreach (GameObject particlePrefab in _tripleSmashParticlesPrefab)
             {
                 ResetParticlesToParent(particlePrefab);
             }
@@ -246,7 +263,7 @@ namespace Bosses
                 yield break;
 
             _isTripleSmashAttacking = true;
-            tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
+            _tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
             StartCoroutine(TripleSmashRotateOverTime());
             _anim.SetTrigger(Triple_Smash);
             yield return new WaitUntil(() => _isTripleSmashAttacking == false);
@@ -270,8 +287,8 @@ namespace Bosses
     
         public void ActivateTripleSmashParticles()
         {
-            tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(true);
-            tripleSmashParticlesPrefab[_tripleSmashCount].transform.parent = transform.parent;
+            _tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(true);
+            _tripleSmashParticlesPrefab[_tripleSmashCount].transform.parent = transform.parent;
         }
 
         #endregion
@@ -327,6 +344,7 @@ namespace Bosses
         private IEnumerator SecondMelee()
         {
             _currentSkillParticles = _SecondMeleeParticles;
+            _currentSkillParticles = null;
             Quaternion currentRotation = transform.rotation;
             Quaternion targetRotation = currentRotation * Quaternion.Euler(0, 180, 0);
             while (transform.rotation != targetRotation)
@@ -352,5 +370,37 @@ namespace Bosses
         }
         
         #endregion
+
+        /// *** Skill Rock Throwing *** *///
+        
+        private void StartThrowingRocks()
+        {
+            if (_rocksToThrow > 0)
+                RockThrow();
+            else
+                _rocksToThrow = _originalRocksToThrow;
+        }
+        
+        private void RockThrow()
+        {
+            var playerPositionWithVariance = _player.position + new Vector3(
+                Random.Range(-_rockAimVariance, _rockAimVariance), 0, 
+                Random.Range(-_rockAimVariance, _rockAimVariance));
+            transform.LookAt(playerPositionWithVariance);
+            _currentSkillIndicator = _rockThrowSkillIndicator;
+            _anim.SetTrigger(Rock_Throw);
+        }
+
+        private void ShootRock()
+        {
+            GameObject rock = Instantiate(_rock, _rockShootPosition.position, _rockShootPosition.rotation);
+            Vector3 rockPosition = rock.transform.position;
+            Vector3 bulletDirection = _rockShootPosition.forward;
+            var bulletScript = rock.GetComponentInChildren<Projectile>();
+            bulletScript.Shoot(_rockSpeed, rockPosition, bulletDirection);
+
+            _rocksToThrow -= 1;
+            StartThrowingRocks();
+        }
     }
 }

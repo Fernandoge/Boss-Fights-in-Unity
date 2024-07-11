@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Bosses;
+using Shared;
 using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
