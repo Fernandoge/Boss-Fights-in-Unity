@@ -234,7 +234,7 @@ namespace Characters.Ninja
                     if (!hitCollider.CompareTag("Counterable")) 
                         continue;
                     
-                    hitCollider.GetComponentInParent<FirstBoss>().Countered();
+                    hitCollider.GetComponentInParent<BossController>().Countered();
                 }
                 yield return null;
             }

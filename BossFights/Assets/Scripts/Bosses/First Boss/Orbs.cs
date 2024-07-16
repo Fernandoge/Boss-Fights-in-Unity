@@ -1,8 +1,7 @@
-using System;
 using Manager.GameManager;
 using UnityEngine;
 
-namespace Bosses
+namespace Bosses.First_Boss
 {
     public class Orbs : MonoBehaviour
     {

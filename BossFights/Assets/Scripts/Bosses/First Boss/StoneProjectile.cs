@@ -4,7 +4,7 @@ using Shared;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Bosses
+namespace Bosses.First_Boss
 {
     public class StoneProjectile : Projectile
     {

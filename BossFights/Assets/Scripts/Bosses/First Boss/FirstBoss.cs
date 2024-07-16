@@ -1,40 +1,25 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Characters;
 using Manager.GameManager;
 using Shared;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
-namespace Bosses
+namespace Bosses.First_Boss
 {
-    public class FirstBoss : MonoBehaviour
+    public class FirstBoss : BossController
     {
-        [Serializable]
-        private class BossValuesRange
-        {
-            [SerializeField] private float _minValue;
-            [SerializeField] private float _maxValue;
-            public float minValue => _minValue;
-            public float maxValue => _maxValue;
-        }
-        
-        [Header("Basic Values")] 
-        [SerializeField] private float _rotationSpeed;
-        [SerializeField] private float _stopBetweenPlayer;
-        public float timeBetweenAttacks;
-        
+        [Header("")] 
         [Header("Jump Attack")]
         public int earthShatterDamage;
         [SerializeField] private GameObject _jumpingAttackParticlesPrefab;
         [SerializeField] private GameObject[] _tripleSmashParticlesPrefab;
         [SerializeField] private BossValuesRange _jumpAttackDistance;
-        
-        [Header("Orbs")]
-        public int orbsDamage; 
+
+        [Header("Orbs")] 
+        public int orbsDamage;
         public GameObject orbsPrefab;
         
         [Header("Fast Run Melees")] 
@@ -55,100 +40,37 @@ namespace Bosses
         [SerializeField] private float _rockAimVariance;
 
         [Header("Frontal Attack")] 
-        public int frontalDamage;
         [SerializeField] private GameObject _frontalAttackParticles;
         [SerializeField] private GameObject _frontalAttackSkillIndicator;
         [SerializeField] private float _frontalAimVariance;
         
-        private Transform _player;
-        private NavMeshAgent _navMeshAgent;
-        private NavMeshAgent _playerNavMeshAgent;
-        private Animator _anim;
-        private Material _meshMaterial;
-        private Collider _collider;
-        private GameObject _currentSkillIndicator;
-        private GameObject _currentSkillParticles;
-        private Coroutine _skillToCastCoroutine;
-        private List<IEnumerator> _attacks;
-        private Color _meshMaterialOriginalColor;
-        private string _colliderOriginalTag;
-        private float auxTimeBetweenAttacks; 
-        private float _navMeshOriginalSpeed;
         private int _tripleSmashCount;
         private int _originalRocksToThrow;
         private bool _isJumpingAttacking;
         private bool _isTripleSmashAttacking;
         private bool _isOrbsCasted;
-        private bool _isPerformingAttack;
-    
+
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
         private static readonly int Orbs = Animator.StringToHash("Orbs");
-        private static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Fast_Run = Animator.StringToHash("FastRun");
         private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
         private static readonly int Rock_Throw = Animator.StringToHash("RockThrow");
         private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
 
         /// *** Unity Events *** ///
-        
-        private void Start()
+
+        protected override void Start()
         {
-            _player = GameManager.Instance.player.transform;
-            _navMeshAgent = GetComponent<NavMeshAgent>();
-            _playerNavMeshAgent = _player.GetComponent<NavMeshAgent>();
-            _anim = GetComponent<Animator>();
-            _meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
-            _collider = GetComponentInChildren<Collider>();
-            auxTimeBetweenAttacks = timeBetweenAttacks;
-            _navMeshOriginalSpeed = _navMeshAgent.speed;
-            _meshMaterialOriginalColor = _meshMaterial.color;
-            _colliderOriginalTag = transform.tag;
+            base.Start();
             _originalRocksToThrow = _rocksToThrow;
         }
 
-        private void Update()
-        {
-            if (timeBetweenAttacks <= 0)
-                PerformAttack();
-            
-            if (!_isPerformingAttack)
-            {
-                timeBetweenAttacks -= Time.deltaTime;
-                IdleMovement();
-            }
-        }
-        
         /// *** Base Methods *** ///
-        
-        private void IdleMovement()
+
+        protected override void PerformAttack()
         {
-            _navMeshAgent.SetDestination(_player.position);
-            if (_navMeshAgent.remainingDistance > _stopBetweenPlayer)
-            {
-                _anim.SetBool(Walking, true);
-                if (_anim.GetCurrentAnimatorStateInfo(0).IsName("Walking"))
-                    _navMeshAgent.isStopped = false;
-            }
-            else
-            {
-                _navMeshAgent.isStopped = true;
-                _anim.SetBool(Walking, false);
-                Vector3 direction = _player.position - transform.position;
-                if (direction != Vector3.zero)
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(direction);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * _rotationSpeed);
-                }
-            }
-        }
-        
-        private void PerformAttack()
-        {
-            _isPerformingAttack = true;
-            _navMeshAgent.isStopped = true;
-            timeBetweenAttacks = auxTimeBetweenAttacks;
-        
+            base.PerformAttack();
             // TODO: if HP values
             // REMOVE DEBUG
             _isOrbsCasted = true;
@@ -162,77 +84,7 @@ namespace Bosses
                 // StartCoroutine(JumpAttack());
                 // StartThrowingRocks();
                 // StartFrontalAttack();
-            }   
-        }
-    
-        // Used in Idle animation
-        private void StoppedPerformingAttack()
-        {
-            if (!_anim.GetCurrentAnimatorStateInfo(0).IsTag("WalkingIdle"))
-                _isPerformingAttack = false;
-        }
-        
-        private void LookAtWithVariance(Transform transformToLookAt, float variance)
-        {
-            var playerPositionWithVariance = transformToLookAt.position + new Vector3(
-                Random.Range(-variance, variance), 0, Random.Range(-variance, variance));
-            transform.LookAt(playerPositionWithVariance);
-        }
-        
-        private void ResetParticlesToParent(GameObject particlesGameObject)
-        {
-            particlesGameObject.transform.parent = transform;
-            particlesGameObject.transform.localPosition = new Vector3();
-            particlesGameObject.transform.localRotation = Quaternion.identity;
-        }
-        
-        /// *** Skills with indicator logic *** ///
-        
-        private void TriggerSkillWithIndicator(int trigger, GameObject skillIndicator = null, GameObject skillParticles = null)
-        {
-            _currentSkillIndicator = skillIndicator;
-            _currentSkillParticles = skillParticles;
-            if (trigger != 0)
-                _anim.SetTrigger(trigger);
-        }
-        
-        private void ActivateSkillIndicator() => _currentSkillIndicator.SetActive(true);
-
-        private void DeactivateSkillIndicator()
-        {
-            _currentSkillIndicator.SetActive(false);
-            if (_currentSkillParticles)
-                _skillToCastCoroutine = StartCoroutine(ActivateSkillWithIndicatorParticles());
-        }
-
-        private IEnumerator ActivateSkillWithIndicatorParticles()
-        {
-            // Wait a little bit, so it appears briefly after skill indicator is deactivated
-            yield return new WaitForSeconds(0.2f);
-            _currentSkillParticles.SetActive(false);
-            _currentSkillParticles.SetActive(true);
-        }
-        
-        /// *** Counter Logic *** ///
-        
-        private void ActivateCounterWindow()
-        {
-            _collider.transform.tag = "Counterable";
-            _meshMaterial.SetColor("_Color", Color.green);
-        }
-        
-        private void StopCounterWindow() 
-        {
-            _collider.transform.tag = _colliderOriginalTag;
-            _meshMaterial.SetColor("_Color", _meshMaterialOriginalColor);
-        }
-        
-        public void Countered()
-        {
-            StopCounterWindow();
-            StopCoroutine(_skillToCastCoroutine);
-            _currentSkillIndicator.SetActive(false);
-            _anim.SetTrigger("Countered");
+            }  
         }
 
         ///// ******* Skills ******* /////
@@ -242,11 +94,11 @@ namespace Bosses
         private IEnumerator JumpAttack()
         {
             ResetParticlesToParent(_jumpingAttackParticlesPrefab);
-            transform.LookAt(_player);
-            _anim.SetTrigger(Jump_Attack);
+            transform.LookAt(player);
+            anim.SetTrigger(Jump_Attack);
             _jumpingAttackParticlesPrefab.SetActive(false);
             yield return new WaitUntil(() => _isJumpingAttacking);
-            _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+            playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
             var jumpAttackDistance = Random.Range(_jumpAttackDistance.minValue, _jumpAttackDistance.maxValue);
             while (_isJumpingAttacking)
             {
@@ -254,7 +106,7 @@ namespace Bosses
                 bossTransform.position += bossTransform.forward * (Time.deltaTime * jumpAttackDistance);
                 yield return null; 
             }
-            _playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+            playerNavMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
         }
 
         public void JumpAttackStart() => _isJumpingAttacking = true;
@@ -292,7 +144,7 @@ namespace Bosses
             _isTripleSmashAttacking = true;
             _tripleSmashParticlesPrefab[_tripleSmashCount].SetActive(false);
             StartCoroutine(TripleSmashRotateOverTime());
-            _anim.SetTrigger(Triple_Smash);
+            anim.SetTrigger(Triple_Smash);
             yield return new WaitUntil(() => _isTripleSmashAttacking == false);
             _tripleSmashCount++;    
         
@@ -301,7 +153,7 @@ namespace Bosses
     
         private IEnumerator TripleSmashRotateOverTime()
         {
-            Quaternion targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
+            var targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
             while (Quaternion.Angle(transform.rotation, targetRotation) > 0.01f)
             {
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 12);
@@ -322,7 +174,7 @@ namespace Bosses
         
         private void StartOrbs()
         {
-            _anim.SetTrigger(Orbs);
+            anim.SetTrigger(Orbs);
         }
 
         private void ActivateOrbs()
@@ -336,23 +188,23 @@ namespace Bosses
         
         private IEnumerator FastRun()
         {
-            _isPerformingAttack = false;
-            _navMeshAgent.isStopped = false;
-            _navMeshAgent.speed = 15;
-            _anim.SetTrigger(Fast_Run);
+            isPerformingAttack = false;
+            navMeshAgent.isStopped = false;
+            navMeshAgent.speed = 15;
+            anim.SetTrigger(Fast_Run);
             ResetParticlesToParent(_firstMeleeParticles.transform.parent.gameObject);
-            yield return new WaitUntil(() => _anim.GetBool(Walking) == false);
+            yield return new WaitUntil(() => anim.GetBool(Walking) == false);
             StartMeleeAttack();
         }
 
         private void StartMeleeAttack()
         {
-            _isPerformingAttack = true;
-            _navMeshAgent.isStopped = true;
-            _navMeshAgent.speed = _navMeshOriginalSpeed;
+            isPerformingAttack = true;
+            navMeshAgent.isStopped = true;
+            navMeshAgent.speed = navMeshOriginalSpeed;
             _firstMeleeParticles.transform.parent.parent = transform.parent;
             // We reset the trigger in case Animator transitions to MeleeAttack instantly
-            _anim.ResetTrigger(Fast_Run);
+            anim.ResetTrigger(Fast_Run);
             TriggerSkillWithIndicator(Melee_Attack, _meleeHitIndicator, _firstMeleeParticles);
         }
 
@@ -396,7 +248,7 @@ namespace Bosses
         
         private void RockThrow()
         {
-            LookAtWithVariance(_player, _rockAimVariance);
+            LookAtWithVariance(player, _rockAimVariance);
             TriggerSkillWithIndicator(Rock_Throw, skillIndicator: _rockThrowSkillIndicator);
         }
 
@@ -416,7 +268,7 @@ namespace Bosses
         
         private void StartFrontalAttack()
         {
-            LookAtWithVariance(_player, _frontalAimVariance);
+            LookAtWithVariance(player, _frontalAimVariance);
             TriggerSkillWithIndicator(Frontal_Attack, _frontalAttackSkillIndicator, _frontalAttackParticles);
         }
     }

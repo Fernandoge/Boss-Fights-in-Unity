@@ -1,7 +1,7 @@
 using Manager.GameManager;
 using UnityEngine;
 
-namespace Bosses
+namespace Bosses.First_Boss
 {
     public class MeleeParticles : MonoBehaviour
     {

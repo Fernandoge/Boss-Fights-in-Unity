@@ -88759,7 +88759,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 400
+      scalar: 500
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -93475,8 +93475,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a40957c82873f94aae1af275eaf0662, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _rotationSpeed: 3
-  _stopBetweenPlayer: 4.5
+  rotationSpeed: 3
+  stopBetweenPlayer: 4.5
   timeBetweenAttacks: 1
   earthShatterDamage: 2
   _jumpingAttackParticlesPrefab: {fileID: 170654022}
@@ -93502,7 +93502,6 @@ MonoBehaviour:
   _rockSpeed: 45
   _rocksToThrow: 5
   _rockAimVariance: 6
-  frontalDamage: 2
   _frontalAttackParticles: {fileID: 1888023928}
   _frontalAttackSkillIndicator: {fileID: 725856876}
   _frontalAimVariance: 4

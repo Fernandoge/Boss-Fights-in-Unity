@@ -2,7 +2,7 @@ using Manager.GameManager;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Bosses
+namespace Bosses.First_Boss
 {
     public class JumpAttackParticles : MonoBehaviour
     {
