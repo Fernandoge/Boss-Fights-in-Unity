@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Manager.GameManager;
 using Shared;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses.First_Boss
@@ -15,8 +17,8 @@ namespace Bosses.First_Boss
         [Header("Jump Attack")]
         public int earthShatterDamage;
         [SerializeField] private GameObject _jumpingAttackParticlesPrefab;
-        [SerializeField] private GameObject[] _tripleSmashParticlesPrefab;
         [SerializeField] private BossValuesRange _jumpAttackDistance;
+        [SerializeField] private GameObject[] _tripleSmashParticlesPrefab;
 
         [Header("Orbs")] 
         public int orbsDamage;
@@ -43,6 +45,15 @@ namespace Bosses.First_Boss
         [SerializeField] private GameObject _frontalAttackParticles;
         [SerializeField] private GameObject _frontalAttackSkillIndicator;
         [SerializeField] private float _frontalAimVariance;
+
+        [Header("Meteors")] 
+        public int meteorsDamage;
+        public float meteorsDuration;
+        [SerializeField] private GameObject _meteorPrefab;
+        [SerializeField] private GameObject _meteorsBoundaries;
+        [SerializeField] private GameObject _meteorsIndicatorParent;
+        [SerializeField] private int _meteorsAmount;
+        [SerializeField] private float _meteorsMinDistance;
         
         private int _tripleSmashCount;
         private int _originalRocksToThrow;
@@ -57,6 +68,7 @@ namespace Bosses.First_Boss
         private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
         private static readonly int Rock_Throw = Animator.StringToHash("RockThrow");
         private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
+        private static readonly int Meteors = Animator.StringToHash("Meteors");
 
         /// *** Unity Events *** ///
 
@@ -80,17 +92,18 @@ namespace Bosses.First_Boss
             }
             else
             {
-                StartCoroutine(FastRun());
+                // StartCoroutine(FastRun());
                 // StartCoroutine(JumpAttack());
                 // StartThrowingRocks();
                 // StartFrontalAttack();
+                StartMeteors();
             }  
         }
 
         ///// ******* Skills ******* /////
         
-        /// ***** Jump Attack ***** ///
-
+        /// ***** Skill 1-1: Jump Attack ***** ///
+        
         private IEnumerator JumpAttack()
         {
             ResetParticlesToParent(_jumpingAttackParticlesPrefab);
@@ -123,7 +136,7 @@ namespace Bosses.First_Boss
         // Used in Mutant Jump Attack
         public void TriggerTripleSmash() => StartTripleSmash();
     
-        /// *** Phase 2: Triple Smash *** ///
+        /// *** Skill 1-2 Triple Smash *** ///
 
         private void StartTripleSmash()
         {
@@ -170,7 +183,7 @@ namespace Bosses.First_Boss
             _tripleSmashParticlesPrefab[_tripleSmashCount].transform.parent = transform.parent;
         }
 
-        /// *** Orbs *** ///
+        /// *** Skill 2-1: Orbs *** ///
         
         private void StartOrbs()
         {
@@ -184,7 +197,7 @@ namespace Bosses.First_Boss
             _isOrbsCasted = true;
         }
         
-        /// *** FastRun and Melee Attack *** ///
+        /// *** Skill 3-1: FastRun and Melee Attack *** ///
         
         private IEnumerator FastRun()
         {
@@ -236,7 +249,7 @@ namespace Bosses.First_Boss
             }
         }
 
-        /// *** Skill Rock Throwing *** *///
+        /// *** Skill 4-1: Skill Rock Throwing *** *///
         
         private void StartThrowingRocks()
         {
@@ -264,12 +277,50 @@ namespace Bosses.First_Boss
             StartThrowingRocks();
         }
 
-        /// *** Skill Frontal Attack *** ///
+        /// *** Skill 5-1: Frontal Attack *** ///
         
         private void StartFrontalAttack()
         {
             LookAtWithVariance(player, _frontalAimVariance);
             TriggerSkillWithIndicator(Frontal_Attack, _frontalAttackSkillIndicator, _frontalAttackParticles);
+        }
+
+        /// *** Skill 6-1: Skill Meteors *** ///
+
+        private void StartMeteors()
+        {
+            anim.SetTrigger(Meteors);
+        }
+
+        // Used in Standing Yell Animation
+        private void InstantiateMeteors()
+        {
+            var bounds = _meteorsBoundaries.GetComponent<Renderer>().bounds;
+            List<Vector3> spawnedPositions = new();
+            
+            for (var meteorIndex = 0; meteorIndex < _meteorsAmount; meteorIndex++)
+            {
+                Vector3 randomPosition = default;
+                var attemptsFindingMinDistance = 0;
+                var validPosition = false;
+                
+                while (!validPosition && attemptsFindingMinDistance < 100)
+                {
+                    attemptsFindingMinDistance++;
+                    randomPosition = new Vector3(
+                        Random.Range(bounds.min.x, bounds.max.x), 0,
+                        Random.Range(bounds.min.z, bounds.max.z)
+                    );
+                    // Check if the new randomPosition is too close to other instantiated meteors
+                    validPosition = spawnedPositions.All(pos => !(Vector3.Distance(randomPosition, pos) < _meteorsMinDistance));
+                }
+                if (attemptsFindingMinDistance == 100)
+                    print($"Failed to meet minimum meteor distance criteria of {_meteorsMinDistance}");
+                
+                Instantiate(_meteorPrefab, randomPosition, Quaternion.identity, _meteorsIndicatorParent.transform);
+                spawnedPositions.Add(randomPosition);
+            }
+            _meteorsIndicatorParent.transform.rotation *= Quaternion.Euler(0, 45, 0);
         }
     }
 }
