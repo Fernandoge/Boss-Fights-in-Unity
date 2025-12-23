@@ -1,10 +1,9 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Manager.GameManager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses
@@ -25,12 +24,22 @@ namespace Bosses
         [SerializeField] protected float stopBetweenPlayer;
         [SerializeField] protected float timeBetweenAttacks;
         
+        [Header("Health")]
+        [SerializeField] protected int maxHealth = 100;
+        [SerializeField] private TextMeshProUGUI _healthText;
+
+        private int currentHealth;
+        private bool hasEnteredSecondPhase;
+        
+        public bool IsInSecondPhase => hasEnteredSecondPhase;
+        
         protected Transform player;
         protected NavMeshAgent navMeshAgent;
         protected NavMeshAgent playerNavMeshAgent;
         protected Animator anim;
         protected float navMeshOriginalSpeed;
         protected bool isPerformingAttack;
+        protected bool isTimeBetweenAttacksFrozen;
         
         private Material meshMaterial;
         private Collider colliderComponent;
@@ -39,7 +48,8 @@ namespace Bosses
         private Coroutine skillToCastCoroutine;
         private Color meshMaterialOriginalColor;
         private string colliderOriginalTag;
-        private float auxTimeBetweenAttacks; 
+        protected float auxTimeBetweenAttacks;
+        private bool isCounterWindowActive; 
         
         protected static readonly int Walking = Animator.StringToHash("Walking");
         
@@ -55,6 +65,10 @@ namespace Bosses
             navMeshOriginalSpeed = navMeshAgent.speed;
             meshMaterialOriginalColor = meshMaterial.color;
             colliderOriginalTag = transform.tag;
+            
+            // Initialize health
+            currentHealth = maxHealth;
+            _healthText.text = currentHealth.ToString();
         }
         
         private void Update()
@@ -64,8 +78,9 @@ namespace Bosses
             
             if (!isPerformingAttack)
             {
-                timeBetweenAttacks -= Time.deltaTime;
                 IdleMovement();
+                if (!isTimeBetweenAttacksFrozen)
+                    timeBetweenAttacks -= Time.deltaTime;
             }
         }
         
@@ -150,12 +165,14 @@ namespace Bosses
         
         protected void ActivateCounterWindow()
         {
+            isCounterWindowActive = true;
             colliderComponent.transform.tag = "Counterable";
             meshMaterial.SetColor("_Color", Color.green);
         }
         
         protected void StopCounterWindow() 
         {
+            isCounterWindowActive = false;
             colliderComponent.transform.tag = colliderOriginalTag;
             meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
         }
@@ -166,6 +183,41 @@ namespace Bosses
             StopCoroutine(skillToCastCoroutine);
             currentSkillIndicator.SetActive(false);
             anim.SetTrigger("Countered");
+        }
+        
+        /// *** Health Logic *** ///
+        
+        public void DamageBoss(int damage)
+        {
+            currentHealth -= damage;
+            _healthText.text = currentHealth.ToString();
+            
+            // Check if boss should enter second phase
+            if (!hasEnteredSecondPhase && currentHealth <= maxHealth / 2)
+            {
+                hasEnteredSecondPhase = true;
+                EnterSecondPhase();
+            }
+            
+            // Don't flash red if counter window is active (already flashing green)
+            if (!isCounterWindowActive)
+                StartCoroutine(FlashOnHit());
+        }
+        
+        protected virtual void EnterSecondPhase()
+        {
+            // Override this method in specific boss implementations to define second phase behavior
+            Debug.Log($"{gameObject.name} has entered second phase!");
+        }
+        
+        private IEnumerator FlashOnHit()
+        {
+            // Flash red
+            meshMaterial.SetColor("_Color", Color.red);
+            yield return new WaitForSeconds(0.04f);
+            
+            // Return to original color
+            meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
         }
     }
 }

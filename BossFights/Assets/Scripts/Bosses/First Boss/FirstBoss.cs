@@ -26,6 +26,7 @@ namespace Bosses.First_Boss
         
         [Header("Fast Run Melees")] 
         public int meleesDamage;
+        public float fastRunSpeed;
         [SerializeField] private GameObject _meleeHitIndicator;
         [SerializeField] private GameObject _lastMeleeHitIndicator;
         [SerializeField] private GameObject _firstMeleeParticles;
@@ -60,6 +61,7 @@ namespace Bosses.First_Boss
         private bool _isJumpingAttacking;
         private bool _isTripleSmashAttacking;
         private bool _isOrbsCasted;
+        private bool _areMeteorsActive;
         private int _lastAttackIndex = -1;
 
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
@@ -80,6 +82,18 @@ namespace Bosses.First_Boss
         }
 
         /// *** Base Methods *** ///
+        
+        protected override void EnterSecondPhase()
+        {
+            base.EnterSecondPhase();
+            
+            // Halve the time between attacks for more aggressive second phase (2x faster attacks)
+            timeBetweenAttacks /= 2f;
+            auxTimeBetweenAttacks /= 2f;
+            
+            // Double the fast run speed for more aggressive chase
+            fastRunSpeed *= 2f;
+        }
 
         protected override void PerformAttack()
         {
@@ -98,8 +112,16 @@ namespace Bosses.First_Boss
                 do
                 {
                     attackIndex = Random.Range(0, 5); // 5 different attacks
-                    // attackIndex = 4; // 5 different attacks
-                } while (attackIndex == _lastAttackIndex);
+                    
+                    // If meteors are selected but still active, reroll
+                    if (attackIndex == 4 && _areMeteorsActive)
+                        continue;
+                    
+                    // Break if we found a valid attack
+                    if (attackIndex != _lastAttackIndex)
+                        break;
+                        
+                } while (true);
                 
                 _lastAttackIndex = attackIndex;
                 
@@ -158,13 +180,17 @@ namespace Bosses.First_Boss
         }
 
         // Used in Mutant Jump Attack
-        public void TriggerTripleSmash() => StartTripleSmash();
+        public void TriggerTripleSmash()
+        {
+            // Only trigger triple smash in phase 2
+            if (IsInSecondPhase)
+                StartTripleSmash();
+        }
     
         /// *** Skill 1-2 Triple Smash *** ///
 
         private void StartTripleSmash()
         {
-            // TODO: if phase 2
             _tripleSmashCount = 0;
             foreach (GameObject particlePrefab in _tripleSmashParticlesPrefab)
             {
@@ -226,8 +252,9 @@ namespace Bosses.First_Boss
         private IEnumerator FastRun()
         {
             isPerformingAttack = false;
+            isTimeBetweenAttacksFrozen = true;
             navMeshAgent.isStopped = false;
-            navMeshAgent.speed = 15;
+            navMeshAgent.speed = fastRunSpeed;
             anim.SetTrigger(Fast_Run);
             ResetParticlesToParent(_firstMeleeParticles.transform.parent.gameObject);
             yield return new WaitUntil(() => anim.GetBool(Walking) == false);
@@ -237,6 +264,7 @@ namespace Bosses.First_Boss
         private void StartMeleeAttack()
         {
             isPerformingAttack = true;
+            isTimeBetweenAttacksFrozen = false;
             navMeshAgent.isStopped = true;
             navMeshAgent.speed = navMeshOriginalSpeed;
             _firstMeleeParticles.transform.parent.parent = transform.parent;
@@ -294,7 +322,7 @@ namespace Bosses.First_Boss
             GameObject rock = Instantiate(_rock, _rockShootPosition.position, _rockShootPosition.rotation);
             Vector3 rockPosition = rock.transform.position;
             Vector3 bulletDirection = _rockShootPosition.forward;
-            var bulletScript = rock.GetComponentInChildren<Projectile>();
+            var bulletScript = rock.GetComponentInChildren<StoneProjectile>();
             bulletScript.Shoot(_rockSpeed, rockPosition, bulletDirection);
 
             _rocksToThrow -= 1;
@@ -313,6 +341,7 @@ namespace Bosses.First_Boss
 
         private void StartMeteors()
         {
+            _areMeteorsActive = true;
             anim.SetTrigger(Meteors);
         }
 
@@ -345,6 +374,16 @@ namespace Bosses.First_Boss
                 spawnedPositions.Add(randomPosition);
             }
             _meteorsIndicatorParent.transform.rotation *= Quaternion.Euler(0, 45, 0);
+            
+            // Start coroutine to reset flag after meteors duration
+            StartCoroutine(ResetMeteorsFlag());
+        }
+        
+        private IEnumerator ResetMeteorsFlag()
+        {
+            // Wait for meteors to finish
+            yield return new WaitForSeconds(meteorsDuration);
+            _areMeteorsActive = false;
         }
     }
 }

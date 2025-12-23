@@ -1,3 +1,5 @@
+using Bosses;
+using Manager.GameManager;
 using Shared;
 using UnityEngine;
 using UnityEngine.AI;
@@ -6,10 +8,21 @@ namespace Characters.Ninja
 {
     public class NinjaBasicAttack : Projectile
     {
+        [SerializeField] private int damage = 10;
+        
         // Override just in case Ninja basic attack collides with an obstacle
         protected override void OnTriggerEnter(Collider col)
         {
             base.OnTriggerEnter(col);
+            
+            // Check if hit a boss
+            if (col.GetComponentInParent<BossController>())
+            {
+                col.GetComponentInParent<BossController>().DamageBoss(damage);
+                Destroy(transform.parent.gameObject);
+                return;
+            }
+            
             if (!col.GetComponent<NavMeshObstacle>()) 
                 return;
             
@@ -25,4 +38,3 @@ namespace Characters.Ninja
         }
     }
 }
-
