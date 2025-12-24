@@ -83,9 +83,9 @@ namespace Bosses.First_Boss
 
         /// *** Base Methods *** ///
         
-        protected override void EnterSecondPhase()
+        protected override IEnumerator EnterSecondPhase()
         {
-            base.EnterSecondPhase();
+            yield return base.EnterSecondPhase();
             
             // Halve the time between attacks for more aggressive second phase (2x faster attacks)
             timeBetweenAttacks /= 2f;
@@ -93,6 +93,10 @@ namespace Bosses.First_Boss
             
             // Double the fast run speed for more aggressive chase
             fastRunSpeed *= 2f;
+            
+            // Double the navMeshAgent speed for faster movement
+            navMeshAgent.speed *= 2f;
+            navMeshOriginalSpeed *= 2f;
         }
 
         protected override void PerformAttack()
@@ -273,6 +277,7 @@ namespace Bosses.First_Boss
             TriggerSkillWithIndicator(Melee_Attack, _meleeHitIndicator, _firstMeleeParticles);
         }
 
+        // Used in Standing Melee Combo Attack animation
         private void StartSecondMelee() => StartCoroutine(SecondMelee());
 
         private IEnumerator SecondMelee()
@@ -287,6 +292,7 @@ namespace Bosses.First_Boss
             }
         }
         
+        // Used in Standing Melee Combo Attack animation
         private void StartThirdMelee() => StartCoroutine(ThirdMelee());
         
         private IEnumerator ThirdMelee()
@@ -317,6 +323,7 @@ namespace Bosses.First_Boss
             TriggerSkillWithIndicator(Rock_Throw, skillIndicator: _rockThrowSkillIndicator);
         }
 
+        // Used in Standing Rock Throw animation
         private void ShootRock()
         {
             GameObject rock = Instantiate(_rock, _rockShootPosition.position, _rockShootPosition.rotation);

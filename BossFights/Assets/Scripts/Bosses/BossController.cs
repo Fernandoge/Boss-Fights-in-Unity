@@ -28,9 +28,6 @@ namespace Bosses
         [SerializeField] protected int maxHealth = 100;
         [SerializeField] private TextMeshProUGUI _healthText;
 
-        private int currentHealth;
-        private bool hasEnteredSecondPhase;
-        
         public bool IsInSecondPhase => hasEnteredSecondPhase;
         
         protected Transform player;
@@ -40,6 +37,7 @@ namespace Bosses
         protected float navMeshOriginalSpeed;
         protected bool isPerformingAttack;
         protected bool isTimeBetweenAttacksFrozen;
+        protected float auxTimeBetweenAttacks;
         
         private Material meshMaterial;
         private Collider colliderComponent;
@@ -48,11 +46,16 @@ namespace Bosses
         private Coroutine skillToCastCoroutine;
         private Color meshMaterialOriginalColor;
         private string colliderOriginalTag;
-        protected float auxTimeBetweenAttacks;
+        private int currentHealth;
+        private bool hasEnteredSecondPhase;
+        private bool isPerformingAction;
         private bool isCounterWindowActive; 
         
         protected static readonly int Walking = Animator.StringToHash("Walking");
-        
+        private static readonly int Enter_Second_Phase = Animator.StringToHash("EnterSecondPhase");
+        private static readonly int Countered = Animator.StringToHash("Countered");
+        private static readonly int PerformingAction = Animator.StringToHash("PerformingAction");
+
         protected virtual void Start()
         {
             player = GameManager.Instance.player.transform;
@@ -75,13 +78,13 @@ namespace Bosses
         {
             if (timeBetweenAttacks <= 0)
                 PerformAttack();
+
+            if (isPerformingAttack || isPerformingAction) 
+                return;
             
-            if (!isPerformingAttack)
-            {
-                IdleMovement();
-                if (!isTimeBetweenAttacksFrozen)
-                    timeBetweenAttacks -= Time.deltaTime;
-            }
+            IdleMovement();
+            if (!isTimeBetweenAttacksFrozen)
+                timeBetweenAttacks -= Time.deltaTime;
         }
         
         private void IdleMovement()
@@ -106,6 +109,16 @@ namespace Bosses
             }
         }
         
+        /// *** Base Methods *** ///
+        
+        private void PerformAction()
+        {
+            isPerformingAction = true;
+            navMeshAgent.isStopped = true;
+            timeBetweenAttacks = auxTimeBetweenAttacks;
+            anim.SetBool(PerformingAction, true);
+        }
+        
         protected virtual void PerformAttack()
         {
             isPerformingAttack = true;
@@ -114,10 +127,17 @@ namespace Bosses
         }
         
         // Used in Idle animation
-        protected void StoppedPerformingAttack()
+        protected void StopPerformingAttack()
         {
             if (!anim.GetCurrentAnimatorStateInfo(0).IsTag("WalkingIdle"))
                 isPerformingAttack = false;
+        }
+        
+        // Used in action animations like EnterSecondPhase
+        protected void StopPerformingAction()
+        {
+            isPerformingAction = false;
+            anim.SetBool(PerformingAction, false);
         }
         
         protected void LookAtWithVariance(Transform transformToLookAt, float variance)
@@ -177,12 +197,12 @@ namespace Bosses
             meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
         }
         
-        public void Countered()
+        public void TriggerCounter()
         {
             StopCounterWindow();
             StopCoroutine(skillToCastCoroutine);
             currentSkillIndicator.SetActive(false);
-            anim.SetTrigger("Countered");
+            anim.SetTrigger(Countered);
         }
         
         /// *** Health Logic *** ///
@@ -193,21 +213,21 @@ namespace Bosses
             _healthText.text = currentHealth.ToString();
             
             // Check if boss should enter second phase
-            if (!hasEnteredSecondPhase && currentHealth <= maxHealth / 2)
-            {
-                hasEnteredSecondPhase = true;
-                EnterSecondPhase();
-            }
+            if (!hasEnteredSecondPhase && currentHealth <= maxHealth / 2 && !isPerformingAction)
+                StartCoroutine(EnterSecondPhase());
             
             // Don't flash red if counter window is active (already flashing green)
             if (!isCounterWindowActive)
                 StartCoroutine(FlashOnHit());
         }
         
-        protected virtual void EnterSecondPhase()
+        // Override this method in specific boss implementations to define second phase behavior
+        protected virtual IEnumerator EnterSecondPhase()
         {
-            // Override this method in specific boss implementations to define second phase behavior
-            Debug.Log($"{gameObject.name} has entered second phase!");
+            PerformAction();
+            yield return new WaitUntil(() => !isPerformingAttack);
+            anim.SetTrigger(Enter_Second_Phase);
+            hasEnteredSecondPhase = true;
         }
         
         private IEnumerator FlashOnHit()
