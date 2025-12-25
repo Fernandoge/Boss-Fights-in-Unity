@@ -6,6 +6,7 @@
 [Oo]bj/
 [Bb]uild
 [Ll]ibrary/
+[Ll]ogs/
 sysinfo.txt
 
 # ===================================== #
@@ -46,3 +47,5 @@ sysinfo.txt
 
 *.apk
 *.obb
+*.log
+*.dwlt

@@ -41,6 +41,12 @@ namespace Bosses.First_Boss
         [SerializeField] private float _rockSpeed;
         [SerializeField] private int _rocksToThrow;
         [SerializeField] private float _rockAimVariance;
+        
+        [Header("Rock Shower")] 
+        [SerializeField] private GameObject _rockShowerIndicator;
+        [SerializeField] private Transform[] _rockShowerRocksPositionUp;
+        [SerializeField] private Transform[] _rockShowerRocksPositionDown;
+        [SerializeField] private float _rockShowerSpeed;
 
         [Header("Frontal Attack")] 
         [SerializeField] private GameObject _frontalAttackParticles;
@@ -72,6 +78,7 @@ namespace Bosses.First_Boss
         private static readonly int Rock_Throw = Animator.StringToHash("RockThrow");
         private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
         private static readonly int Meteors = Animator.StringToHash("Meteors");
+        private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
 
         /// *** Unity Events *** ///
 
@@ -97,6 +104,10 @@ namespace Bosses.First_Boss
             // Double the navMeshAgent speed for faster movement
             navMeshAgent.speed *= 2f;
             navMeshOriginalSpeed *= 2f;
+            
+            // Add three more rocks to throw
+            _originalRocksToThrow += 3;
+            _rocksToThrow += 3;
         }
 
         protected override void PerformAttack()
@@ -115,7 +126,7 @@ namespace Bosses.First_Boss
                 int attackIndex;
                 do
                 {
-                    attackIndex = Random.Range(0, 5); // 5 different attacks
+                    attackIndex = Random.Range(0, 6); // 6 different attacks
                     
                     // If meteors are selected but still active, reroll
                     if (attackIndex == 4 && _areMeteorsActive)
@@ -145,6 +156,9 @@ namespace Bosses.First_Boss
                         break;
                     case 4:
                         StartMeteors();
+                        break;
+                    case 5:
+                        StartRockShower();
                         break;
                 }
             }  
@@ -326,14 +340,16 @@ namespace Bosses.First_Boss
         // Used in Standing Rock Throw animation
         private void ShootRock()
         {
-            GameObject rock = Instantiate(_rock, _rockShootPosition.position, _rockShootPosition.rotation);
-            Vector3 rockPosition = rock.transform.position;
-            Vector3 bulletDirection = _rockShootPosition.forward;
-            var bulletScript = rock.GetComponentInChildren<StoneProjectile>();
-            bulletScript.Shoot(_rockSpeed, rockPosition, bulletDirection);
-
+            ShootRockFromPosition(_rockShootPosition.position, _rockShootPosition.forward, _rockSpeed);
             _rocksToThrow -= 1;
             StartThrowingRocks();
+        }
+
+        private void ShootRockFromPosition(Vector3 position, Vector3 direction, float speed)
+        {
+            GameObject rock = Instantiate(_rock, position, Quaternion.LookRotation(direction));
+            var bulletScript = rock.GetComponentInChildren<StoneProjectile>();
+            bulletScript.Shoot(speed, rock.transform.position, direction);
         }
 
         /// *** Skill 5-1: Frontal Attack *** ///
@@ -391,6 +407,26 @@ namespace Bosses.First_Boss
             // Wait for meteors to finish
             yield return new WaitForSeconds(meteorsDuration);
             _areMeteorsActive = false;
+        }
+
+        /// *** Skill 7-1: Skill Rock Shower *** ///
+        private void StartRockShower()
+        {
+            TriggerSkillWithIndicator(Rock_Shower, skillIndicator: _rockShowerIndicator);
+        }
+
+        private void RockShower() 
+        {
+            foreach(Transform rockPosition in _rockShowerRocksPositionUp)
+            {
+                Vector3 spawnPosition = rockPosition.position + new Vector3(7f, 1f, 7f);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
+            }
+            foreach(Transform rockPosition in _rockShowerRocksPositionDown)
+            {
+                Vector3 spawnPosition = rockPosition.position + new Vector3(-7f, 1f, -7f);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
+            }
         }
     }
 }
