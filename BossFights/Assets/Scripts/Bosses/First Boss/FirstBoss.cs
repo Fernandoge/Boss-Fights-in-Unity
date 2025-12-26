@@ -2,15 +2,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Manager.GameManager;
-using Shared;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses.First_Boss
 {
+    [Serializable]
+    public class RockShowerPattern
+    {
+        public GameObject indicator;
+        public Transform[] rocksPositionUp;
+        public Transform[] rocksPositionDown;
+    }
+    
     public class FirstBoss : BossController
     {
         [Header("")] 
@@ -43,10 +48,8 @@ namespace Bosses.First_Boss
         [SerializeField] private float _rockAimVariance;
         
         [Header("Rock Shower")] 
-        [SerializeField] private GameObject _rockShowerIndicator;
-        [SerializeField] private Transform[] _rockShowerRocksPositionUp;
-        [SerializeField] private Transform[] _rockShowerRocksPositionDown;
         [SerializeField] private float _rockShowerSpeed;
+        [SerializeField] private RockShowerPattern[] _rockShowerPatterns;
 
         [Header("Frontal Attack")] 
         [SerializeField] private GameObject _frontalAttackParticles;
@@ -69,6 +72,7 @@ namespace Bosses.First_Boss
         private bool _isOrbsCasted;
         private bool _areMeteorsActive;
         private int _lastAttackIndex = -1;
+        private RockShowerPattern _selectedRockShowerPattern;
 
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
@@ -412,19 +416,28 @@ namespace Bosses.First_Boss
         /// *** Skill 7-1: Skill Rock Shower *** ///
         private void StartRockShower()
         {
-            TriggerSkillWithIndicator(Rock_Shower, skillIndicator: _rockShowerIndicator);
+            _selectedRockShowerPattern = IsInSecondPhase ? 
+                _rockShowerPatterns[Random.Range(0, _rockShowerPatterns.Length)] : _rockShowerPatterns[Random.Range(0, 1)];
+            TriggerSkillWithIndicator(Rock_Shower, skillIndicator: _selectedRockShowerPattern.indicator);
         }
 
         private void RockShower() 
         {
-            foreach(Transform rockPosition in _rockShowerRocksPositionUp)
+            Vector3 spawnPosition;
+            foreach(var rockPosition in _selectedRockShowerPattern.rocksPositionUp)
             {
-                Vector3 spawnPosition = rockPosition.position + new Vector3(7f, 1f, 7f);
+                if (_selectedRockShowerPattern.indicator.name.Contains("Vertical"))
+                    spawnPosition = rockPosition.position + new Vector3(7f, 1f, 7f);
+                else
+                    spawnPosition = rockPosition.position + new Vector3(-7f, 1f, 7f);
                 ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
             }
-            foreach(Transform rockPosition in _rockShowerRocksPositionDown)
+            foreach(var rockPosition in _selectedRockShowerPattern.rocksPositionDown)
             {
-                Vector3 spawnPosition = rockPosition.position + new Vector3(-7f, 1f, -7f);
+                if (_selectedRockShowerPattern.indicator.name.Contains("Vertical"))
+                    spawnPosition = rockPosition.position + new Vector3(-7f, 1f, -7f);
+                else
+                    spawnPosition = rockPosition.position + new Vector3(7f, 1f, -7f);
                 ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
             }
         }
