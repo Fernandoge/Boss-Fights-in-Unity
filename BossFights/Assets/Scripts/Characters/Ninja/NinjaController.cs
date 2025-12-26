@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Bosses;
 using Shared;
 using TMPro;
+using UI;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -18,6 +19,8 @@ namespace Characters.Ninja
         [SerializeField] private GameObject _healingPrefab;
         [SerializeField] private int _castInputsHeal;
         [SerializeField] private int _skillHealAmount;
+        [SerializeField] private float _healCD;
+        [SerializeField] private SpellIcon _healSpellIcon;
         [Header("Skill Wall")] 
         [SerializeField] private GameObject _wallPrefab;
         [SerializeField] private int _castInputsWall;
@@ -36,6 +39,7 @@ namespace Characters.Ninja
         private bool _isKickWindowActive;
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
+        private float _originalHealCD;
         
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
@@ -50,9 +54,21 @@ namespace Characters.Ninja
         {
             base.Start();
             _wallParticles = _wallPrefab.GetComponentInChildren<ParticleSystem>().gameObject;
+            
+            // Initialize heal cooldown
+            _originalHealCD = _healCD;
+            _healCD = 0;
         }
         
         /// *** Base Methods *** ///
+
+        protected override void PlayerCooldowns()
+        {
+            base.PlayerCooldowns();
+            
+            if (_healCD > 0)
+                _healCD -= Time.deltaTime;
+        }
 
         protected override void ResetPlayerState(bool includeCoroutines)
         {
@@ -79,7 +95,7 @@ namespace Characters.Ninja
             if (isAnimationLocked || anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                 return;
             
-            if (Input.GetKeyDown(KeyCode.Q))
+            if (Input.GetKeyDown(KeyCode.Q) && _healCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, KeyCode.Q));
             else if (Input.GetKeyDown(KeyCode.W))
                 StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.W));
@@ -100,6 +116,13 @@ namespace Characters.Ninja
             anim.SetTrigger(skillToTrigger);
             anim.SetBool(Casting, true);
             isAnimationLocked = true;
+            
+            // Start cooldown immediately for heal skill
+            if (skillToTrigger == Skill_Heal)
+            {
+                _healCD = _originalHealCD;
+                _healSpellIcon.StartCooldown(_originalHealCD);
+            }
 
             // Prepare random KeyCodes to Cast for the QTE
             KeyCode[] totalKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };

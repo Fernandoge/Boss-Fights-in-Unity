@@ -1,8 +1,10 @@
 using System.Collections;
 using Shared;
 using TMPro;
+using UI;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Characters
@@ -19,6 +21,7 @@ namespace Characters
         [SerializeField] private float _dashDistance;
         [SerializeField] private float _dashFreezeTime;
         [SerializeField] private float _dashCD;
+        [SerializeField] private SpellIcon _dashSpellIcon;
 
         protected Animator anim;
         protected bool isAnimationLocked;
@@ -81,7 +84,7 @@ namespace Characters
             transform.rotation = targetRotation;
         }
         
-        private void PlayerCooldowns()
+        protected virtual void PlayerCooldowns()
         {
             if (_dashCD > 0)
                 _dashCD -= Time.deltaTime;
@@ -199,9 +202,11 @@ namespace Characters
                 _navMeshAgent.enabled = true;
             }
             _dashCD = _originalDashCD;
+            _dashSpellIcon.StartCooldown(_dashCD);
             StartCoroutine(StartDashFreezeTime(_dashFreezeTime));
         }
         
+        // Animation Lock triggered after dashing
         private IEnumerator StartDashFreezeTime(float dashFreezeTime)
         {
             isAnimationLocked = true;

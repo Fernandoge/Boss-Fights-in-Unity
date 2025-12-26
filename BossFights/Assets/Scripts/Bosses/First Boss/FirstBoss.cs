@@ -109,9 +109,9 @@ namespace Bosses.First_Boss
             navMeshAgent.speed *= 2f;
             navMeshOriginalSpeed *= 2f;
             
-            // Add three more rocks to throw
-            _originalRocksToThrow += 3;
-            _rocksToThrow += 3;
+            // Add two more rocks to base amount for second phase
+            _originalRocksToThrow += 2;
+            _rocksToThrow = Random.Range(_originalRocksToThrow - 1, _originalRocksToThrow + 2);
         }
 
         protected override void PerformAttack()
@@ -144,7 +144,7 @@ namespace Bosses.First_Boss
                 
                 _lastAttackIndex = attackIndex;
                 
-                switch (attackIndex)
+                switch (2)
                 {
                     case 0:
                         StartCoroutine(FastRun());
@@ -332,7 +332,7 @@ namespace Bosses.First_Boss
             if (_rocksToThrow > 0)
                 RockThrow();
             else
-                _rocksToThrow = _originalRocksToThrow;
+                _rocksToThrow = Random.Range(_originalRocksToThrow - 1, _originalRocksToThrow + 2);
         }
         
         private void RockThrow()
