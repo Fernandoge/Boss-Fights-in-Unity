@@ -32,6 +32,8 @@ namespace Characters
         private Camera _mainCamera;
         private float _originalDashCD;
         private float _originalDamagedImmuneCD;
+        private Vector3 _lastDestination;
+        private NavMeshPath _reusablePath; // Reuse path object to avoid allocations
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Skill_Dash = Animator.StringToHash("Skill_Dash");
@@ -44,6 +46,7 @@ namespace Characters
             _mainCamera = Camera.main;
             anim = GetComponent<Animator>();
             _healthText.text = _health.ToString();
+            _reusablePath = new NavMeshPath(); // Initialize reusable path
         }
 
         protected virtual void Start()
@@ -80,8 +83,17 @@ namespace Characters
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out var hit)) 
                 return;
-            var targetRotation = Quaternion.LookRotation(hit.point - transform.position);
-            transform.rotation = targetRotation;
+            
+            Vector3 direction = hit.point - transform.position;
+            direction.y = 0; // Flatten to horizontal plane
+            
+            // Prevent rotation if clicking too close to player (minimum distance check)
+            if (direction.sqrMagnitude < 0.1f)
+                return;
+            
+            var targetRotation = Quaternion.LookRotation(direction);
+            // Lock X rotation to 0 to prevent tilting
+            transform.rotation = Quaternion.Euler(0, targetRotation.eulerAngles.y, 0);
         }
         
         protected virtual void PlayerCooldowns()
@@ -137,10 +149,24 @@ namespace Characters
                 if (!Physics.Raycast(ray, out var hit)) 
                     return;
                 
-                _navMeshAgent.isStopped = false;
-                _navMeshAgent.SetDestination(hit.point);
-                anim.SetBool(Running, true);
-                anim.SetBool(Shooting, false);
+                // Find nearest valid NavMesh position (reduced search distance for better performance)
+                if (!NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 10f, NavMesh.AllAreas))
+                    return;
+                
+                // Only set new destination if it's significantly different from the last one
+                if (Vector3.Distance(navHit.position, _lastDestination) < 0.5f)
+                    return;
+                
+                _lastDestination = navHit.position;
+                
+                // Pre-calculate path to reduce hitching
+                if (_navMeshAgent.CalculatePath(navHit.position, _reusablePath))
+                {
+                    _navMeshAgent.isStopped = false;
+                    _navMeshAgent.SetPath(_reusablePath);
+                    anim.SetBool(Running, true);
+                    anim.SetBool(Shooting, false);
+                }
             }
             
             if (Input.GetMouseButton(0))

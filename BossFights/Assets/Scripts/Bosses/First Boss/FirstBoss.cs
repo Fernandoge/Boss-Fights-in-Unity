@@ -144,7 +144,7 @@ namespace Bosses.First_Boss
                 
                 _lastAttackIndex = attackIndex;
                 
-                switch (2)
+                switch (attackIndex)
                 {
                     case 0:
                         StartCoroutine(FastRun());
@@ -417,7 +417,7 @@ namespace Bosses.First_Boss
         private void StartRockShower()
         {
             _selectedRockShowerPattern = IsInSecondPhase ? 
-                _rockShowerPatterns[Random.Range(0, _rockShowerPatterns.Length)] : _rockShowerPatterns[Random.Range(0, 1)];
+                _rockShowerPatterns[Random.Range(0, _rockShowerPatterns.Length)] : _rockShowerPatterns[Random.Range(0, 2)];
             TriggerSkillWithIndicator(Rock_Shower, skillIndicator: _selectedRockShowerPattern.indicator);
         }
 
