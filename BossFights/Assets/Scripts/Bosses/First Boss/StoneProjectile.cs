@@ -9,11 +9,16 @@ namespace Bosses.First_Boss
     public class StoneProjectile : Projectile
     {
         private float _spawnTime;
-        private const float IgnoreCollisionDuration = 0.1f;
+        private float _ignoreCollisionDuration = 0f;
 
         private void Start()
         {
             _spawnTime = Time.time;
+        }
+        
+        public void SetIgnoreCollisionDuration(float duration)
+        {
+            _ignoreCollisionDuration = duration;
         }
 
         protected override void OnTriggerEnter(Collider col)
@@ -26,8 +31,9 @@ namespace Bosses.First_Boss
             
             if (col.GetComponent<NavMeshObstacle>())
             {
-                // Ignore NavMeshObstacle collisions for the first 0.1 seconds
-                if (Time.time - _spawnTime < IgnoreCollisionDuration)
+                // Ignore NavMeshObstacle collisions for the specified duration
+                // This is required for rock shower, so it doesn't collide with level walls
+                if (Time.time - _spawnTime < _ignoreCollisionDuration)
                     return;
                 
                 Destroy(transform.parent.gameObject);

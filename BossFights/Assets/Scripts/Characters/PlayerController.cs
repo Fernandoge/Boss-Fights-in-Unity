@@ -1,10 +1,10 @@
 using System.Collections;
+using Characters.Ninja;
 using Shared;
 using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Characters
@@ -16,6 +16,7 @@ namespace Characters
         [SerializeField] private float _damageImmuneCD;
         [SerializeField] private GameObject[] _basicAttackPrefabs;
         [SerializeField] private Transform _basicAttackSpawnPoint;
+        [SerializeField] private int _basicAttackDamage;
         [SerializeField] private float _basicAttackSpeed;
         [Header("Skill Dash")]
         [SerializeField] private float _dashDistance;
@@ -112,7 +113,8 @@ namespace Characters
             Vector3 bulletPosition = bullet.transform.position;
             Vector3 bulletDirection = _basicAttackSpawnPoint.forward;
             anim.SetBool(Shooting, false);
-            var bulletScript = bullet.GetComponentInChildren<Projectile>();
+            var bulletScript = bullet.GetComponentInChildren<NinjaBasicAttack>();
+            bulletScript.SetAttackDamage(_basicAttackDamage);
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
         
@@ -171,10 +173,6 @@ namespace Characters
             
             if (Input.GetMouseButton(0))
             {
-                var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (!Physics.Raycast(ray, out var hit)) 
-                    return;
-                
                 LookAtMouse();
                 _navMeshAgent.isStopped = true;
                 anim.SetBool(Running, false);

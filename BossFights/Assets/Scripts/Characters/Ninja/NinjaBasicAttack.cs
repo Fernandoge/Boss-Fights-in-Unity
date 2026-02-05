@@ -1,4 +1,4 @@
-using Bosses;
+using Interfaces;
 using Manager.GameManager;
 using Shared;
 using UnityEngine;
@@ -7,18 +7,24 @@ using UnityEngine.AI;
 namespace Characters.Ninja
 {
     public class NinjaBasicAttack : Projectile
-    {
-        [SerializeField] private int damage = 10;
+    { 
+        private int _attackDamage = 1;
+        
+        public void SetAttackDamage(int damageAmount)
+        {
+            _attackDamage = damageAmount;
+        }
         
         // Override just in case Ninja basic attack collides with an obstacle
         protected override void OnTriggerEnter(Collider col)
         {
             base.OnTriggerEnter(col);
             
-            // Check if hit a boss
-            if (col.GetComponentInParent<BossController>())
+            // Check if hit an entity that can be damaged by the player
+            var damageableByPlayer = col.GetComponentInParent<IDamageableByPlayer>();
+            if (damageableByPlayer != null)
             {
-                col.GetComponentInParent<BossController>().DamageBoss(damage);
+                damageableByPlayer.TakeDamage(_attackDamage);
                 Destroy(transform.parent.gameObject);
                 return;
             }

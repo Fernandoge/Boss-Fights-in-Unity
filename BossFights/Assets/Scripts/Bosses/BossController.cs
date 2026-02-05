@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using Interfaces;
 using Manager.GameManager;
+using Shared;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
@@ -8,7 +10,7 @@ using Random = UnityEngine.Random;
 
 namespace Bosses
 {
-    public class BossController : MonoBehaviour
+    public class BossController : MonoBehaviour, IDamageableByPlayer
     {
         [Serializable]
         protected class BossValuesRange
@@ -207,7 +209,8 @@ namespace Bosses
         
         /// *** Health Logic *** ///
         
-        public void DamageBoss(int damage)
+        // IDamageableByPlayer interface implementation
+        public void TakeDamage(int damage)
         {
             currentHealth -= damage;
             _healthText.text = currentHealth.ToString();

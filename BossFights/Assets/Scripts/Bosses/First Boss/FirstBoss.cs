@@ -25,9 +25,9 @@ namespace Bosses.First_Boss
         [SerializeField] private BossValuesRange _jumpAttackDistance;
         [SerializeField] private GameObject[] _tripleSmashParticlesPrefab;
 
-        [Header("Orbs")] 
-        public int orbsDamage;
-        public GameObject orbsPrefab;
+        [Header("Cataclysm")] 
+        [SerializeField] private int _cataclysmProjectileCount;
+        [SerializeField] private float _cataclysmProjectileSpeed;
         
         [Header("Fast Run Melees")] 
         public int meleesDamage;
@@ -73,6 +73,7 @@ namespace Bosses.First_Boss
         private bool _areMeteorsActive;
         private int _lastAttackIndex = -1;
         private RockShowerPattern _selectedRockShowerPattern;
+        private int _consecutiveNormalAttacks;
 
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
@@ -83,6 +84,7 @@ namespace Bosses.First_Boss
         private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
         private static readonly int Meteors = Animator.StringToHash("Meteors");
         private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
+        private static readonly int Cataclysm = Animator.StringToHash("Cataclysm");
 
         /// *** Unity Events *** ///
 
@@ -97,6 +99,9 @@ namespace Bosses.First_Boss
         protected override IEnumerator EnterSecondPhase()
         {
             yield return base.EnterSecondPhase();
+            
+            // Reset consecutive attack counter when entering phase 2
+            _consecutiveNormalAttacks = 0;
             
             // Halve the time between attacks for more aggressive second phase (2x faster attacks)
             timeBetweenAttacks /= 2f;
@@ -117,13 +122,10 @@ namespace Bosses.First_Boss
         protected override void PerformAttack()
         {
             base.PerformAttack();
-            // TODO: if HP values
-            // REMOVE DEBUG
-            _isOrbsCasted = true;
-            if (!_isOrbsCasted)
-            {
-                StartOrbs();
-            }
+            
+            // Check if it's time to trigger Cataclysm
+            if (_consecutiveNormalAttacks >= 3)
+                StartCataclysm();
             else
             {
                 // Randomly select an attack, but never the same as the last one
@@ -165,6 +167,9 @@ namespace Bosses.First_Boss
                         StartRockShower();
                         break;
                 }
+                
+                // Increment counter after a normal attack
+                _consecutiveNormalAttacks++;
             }  
         }
 
@@ -255,18 +260,60 @@ namespace Bosses.First_Boss
             _tripleSmashParticlesPrefab[_tripleSmashCount].transform.parent = transform.parent;
         }
 
-        /// *** Skill 2-1: Orbs *** ///
+        /// *** Skill 2-1: Cataclysm *** ///
         
-        private void StartOrbs()
+        private void StartCataclysm()
         {
-            anim.SetTrigger(Orbs);
+            // Reset the attack counter after triggering Cataclysm
+            _consecutiveNormalAttacks = 0;
+            
+            // Speed up Cataclysm animation in phase 2 (1.5x faster)
+            if (IsInSecondPhase)
+                anim.speed = 1.5f;
+            
+            // Trigger the Cataclysm animation
+            anim.SetTrigger(Cataclysm);
         }
-
-        private void ActivateOrbs()
+        
+        // Called from animation event - shoots projectiles in a circular pattern around the boss
+        public void CataclysmCircleAttack()
         {
-            orbsPrefab.SetActive(false);
-            orbsPrefab.SetActive(true);
-            _isOrbsCasted = true;
+            // Reset animation speed to normal once Cataclysm attack appears
+            if (IsInSecondPhase)
+                anim.speed = 1f;
+            
+            StartCoroutine(CataclysmCircleAttackCoroutine());
+        }
+        
+        private IEnumerator CataclysmCircleAttackCoroutine()
+        {
+            float angleStep = 360f / _cataclysmProjectileCount;
+            Vector3 bossPosition = transform.position;
+            Vector3 spawnPosition = new Vector3(bossPosition.x, bossPosition.y + 2f, bossPosition.z);
+            
+            // Pre-calculate all directions once (optimization)
+            Vector3[] directions = new Vector3[_cataclysmProjectileCount];
+            for (int i = 0; i < _cataclysmProjectileCount; i++)
+            {
+                float angle = i * angleStep;
+                float angleInRadians = angle * Mathf.Deg2Rad;
+                directions[i] = new Vector3(Mathf.Cos(angleInRadians), 0, Mathf.Sin(angleInRadians)).normalized;
+            }
+            
+            // Shoot 3 waves of rocks with 0.5s delay between waves
+            for (int j = 0; j < 3; j++)
+            {
+                // Shoot all rocks in circle pattern using pre-calculated directions
+                for (int i = 0; i < _cataclysmProjectileCount; i++)
+                {
+                    ShootRockFromPosition(spawnPosition, directions[i], _cataclysmProjectileSpeed);
+                }
+                
+                // Wait 0.5s before next wave (except after the last wave)
+                if (j < 2)
+                    yield return new WaitForSeconds(0.5f);
+            }
+            
         }
         
         /// *** Skill 3-1: FastRun and Melee Attack *** ///
@@ -349,10 +396,11 @@ namespace Bosses.First_Boss
             StartThrowingRocks();
         }
 
-        private void ShootRockFromPosition(Vector3 position, Vector3 direction, float speed)
+        private void ShootRockFromPosition(Vector3 position, Vector3 direction, float speed, float ignoreCollisionDuration = 0f)
         {
             GameObject rock = Instantiate(_rock, position, Quaternion.LookRotation(direction));
             var bulletScript = rock.GetComponentInChildren<StoneProjectile>();
+            bulletScript.SetIgnoreCollisionDuration(ignoreCollisionDuration);
             bulletScript.Shoot(speed, rock.transform.position, direction);
         }
 
@@ -430,7 +478,7 @@ namespace Bosses.First_Boss
                     spawnPosition = rockPosition.position + new Vector3(7f, 1f, 7f);
                 else
                     spawnPosition = rockPosition.position + new Vector3(-7f, 1f, 7f);
-                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, 0.15f);
             }
             foreach(var rockPosition in _selectedRockShowerPattern.rocksPositionDown)
             {
@@ -438,7 +486,7 @@ namespace Bosses.First_Boss
                     spawnPosition = rockPosition.position + new Vector3(-7f, 1f, -7f);
                 else
                     spawnPosition = rockPosition.position + new Vector3(7f, 1f, -7f);
-                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, 0.15f);
             }
         }
     }

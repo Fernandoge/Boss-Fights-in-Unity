@@ -45,7 +45,7 @@ namespace Bosses.First_Boss
         {
             _explosion.SetActive(true);
             _soakIndicator.SetActive(false);
-            GameManager.Instance.player.DamagePlayer(GameManager.Instance.firstBoss.orbsDamage);
+            // GameManager.Instance.player.DamagePlayer(GameManager.Instance.firstBoss.orbsDamage);
         }
 
     }

@@ -81,7 +81,7 @@ namespace Characters.Ninja
             _isAbleToKickFlip = false;
             _QTEAlert.gameObject.SetActive(false);
             _QTEText.transform.parent.gameObject.SetActive(false);
-        } 
+        }
         
         /// *** Inputs *** ///
         

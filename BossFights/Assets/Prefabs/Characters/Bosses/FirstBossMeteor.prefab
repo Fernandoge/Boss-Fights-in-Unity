@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2789102483861913039}
   - component: {fileID: 3327902686209850061}
   - component: {fileID: 4057982928265930290}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Sparks
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4907,7 +4907,7 @@ GameObject:
   - component: {fileID: 2122037112678068519}
   - component: {fileID: 2122037112678068518}
   - component: {fileID: 2122037112678068517}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9918,7 +9918,7 @@ GameObject:
   - component: {fileID: 9185485404155711213}
   - component: {fileID: 5417915683573132097}
   - component: {fileID: 1097005889666330558}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Smoke
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14813,7 +14813,7 @@ GameObject:
   - component: {fileID: 2180271890625014218}
   - component: {fileID: 2880616456165956190}
   - component: {fileID: 8978074957584787522}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19699,7 +19699,7 @@ GameObject:
   - component: {fileID: 5057032932570762913}
   - component: {fileID: 4264482595446843816}
   - component: {fileID: 4432475831025139029}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Meteors
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24693,7 +24693,7 @@ GameObject:
   - component: {fileID: 8578184323503159899}
   - component: {fileID: 2384553297269410185}
   - component: {fileID: 5124188930894065503}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: FirstBossMeteor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24816,7 +24816,7 @@ GameObject:
   - component: {fileID: 9036247562696558028}
   - component: {fileID: 6474041660950827926}
   - component: {fileID: 3351700751004248701}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Stones
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29711,7 +29711,7 @@ GameObject:
   - component: {fileID: 6773486158939818333}
   - component: {fileID: 7468534481316357976}
   - component: {fileID: 3453833631693710607}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Glow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34682,7 +34682,7 @@ GameObject:
   - component: {fileID: 9204490900528253542}
   - component: {fileID: 2597033055775549535}
   - component: {fileID: 2229799936530736499}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Flash
   m_TagString: Untagged
   m_Icon: {fileID: 0}
