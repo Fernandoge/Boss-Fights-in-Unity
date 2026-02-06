@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Bosses.First_Boss.Slime;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -65,6 +66,17 @@ namespace Bosses.First_Boss
         [SerializeField] private int _meteorsAmount;
         [SerializeField] private float _meteorsMinDistance;
         
+        [Header("Intermission")]
+        [SerializeField] private Transform _intermissionCenterPosition;
+        [SerializeField] private Transform[] _slimePositions; // 4 positions in the scene
+        [SerializeField] private SlimeController[] _slimes; // The slime controllers to move
+        [SerializeField] private GameObject _rockShellPrefab; // Rock prefab for shell game
+        [SerializeField] private float _rockYOffset; // Y offset to align rocks with slimes
+        [SerializeField] private int _shellGameSwapCount; // Number of swaps to perform
+        [SerializeField] private float _swapSpeed; // Duration of each swap animation (lower = faster)
+        [SerializeField] [Range(0, 100)] private int _singleSwapChance; // % chance for single swap
+        [SerializeField] [Range(0, 100)] private int _parallelSwapChance; // % chance for parallel swap (remainder = chain rotation)
+        
         private int _tripleSmashCount;
         private int _originalRocksToThrow;
         private bool _isJumpingAttacking;
@@ -74,6 +86,10 @@ namespace Bosses.First_Boss
         private int _lastAttackIndex = -1;
         private RockShowerPattern _selectedRockShowerPattern;
         private int _consecutiveNormalAttacks;
+        
+        // Shell game tracking
+        private IntermissionStone[] _intermissionStones; // All 4 stones
+        private int _kickedStoneIndex; // Track which stone was kicked for punishment
 
         private static readonly int Jump_Attack = Animator.StringToHash("JumpAttack");
         private static readonly int Triple_Smash = Animator.StringToHash("TripleSmash");
@@ -85,6 +101,10 @@ namespace Bosses.First_Boss
         private static readonly int Meteors = Animator.StringToHash("Meteors");
         private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
         private static readonly int Cataclysm = Animator.StringToHash("Cataclysm");
+        private static readonly int Grab_Slimes = Animator.StringToHash("GrabSlimes");
+        private static readonly int BackFlip = Animator.StringToHash("BackFlip");
+        private static readonly int IntermissionPunish = Animator.StringToHash("IntermissionPunish");
+        private static readonly int RevealSlimeStones = Animator.StringToHash("RevealSlimeStones");
 
         /// *** Unity Events *** ///
 
@@ -98,7 +118,11 @@ namespace Bosses.First_Boss
         
         protected override IEnumerator EnterSecondPhase()
         {
+            // Boss enters "Agony" animation
             yield return base.EnterSecondPhase();
+            
+            // Make boss immune to damage during phase 2 intermission
+            isImmuneToDamage = true;
             
             // Reset consecutive attack counter when entering phase 2
             _consecutiveNormalAttacks = 0;
@@ -117,6 +141,14 @@ namespace Bosses.First_Boss
             // Add two more rocks to base amount for second phase
             _originalRocksToThrow += 2;
             _rocksToThrow = Random.Range(_originalRocksToThrow - 1, _originalRocksToThrow + 2);
+            
+            // Intermission slimes preparation
+            foreach (SlimeController slime in _slimes)
+            {
+                slime.SetDamageImmunity(true);
+                // quickly resets all slimes to idle animation
+                slime.SetAnimationSpeed(10f);
+            }
         }
 
         protected override void PerformAttack()
@@ -172,7 +204,7 @@ namespace Bosses.First_Boss
                 _consecutiveNormalAttacks++;
             }  
         }
-
+        
         ///// ******* Skills ******* /////
         
         /// ***** Skill 1-1: Jump Attack ***** ///
@@ -320,20 +352,24 @@ namespace Bosses.First_Boss
         
         private IEnumerator FastRun()
         {
-            isPerformingAttack = false;
-            isTimeBetweenAttacksFrozen = true;
             navMeshAgent.isStopped = false;
             navMeshAgent.speed = fastRunSpeed;
             anim.SetTrigger(Fast_Run);
             ResetParticlesToParent(_firstMeleeParticles.transform.parent.gameObject);
-            yield return new WaitUntil(() => anim.GetBool(Walking) == false);
+            
+            while (navMeshAgent.remainingDistance > stopBetweenPlayer)
+            {
+                navMeshAgent.SetDestination(player.position);
+                yield return null;
+            }
+            
+            navMeshAgent.isStopped = true;
+            anim.SetBool(Walking, false);
             StartMeleeAttack();
         }
 
         private void StartMeleeAttack()
         {
-            isPerformingAttack = true;
-            isTimeBetweenAttacksFrozen = false;
             navMeshAgent.isStopped = true;
             navMeshAgent.speed = navMeshOriginalSpeed;
             _firstMeleeParticles.transform.parent.parent = transform.parent;
@@ -489,5 +525,345 @@ namespace Bosses.First_Boss
                 ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, 0.15f);
             }
         }
+        
+        /// *** Phase 2 Intermission *** ///
+        
+        // Called in Agony animation (phase 2 start animation)
+        private IEnumerator GoToCenterForIntermission()
+        {
+            // Get the center position from the assigned transform
+            Vector3 center = _intermissionCenterPosition.position;
+            
+            // Look towards the center
+            Vector3 directionToCenter = center - transform.position;
+            if (directionToCenter != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(directionToCenter);
+            
+            // Start walking to center (use normal speed)
+            navMeshAgent.isStopped = false;
+            anim.SetBool(Walking, true);
+            navMeshAgent.SetDestination(center);
+            
+            // Wait until boss reaches the center using manual distance check
+            while (Vector3.Distance(transform.position, center) > 0.1f)
+            {
+                yield return null;
+            }
+            
+            navMeshAgent.isStopped = true;
+            anim.SetBool(Walking, false);
+            anim.SetTrigger(Grab_Slimes);
+
+            // Rotate boss to look down (south)
+            Quaternion lookDownRotation = Quaternion.Euler(0, 220, 0);
+            float rotationDuration = 0.5f;
+            float elapsedTime = 0f;
+            Quaternion startRotation = transform.rotation;
+            
+            while (elapsedTime < rotationDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                transform.rotation = Quaternion.Slerp(startRotation, lookDownRotation, elapsedTime / rotationDuration);
+                yield return null;
+            }
+
+            foreach (var slime in _slimes)
+                slime.SetSlimeDizzyLoop();
+        }
+        
+        // Move slimes to random positions (3 slimes to 3 of 4 positions, leaving one empty)
+        private IEnumerator MoveSlimesToPositions()
+        {
+            // Create a list of available positions (0, 1, 2, 3)
+            List<int> availablePositions = new List<int> { 0, 1, 2, 3 };
+            
+            // Shuffle and select 3 positions (one will remain empty)
+            for (int i = availablePositions.Count - 1; i > 0; i--)
+            {
+                int randomIndex = Random.Range(0, i + 1);
+                (availablePositions[i], availablePositions[randomIndex]) = (availablePositions[randomIndex], availablePositions[i]);
+            }
+            
+            // Take only the first 3 positions (leaving one empty)
+            List<int> selectedPositions = availablePositions.GetRange(0, 3);
+            
+            // Move each slime to its assigned position using SlimeController
+            List<Coroutine> movementCoroutines = new List<Coroutine>();
+            for (int i = 0; i < _slimes.Length && i < selectedPositions.Count; i++)
+            {
+                SlimeController slimeController = _slimes[i];
+                Transform targetPosition = _slimePositions[selectedPositions[i]];
+                movementCoroutines.Add(StartCoroutine(slimeController.MoveToIntermissionPosition(targetPosition.position, 20)));
+            }
+            
+            // Wait for all slimes to reach their positions
+            foreach (var coroutine in movementCoroutines)
+                yield return coroutine;
+            
+            // After all slimes have moved and rotated, levitate them up
+            List<Coroutine> levitationCoroutines = new List<Coroutine>();
+            foreach (var slimeController in _slimes)
+                levitationCoroutines.Add(StartCoroutine(slimeController.LevitateUp(0.6f, 1.5f)));
+            
+            // Wait for all slimes to finish levitating
+            foreach (var coroutine in levitationCoroutines)
+                yield return coroutine;
+            
+            // Trigger BackFlip animation on the boss
+            anim.SetTrigger(BackFlip);
+        }
+        
+        // Called from BackFlip animation - converts all slimes into rocks for shell game
+        public void ConvertSlimesToRocks()
+        {
+            _intermissionStones = new IntermissionStone[4];
+            
+            // Track the Y position from slimes for consistency
+            float slimeYPosition = _slimes[0].transform.position.y;
+            
+            // Create a mapping of which slimes are at which positions
+            bool[] positionHasSlime = new bool[4];
+            int[] slimeAtPosition = new int[4]; // Index of slime at each position (-1 if none)
+            
+            for (int i = 0; i < 4; i++)
+            {
+                slimeAtPosition[i] = -1;
+                positionHasSlime[i] = false;
+            }
+            
+            // Find which slimes are at which positions
+            for (int i = 0; i < _slimes.Length; i++)
+            {
+                SlimeController slime = _slimes[i];
+                for (int j = 0; j < _slimePositions.Length; j++)
+                {
+                    // Check if slime is close to this position (within 1 unit on XZ plane)
+                    Vector3 slimePos = slime.transform.position;
+                    Vector3 positionPos = _slimePositions[j].position;
+                    float distance = Vector3.Distance(new Vector3(slimePos.x, 0, slimePos.z), new Vector3(positionPos.x, 0, positionPos.z));
+                    
+                    if (distance < 1f)
+                    {
+                        positionHasSlime[j] = true;
+                        slimeAtPosition[j] = i;
+                        break;
+                    }
+                }
+            }
+            
+            // Instantiate rocks at all 4 positions
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 rockPosition;
+                Transform slimeTransform = null;
+                
+                if (positionHasSlime[i])
+                {
+                    // This position has a slime - use its actual position
+                    slimeTransform = _slimes[slimeAtPosition[i]].transform;
+                    rockPosition = new Vector3(slimeTransform.position.x, slimeYPosition + _rockYOffset, slimeTransform.position.z);
+                }
+                else
+                    // This position is empty - use the marker position
+                    rockPosition = new Vector3(_slimePositions[i].position.x, slimeYPosition + _rockYOffset, _slimePositions[i].position.z);
+                
+                // Instantiate the rock
+                GameObject rockObject = Instantiate(_rockShellPrefab, rockPosition, Quaternion.identity);
+                IntermissionStone stone = rockObject.GetComponent<IntermissionStone>();
+                
+                // Initialize the stone with its slime (or null if empty)
+                stone.Initialize(slimeTransform, rockPosition);
+                stone.SetBossReference(this, i); // Set boss reference for player interaction
+                stone.SetSwapSpeed(_swapSpeed); // Set the swap animation speed
+                _intermissionStones[i] = stone;
+            }
+        }
+        
+        /// *** Shell Game Logic *** ///
+        
+        // Start the shell game from dance animation
+        private IEnumerator StartShellGame()
+        {
+            yield return ShuffleStones();
+            
+            // After shuffle completes, make all stones counterable (green)
+            foreach (var stone in _intermissionStones)
+            {
+                if (stone != null)
+                    stone.MakeCounterable();
+            }
+            
+            // Now wait for player to kick stones
+            // The stones will call OnStoneKicked() when the player kicks them
+        }
+        
+        // Perform the shell game shuffle - various swap patterns for visual complexity
+        private IEnumerator ShuffleStones()
+        {
+            for (int swapIndex = 0; swapIndex < _shellGameSwapCount; swapIndex++)
+            {
+                // First 2 swaps are always simple single swaps
+                if (swapIndex < 2)
+                {
+                    // Single swap - classic shell game move
+                    int stoneA = Random.Range(0, 4);
+                    int stoneB;
+                    do
+                    {
+                        stoneB = Random.Range(0, 4);
+                    } while (stoneB == stoneA);
+                    
+                    yield return _intermissionStones[stoneA].SwapWith(_intermissionStones[stoneB]);
+                    
+                    // Add small delay after first two swaps to make them clearly separate
+                    yield return new WaitForSeconds(0.3f);
+                }
+                else
+                {
+                    // After first 2 swaps, randomly choose a swap pattern based on configured probabilities
+                    int swapPattern = Random.Range(0, 100);
+                    
+                    if (swapPattern < _singleSwapChance)
+                    {
+                        // Single swap - classic shell game move
+                        int stoneA = Random.Range(0, 4);
+                        int stoneB;
+                        do
+                        {
+                            stoneB = Random.Range(0, 4);
+                        } while (stoneB == stoneA);
+                        
+                        yield return _intermissionStones[stoneA].SwapWith(_intermissionStones[stoneB]);
+                    }
+                    else if (swapPattern < _singleSwapChance + _parallelSwapChance)
+                    {
+                        // Parallel swap - two pairs swap simultaneously!
+                        // Pick 4 different stones and swap them in pairs
+                        List<int> availableStones = new List<int> { 0, 1, 2, 3 };
+                        
+                        // Pick first pair
+                        int stone1 = availableStones[Random.Range(0, availableStones.Count)];
+                        availableStones.Remove(stone1);
+                        int stone2 = availableStones[Random.Range(0, availableStones.Count)];
+                        availableStones.Remove(stone2);
+                        
+                        // Pick second pair from remaining stones
+                        int stone3 = availableStones[0];
+                        int stone4 = availableStones[1];
+                        
+                        // Start both swaps simultaneously
+                        Coroutine swap1 = StartCoroutine(_intermissionStones[stone1].SwapWith(_intermissionStones[stone2]));
+                        Coroutine swap2 = StartCoroutine(_intermissionStones[stone3].SwapWith(_intermissionStones[stone4]));
+                        
+                        // Wait for both to complete
+                        yield return swap1;
+                        yield return swap2;
+                    }
+                    else
+                    {
+                        // Chain rotation - 3 stones rotate in a circle (A→B→C→A)
+                        List<int> availableStones = new List<int> { 0, 1, 2, 3 };
+                        
+                        // Pick 3 random stones
+                        int stoneA = availableStones[Random.Range(0, availableStones.Count)];
+                        availableStones.Remove(stoneA);
+                        int stoneB = availableStones[Random.Range(0, availableStones.Count)];
+                        availableStones.Remove(stoneB);
+                        int stoneC = availableStones[Random.Range(0, availableStones.Count)];
+                        
+                        // Perform chain rotation: A→B, B→C, C→A (simultaneously!)
+                        Coroutine swapAB = StartCoroutine(_intermissionStones[stoneA].SwapWith(_intermissionStones[stoneB]));
+                        Coroutine swapBC = StartCoroutine(_intermissionStones[stoneB].SwapWith(_intermissionStones[stoneC]));
+                        Coroutine swapCA = StartCoroutine(_intermissionStones[stoneC].SwapWith(_intermissionStones[stoneA]));
+                        
+                        // Wait for all three to complete
+                        yield return swapAB;
+                        yield return swapBC;
+                        yield return swapCA;
+                    }
+                }
+            }
+        }
+        
+        // Called by IntermissionStone when player kicks it
+        public void OnStoneKicked(int stoneIndex)
+        {
+            // Remove counterable from ALL stones (player can only choose one)
+            foreach (var stone in _intermissionStones)
+            {
+                if (stone != null)
+                    stone.RemoveCounterable();
+            }
+            // Store the kicked stone index for later use in animation event
+            _kickedStoneIndex = stoneIndex;
+        }
+        
+        // Called by IntermissionStone after the reveal animation completes
+        public void OnStoneRevealed(int stoneIndex)
+        { 
+            if (_intermissionStones[stoneIndex].HasSlime)
+                // Trigger boss punishment animation which will call "ExecutePunishment"
+                anim.SetTrigger(IntermissionPunish);
+            else
+                // Trigger boss animation to reveal remaining stones
+                anim.SetTrigger(RevealSlimeStones);
+        }
+        
+        // Called from IntermissionPunish animation event - destroys stone and explodes slime
+        public void ExecutePunishment()
+        {
+            IntermissionStone kickedStone = _intermissionStones[_kickedStoneIndex];
+            
+            if (kickedStone == null)
+                return;
+            
+            // Get the slime before triggering deactivation
+            Transform revealedSlime = kickedStone.SlimeTransform;
+            
+            // Trigger stone deactivate animation (stone will be destroyed via animation event)
+            kickedStone.TriggerDeactivate();
+            
+            // Explode the revealed slime
+            if (revealedSlime != null)
+            {
+                SlimeController slimeController = revealedSlime.GetComponent<SlimeController>();
+                if (slimeController != null)
+                    slimeController.StartExplosion();
+            }
+        }
+        
+        // Called from RevealSlimeStones animation event - lifts all remaining stones to reveal slimes
+        public void LiftRemainingStones()
+        {
+            // Trigger reveal animation for all remaining stones
+            foreach (var stone in _intermissionStones)
+            {
+                if (stone != null)
+                {
+                    stone.TriggerReveal();
+                }
+            }
+        }
+
+        // Called from move slimes back to spawn animation
+        private IEnumerator MoveSlimesBackToSpawnCoroutine()
+        {
+            List<Coroutine> movementCoroutines = new List<Coroutine>();
+            // Move all slimes back to their spawn positions quickly
+            foreach (var slime in _slimes)
+                movementCoroutines.Add(StartCoroutine(slime.MoveBackToSpawn(80f)));
+            // Wait for all slimes to reach spawn
+            foreach (var coroutine in movementCoroutines)
+                yield return coroutine;
+        }
+        
+        // End the intermission phase - called in warming up animation
+        private void EndIntermission()
+        {
+            // Reset boss state to resume combat
+            isImmuneToDamage = false;
+            StopPerformingAction();
+        }
     }
 }
+

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Bosses;
+using Interfaces;
 using Shared;
 using TMPro;
 using UI;
@@ -257,7 +258,12 @@ namespace Characters.Ninja
                     if (!hitCollider.CompareTag("Counterable")) 
                         continue;
                     
-                    hitCollider.GetComponentInParent<BossController>().TriggerCounter();
+                    // Check if it's any counterable object (boss, stone, etc.)
+                    ICounterable counterable = hitCollider.GetComponentInParent<ICounterable>();
+                    if (counterable != null)
+                    {
+                        counterable.TriggerCounter();
+                    }
                 }
                 yield return null;
             }

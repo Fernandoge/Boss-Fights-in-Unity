@@ -1,5 +1,6 @@
 using System.Collections;
 using Interfaces;
+using Manager.GameManager;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -16,6 +17,9 @@ namespace Bosses.First_Boss.Slime
         [SerializeField] private float wallClearance; // Distance to maintain from walls
         [SerializeField] private float slimeSeparationDistance; // Minimum distance to maintain from other slimes
         
+        [Header("Intermission")]
+        [SerializeField] private GameObject explosionEffectPrefab;
+        
         private int currentHealth;
         private SlimeController[] cachedSlimes; // Cached list of other slimes
         private Renderer meshRenderer;
@@ -25,26 +29,27 @@ namespace Bosses.First_Boss.Slime
         private Animator animator;
         private bool isDead;
         private bool isFlashing; // Track if we're currently flashing
+        private bool isIntermissionActive; // Disable roaming when moving to intermission position
+        private bool isImmuneToDamage; // Disable damage during intermission
+        private Vector3 spawnPosition; // Original spawn position to return to after intermission
         private static readonly int Dizzy = Animator.StringToHash("Dizzy");
+        private static readonly int Dizzy_Loop = Animator.StringToHash("DizzyLoop");
+        private static readonly int Explode = Animator.StringToHash("Explode");
+        private static readonly int DieAfterPushed = Animator.StringToHash("DieAfterPushed");
+        private static readonly int BackToWalk = Animator.StringToHash("BackToWalk");
 
         void Start()
         {
-            // Initialize health
+            // Save spawn position for returning after intermission
+            spawnPosition = transform.position;
             currentHealth = maxHealth;
         
             // Get renderer and initialize MaterialPropertyBlock for flash effect
             meshRenderer = GetComponentInChildren<Renderer>();
             if (meshRenderer != null)
-            {
                 propertyBlock = new MaterialPropertyBlock();
-            }
-        
-            // Get Animator component
+            
             animator = GetComponent<Animator>();
-            if (animator == null)
-            {
-                Debug.LogWarning("Animator component is missing on " + gameObject.name);
-            }
         
             // Find all slimes once at startup and cache the list (excluding ourselves)
             SlimeController[] allSlimes = FindObjectsOfType<SlimeController>();
@@ -58,24 +63,15 @@ namespace Bosses.First_Boss.Slime
         
             // Get NavMeshAgent component
             navMeshAgent = GetComponent<NavMeshAgent>();
-            if (navMeshAgent == null)
-            {
-                Debug.LogError("NavMeshAgent component is missing on " + gameObject.name);
-            }
-            else
-            {
-                // Start moving immediately
-                Vector3 randomPoint = GetRandomPointOnNavMesh();
-                navMeshAgent.SetDestination(randomPoint);
-            }
+            // Start moving immediately
+            Vector3 randomPoint = GetRandomPointOnNavMesh();
+            navMeshAgent.SetDestination(randomPoint);
         }
 
         void Update()
         {
-            if (navMeshAgent != null && !isDead)
-            {
+            if (navMeshAgent != null && !isDead && !isIntermissionActive)
                 Roam();
-            }
         }
 
         void LateUpdate()
@@ -90,7 +86,136 @@ namespace Bosses.First_Boss.Slime
         }
 
         /// *** Movement Logic *** ///
-    
+        
+        // Called by boss during intermission to move slime to specific position
+        public IEnumerator MoveToIntermissionPosition(Vector3 targetPosition, float speed)
+        {
+            // Disable roaming behavior
+            isIntermissionActive = true;
+            
+            // Store original settings
+            float originalSpeed = navMeshAgent.speed;
+            float originalStoppingDistance = navMeshAgent.stoppingDistance;
+            ObstacleAvoidanceType originalAvoidance = navMeshAgent.obstacleAvoidanceType;
+            
+            // Disable obstacle avoidance so player can't push slimes during intermission
+            navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+            
+            // Set fast intermission speed and zero stopping distance for precise positioning
+            navMeshAgent.speed = speed;
+            navMeshAgent.stoppingDistance = 0f;
+            navMeshAgent.isStopped = false;
+            
+            // Set destination
+            navMeshAgent.SetDestination(targetPosition);
+            
+            // Wait for path to be calculated
+            yield return new WaitUntil(() => !navMeshAgent.pathPending);
+            
+            // Wait until slime reaches the position with tight threshold
+            while (Vector3.Distance(transform.position, targetPosition) > 0.1f)
+                yield return null;
+            
+            // Stop at position
+            navMeshAgent.isStopped = true;
+            
+            // Rotate slime to look south
+            Quaternion lookSouthRotation = Quaternion.Euler(0, 220, 0);
+            float rotationDuration = 0.6f;
+            float elapsedTime = 0f;
+            Quaternion startRotation = transform.rotation;
+            
+            while (elapsedTime < rotationDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                transform.rotation = Quaternion.Slerp(startRotation, lookSouthRotation, elapsedTime / rotationDuration);
+                yield return null;
+            }
+            
+            // Ensure final rotation is set
+            transform.rotation = lookSouthRotation;
+            
+            // Restore original movement settings (but keep obstacle avoidance disabled during intermission)
+            navMeshAgent.speed = originalSpeed;
+            navMeshAgent.stoppingDistance = originalStoppingDistance;
+        }
+        
+        // Called by boss to make slime levitate upward
+        public IEnumerator LevitateUp(float liftHeight, float duration)
+        {
+            float elapsedTime = 0f;
+            float startOffset = navMeshAgent.baseOffset;
+            float targetOffset = startOffset + liftHeight;
+            
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                navMeshAgent.baseOffset = Mathf.Lerp(startOffset, targetOffset, elapsedTime / duration);
+                yield return null;
+            }
+            
+            // Ensure final offset is set
+            navMeshAgent.baseOffset = targetOffset;
+        }
+
+        public void StartExplosion() => animator.SetTrigger(Explode);
+
+        // Called in explosion animation event to hide slime and spawn explosion effect
+        private void ExplodeSlime()
+        {
+            meshRenderer.enabled = false; // Hide the slime mesh
+            Vector3 explosionPosition = transform.position + Vector3.up * 1.5f;
+            Instantiate(explosionEffectPrefab, explosionPosition, Quaternion.identity);
+            GameManager.Instance.player.DamagePlayer(1000);
+        }
+        
+        // Move slime back to its spawn position after intermission
+        public IEnumerator MoveBackToSpawn(float speed)
+        {
+            // Store initial base offset (current levitation height) and original nav speed
+            float initialBaseOffset = navMeshAgent.baseOffset;
+            float originalNavSpeed = navMeshAgent.speed;
+            
+            navMeshAgent.isStopped = false;
+            navMeshAgent.speed = speed;
+            navMeshAgent.SetDestination(spawnPosition);
+            
+            // Wait for path to be calculated
+            yield return new WaitUntil(() => !navMeshAgent.pathPending);
+            
+            // Store initial distance for lerp calculation
+            float initialDistance = navMeshAgent.remainingDistance;
+            
+            // Gradually lower slime to ground while moving to spawn position
+            while (navMeshAgent.remainingDistance > 4f)
+            {
+                // Calculate progress (0 to 1) based on remaining distance on NavMesh path
+                float progress = 1f - (navMeshAgent.remainingDistance / initialDistance);
+                
+                // Remap progress so baseOffset reaches 0 at 66% progress (0.66)
+                // After 66% progress, baseOffset stays at 0
+                float baseOffsetProgress = Mathf.Clamp01(progress / 0.66f);
+                
+                // Lerp base offset from initial height to 0 (ground level)
+                navMeshAgent.baseOffset = Mathf.Lerp(initialBaseOffset, 0f, baseOffsetProgress);
+                yield return null;
+            }
+            animator.SetTrigger(DieAfterPushed);
+            navMeshAgent.speed = originalNavSpeed * 2;
+        }
+        
+        // Set animation speed (useful for quickly resetting to idle) - Now called in idle walk animation
+        public void SetAnimationSpeed(float speed) => animator.speed = speed;
+
+        public void SetSlimeDizzyLoop()
+        {
+            animator.SetTrigger(Dizzy_Loop);
+            navMeshAgent.isStopped = true;
+        }
+
+        // Set damage immunity (used during intermission)
+        public void SetDamageImmunity(bool immune) => isImmuneToDamage = immune;
+
         private void Roam()
         {
             // Pick a new destination when we've reached the current one
@@ -201,8 +326,8 @@ namespace Bosses.First_Boss.Slime
         // IDamageableByPlayer interface implementation
         public void TakeDamage(int damage)
         {
-            // Don't take damage if already dead
-            if (isDead) return;
+            // Don't take damage if immune (during intermission) or already dead
+            if (isImmuneToDamage || isDead) return;
             
             currentHealth -= damage;
         
@@ -219,7 +344,6 @@ namespace Bosses.First_Boss.Slime
         private void Die()
         {
             isDead = true;
-        
             // Stop the NavMeshAgent completely
             if (navMeshAgent != null)
             {
@@ -227,17 +351,13 @@ namespace Bosses.First_Boss.Slime
                 navMeshAgent.velocity = Vector3.zero;
                 navMeshAgent.enabled = false; // Disable to ensure no movement during animation
             }
-        
-            // Trigger the Dizzy animation
-            if (animator != null)
-                animator.SetTrigger(Dizzy);
+            animator.SetTrigger(Dizzy);
         }
-    
-        // This is called at the beginning of walk animation
+        
         public void Resurrect()
         {
             isDead = false;
-        
+            
             // Restore health to full
             currentHealth = maxHealth;
         
@@ -250,6 +370,14 @@ namespace Bosses.First_Boss.Slime
                 // Set a new destination to start moving
                 Vector3 randomPoint = GetRandomPointOnNavMesh();
                 navMeshAgent.SetDestination(randomPoint);
+            }
+            
+            if (isIntermissionActive)
+            {
+                isImmuneToDamage = false;
+                isIntermissionActive = false;
+                // Re-enable obstacle avoidance when returning to normal roaming
+                navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
             }
         }
     

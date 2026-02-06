@@ -174440,7 +174440,7 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_Events:
   - time: 6.2833333
-    functionName: StopPerformingAction
+    functionName: EndIntermission
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0

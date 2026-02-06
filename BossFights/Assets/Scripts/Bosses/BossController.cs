@@ -10,7 +10,7 @@ using Random = UnityEngine.Random;
 
 namespace Bosses
 {
-    public class BossController : MonoBehaviour, IDamageableByPlayer
+    public class BossController : MonoBehaviour, IDamageableByPlayer, ICounterable
     {
         [Serializable]
         protected class BossValuesRange
@@ -38,8 +38,8 @@ namespace Bosses
         protected Animator anim;
         protected float navMeshOriginalSpeed;
         protected bool isPerformingAttack;
-        protected bool isTimeBetweenAttacksFrozen;
         protected float auxTimeBetweenAttacks;
+        protected bool isPerformingAction;
         
         private Material meshMaterial;
         private Collider colliderComponent;
@@ -50,8 +50,8 @@ namespace Bosses
         private string colliderOriginalTag;
         private int currentHealth;
         private bool hasEnteredSecondPhase;
-        private bool isPerformingAction;
-        private bool isCounterWindowActive; 
+        private bool isCounterWindowActive;
+        protected bool isImmuneToDamage; 
         
         protected static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Enter_Second_Phase = Animator.StringToHash("EnterSecondPhase");
@@ -85,8 +85,7 @@ namespace Bosses
                 return;
             
             IdleMovement();
-            if (!isTimeBetweenAttacksFrozen)
-                timeBetweenAttacks -= Time.deltaTime;
+            timeBetweenAttacks -= Time.deltaTime;
         }
         
         private void IdleMovement()
@@ -135,7 +134,6 @@ namespace Bosses
                 isPerformingAttack = false;
         }
         
-        // Used in action animations like EnterSecondPhase
         protected void StopPerformingAction()
         {
             isPerformingAction = false;
@@ -212,6 +210,10 @@ namespace Bosses
         // IDamageableByPlayer interface implementation
         public void TakeDamage(int damage)
         {
+            // Don't take damage if immune (e.g., during phase transitions)
+            if (isImmuneToDamage)
+                return;
+            
             currentHealth -= damage;
             _healthText.text = currentHealth.ToString();
             
@@ -227,10 +229,18 @@ namespace Bosses
         // Override this method in specific boss implementations to define second phase behavior
         protected virtual IEnumerator EnterSecondPhase()
         {
-            PerformAction();
-            yield return new WaitUntil(() => !isPerformingAttack);
-            anim.SetTrigger(Enter_Second_Phase);
+            // Safety check: prevent multiple coroutines from running if boss takes rapid damage
+            // This prevents the race condition where multiple StartCoroutine calls happen
+            // before hasEnteredSecondPhase flag is set
+            if (hasEnteredSecondPhase)
+                yield break;
+            
+            // Set flag immediately to prevent other coroutines from continuing
             hasEnteredSecondPhase = true;
+            
+            yield return new WaitUntil(() => !isPerformingAttack && !isPerformingAction);
+            PerformAction();
+            anim.SetTrigger(Enter_Second_Phase);
         }
         
         private IEnumerator FlashOnHit()
