@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Bosses;
 using Interfaces;
 using Shared;
 using TMPro;
@@ -25,6 +24,12 @@ namespace Characters.Ninja
         [Header("Skill Wall")] 
         [SerializeField] private GameObject _wallPrefab;
         [SerializeField] private int _castInputsWall;
+        [Header("Skill Clones")]
+        [SerializeField] private GameObject _clonePrefab;
+        [SerializeField] private int _castInputsClones;
+        [SerializeField] private float _clonesDuration;
+        [SerializeField] private float _clonesCD;
+        [SerializeField] private SpellIcon _clonesSpellIcon;
         [Header("Skill Kick")] 
         [SerializeField] private Transform _kickHitPosition;
         [SerializeField] private float _kickHitArea;
@@ -41,13 +46,20 @@ namespace Characters.Ninja
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
         private float _originalHealCD;
+        private float _originalClonesCD;
+        private List<NinjaClone> _activeClones;
+        private Vector3 _storedShootTargetPoint;
+        private bool _wasShootingLastFrame;
+        private int _currentSkillBeingCast;
         
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
         private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
+        private static readonly int Skill_Clones = Animator.StringToHash("Skill_Clones");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
         private static readonly int Skill_Katon = Animator.StringToHash("Skill_Katon");
         private static readonly int Skill_FlipKick = Animator.StringToHash("Skill_FlipKick");
         private static readonly int CastInput = Animator.StringToHash("CastInput");
+        private static readonly int Shooting = Animator.StringToHash("Shooting");
 
         /// *** Unity Events *** ///
         
@@ -59,6 +71,11 @@ namespace Characters.Ninja
             // Initialize heal cooldown
             _originalHealCD = _healCD;
             _healCD = 0;
+            
+            // Initialize clones cooldown
+            _originalClonesCD = _clonesCD;
+            _clonesCD = 0;
+            _activeClones = new List<NinjaClone>();
         }
         
         /// *** Base Methods *** ///
@@ -66,9 +83,22 @@ namespace Characters.Ninja
         protected override void PlayerCooldowns()
         {
             base.PlayerCooldowns();
-            
+
             if (_healCD > 0)
                 _healCD -= Time.deltaTime;
+            if (_clonesCD > 0)
+                _clonesCD -= Time.deltaTime;
+
+            // Capture mouse world point when shooting animation starts
+            bool isShootingNow = anim.GetBool(Shooting);
+            if (isShootingNow && !_wasShootingLastFrame)
+            {
+                if (GetMouseWorldPoint(out Vector3 mouseWorldPoint))
+                    _storedShootTargetPoint = mouseWorldPoint;
+                else
+                    _storedShootTargetPoint = transform.position + transform.forward * 10f;
+            }
+            _wasShootingLastFrame = isShootingNow;
         }
 
         protected override void ResetPlayerState(bool includeCoroutines)
@@ -77,11 +107,48 @@ namespace Characters.Ninja
             
             anim.ResetTrigger(Skill_Heal);
             anim.ResetTrigger(Skill_Wall);
+            anim.ResetTrigger(Skill_Clones);
             _isKickFlipping = false;
             _isKickWindowActive = false;
             _isAbleToKickFlip = false;
             _QTEAlert.gameObject.SetActive(false);
             _QTEText.transform.parent.gameObject.SetActive(false);
+        }
+
+        public override void DamagePlayer(int damage)
+        {
+            StartCooldownForCurrentSkill();
+            base.DamagePlayer(damage);
+        }
+        
+        public override void BasicAttack()
+        {
+            base.BasicAttack();
+            float normalizedTime = anim.GetCurrentAnimatorStateInfo(0).normalizedTime % 1f;
+            
+            // Use stored target point captured when shooting started
+            foreach (NinjaClone clone in _activeClones)
+            {
+                if (clone != null)
+                    clone.TriggerShoot(normalizedTime, _storedShootTargetPoint);
+            }
+        }
+
+        private void StartCooldownForCurrentSkill()
+        {
+            // Start cooldown if casting Heal or Clones skill
+            if (_currentSkillBeingCast == Skill_Heal)
+            {
+                _healCD = _originalHealCD;
+                _healSpellIcon.StartCooldown(_originalHealCD);
+            }
+            else if (_currentSkillBeingCast == Skill_Clones)
+            {
+                _clonesCD = _originalClonesCD;
+                _clonesSpellIcon.StartCooldown(_originalClonesCD);
+            }
+            
+            _currentSkillBeingCast = 0;
         }
         
         /// *** Inputs *** ///
@@ -98,8 +165,10 @@ namespace Characters.Ninja
             
             if (Input.GetKeyDown(KeyCode.Q) && _healCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, KeyCode.Q));
-            else if (Input.GetKeyDown(KeyCode.W))
-                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.W));
+            else if (Input.GetKeyDown(KeyCode.W) && _clonesCD <= 0)
+                StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, KeyCode.W));
+            else if (Input.GetKeyDown(KeyCode.D))
+                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.D));
             else if (Input.GetKeyDown(KeyCode.E))
                 StartCoroutine(SkillKick());
             else if (Input.GetKeyDown(KeyCode.A))
@@ -114,17 +183,12 @@ namespace Characters.Ninja
         {
             // May be overkill here, but it is needed to reset some animator booleans 
             ResetPlayerState(false);
+            _currentSkillBeingCast = skillToTrigger;
             anim.SetTrigger(skillToTrigger);
             anim.SetBool(Casting, true);
             isAnimationLocked = true;
-            
-            // Start cooldown immediately for heal skill
-            if (skillToTrigger == Skill_Heal)
-            {
-                _healCD = _originalHealCD;
-                _healSpellIcon.StartCooldown(_originalHealCD);
-            }
 
+            // Prepare random KeyCodes to Cast for the QTE
             // Prepare random KeyCodes to Cast for the QTE
             KeyCode[] totalKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
             var keycodesToCast = GenerateKeycodesToCast(totalKeyCodes, keycodeToRemove, skillCastInputs);
@@ -186,6 +250,8 @@ namespace Characters.Ninja
         
         private void FailedQTE()
         {
+            StartCooldownForCurrentSkill();
+            
             // To cancel QTE Coroutines
             ResetPlayerState(true);
             anim.SetTrigger(Damaged);
@@ -222,6 +288,11 @@ namespace Characters.Ninja
             _healingPrefab.SetActive(false);
             SetHealth(_skillHealAmount);
             _healingPrefab.SetActive(true);
+            
+            // Start cooldown when skill executes
+            _healCD = _originalHealCD;
+            _healSpellIcon.StartCooldown(_originalHealCD);
+            _currentSkillBeingCast = 0;
         }
 
         /// *** Wall *** ///
@@ -237,6 +308,42 @@ namespace Characters.Ninja
             _wallPrefab.transform.parent = transform.parent;
             _wallPrefab.SetActive(true);
             _wallParticles.SetActive(true);
+        }
+
+        /// *** Clones *** ///
+
+        // Used in Skill_Clones animation
+        private void SkillClones()
+        {
+            foreach (NinjaClone clone in _activeClones)
+            {
+                if (clone != null)
+                    clone.StopClone();
+            }
+            _activeClones.Clear();
+
+            Vector3 leftOffset = transform.position + transform.right * -2.5f;
+            Vector3 rightOffset = transform.position + transform.right * 2.5f;
+
+            GameObject leftCloneObj = Instantiate(_clonePrefab, leftOffset, transform.rotation);
+            GameObject rightCloneObj = Instantiate(_clonePrefab, rightOffset, transform.rotation);
+
+            NinjaClone leftClone = leftCloneObj.GetComponent<NinjaClone>();
+            NinjaClone rightClone = rightCloneObj.GetComponent<NinjaClone>();
+
+            leftClone.SetLifetime(_clonesDuration);
+            leftClone.StartAttacking();
+            
+            rightClone.SetLifetime(_clonesDuration);
+            rightClone.StartAttacking();
+
+            _activeClones.Add(leftClone);
+            _activeClones.Add(rightClone);
+            
+            // Start cooldown when skill executes
+            _clonesCD = _originalClonesCD;
+            _clonesSpellIcon.StartCooldown(_originalClonesCD);
+            _currentSkillBeingCast = 0;
         }
 
         /// *** Kick *** ///
@@ -261,9 +368,7 @@ namespace Characters.Ninja
                     // Check if it's any counterable object (boss, stone, etc.)
                     ICounterable counterable = hitCollider.GetComponentInParent<ICounterable>();
                     if (counterable != null)
-                    {
                         counterable.TriggerCounter();
-                    }
                 }
                 yield return null;
             }

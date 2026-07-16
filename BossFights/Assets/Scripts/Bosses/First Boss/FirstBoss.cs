@@ -593,7 +593,7 @@ namespace Bosses.First_Boss
             {
                 SlimeController slimeController = _slimes[i];
                 Transform targetPosition = _slimePositions[selectedPositions[i]];
-                movementCoroutines.Add(StartCoroutine(slimeController.MoveToIntermissionPosition(targetPosition.position, 20)));
+                movementCoroutines.Add(StartCoroutine(slimeController.MoveToIntermissionPosition(targetPosition.position, 40)));
             }
             
             // Wait for all slimes to reach their positions

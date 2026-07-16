@@ -79,6 +79,18 @@ namespace Characters
                 StopAllCoroutines();
         } 
         
+        protected bool GetMouseWorldPoint(out Vector3 worldPoint)
+        {
+            Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                worldPoint = hit.point;
+                return true;
+            }
+            worldPoint = Vector3.zero;
+            return false;
+        }
+
         protected void LookAtMouse()
         {
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -106,7 +118,7 @@ namespace Characters
         }
         
         // Used in Shoot animation
-        public void BasicAttack()
+        public virtual void BasicAttack()
         {
             int basicAttackNumber = Random.Range(0, _basicAttackPrefabs.Length);
             GameObject bullet = Instantiate(_basicAttackPrefabs[basicAttackNumber], _basicAttackSpawnPoint.position, _basicAttackSpawnPoint.rotation);
@@ -182,7 +194,7 @@ namespace Characters
         
         /// *** Health Logic *** ///
          
-        public void DamagePlayer(int damage)
+        public virtual void DamagePlayer(int damage)
         {
             if (_damageImmuneCD > 0)
                 return;

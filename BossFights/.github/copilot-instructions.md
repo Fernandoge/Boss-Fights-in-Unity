@@ -1,4 +1,4 @@
-﻿# Unity C# Coding Standards
+﻿﻿# Unity C# Coding Standards
 
 ## Naming Conventions
 
@@ -66,6 +66,59 @@
   ```csharp
   public bool HasSlime => slimeTransform != null;
   public bool IsInSecondPhase => hasEnteredSecondPhase;
+  ```
+
+### Expression-Bodied Members
+- **Single-line methods**: Use expression-bodied syntax (`=>`) instead of curly braces
+  ```csharp
+  // ✅ GOOD
+  public void StartAttacking() => _isAttacking = true;
+  private void StartFlip() => _isKickFlipping = true;
+  public void DamageAnimStopped() => isAnimationLocked = false;
+  
+  // ❌ BAD
+  public void StartAttacking()
+  {
+      _isAttacking = true;
+  }
+  ```
+
+- **Multi-line methods**: Use curly braces as normal
+  ```csharp
+  public void StopClone()
+  {
+      _isAttacking = false;
+      Destroy(gameObject);
+  }
+  ```
+
+### Control Flow Statements
+- **Single-line if/else**: Omit curly braces when the body is a single statement
+  ```csharp
+  // ✅ GOOD
+  if (GetMouseWorldPoint(out Vector3 mouseWorldPoint))
+      _storedShootTargetPoint = mouseWorldPoint;
+  else
+      _storedShootTargetPoint = transform.position + transform.forward * 10f;
+  
+  // ❌ BAD
+  if (GetMouseWorldPoint(out Vector3 mouseWorldPoint))
+  {
+      _storedShootTargetPoint = mouseWorldPoint;
+  }
+  else
+  {
+      _storedShootTargetPoint = transform.position + transform.forward * 10f;
+  }
+  ```
+
+- **Multi-line if/else**: Use curly braces as normal
+  ```csharp
+  if (condition)
+  {
+      DoSomething();
+      DoAnotherThing();
+  }
   ```
 
 ## Code Organization
@@ -204,6 +257,35 @@ direction.y = 0;
 - Reuse objects when possible (e.g., `NavMeshPath`, `MaterialPropertyBlock`)
 - Use `sqrMagnitude` instead of `Distance` when only comparing distances
 
+### Spawned Object Lifetime Management
+- **Spawned objects should manage their own lifetime** instead of relying on the spawner's coroutines
+- Use `Update()` with timers instead of coroutines when the spawner might call `StopAllCoroutines()`
+- This makes objects resilient to interruptions and keeps behavior self-contained
+
+  ```csharp
+  // ✅ GOOD - Clone manages its own lifetime
+  public class NinjaClone : MonoBehaviour
+  {
+      private float _lifetime;
+      
+      private void Update()
+      {
+          _lifetime -= Time.deltaTime;
+          if (_lifetime <= 0)
+              DestroySelf();
+      }
+      
+      public void SetLifetime(float duration) => _lifetime = duration;
+  }
+  
+  // ❌ BAD - Spawner manages lifetime with coroutine (vulnerable to StopAllCoroutines)
+  private IEnumerator CloneLifetime()
+  {
+      yield return new WaitForSeconds(duration);
+      clone.DestroySelf();
+  }
+  ```
+
 ## Animation Controller Patterns
 
 ### Trigger Parameters
@@ -231,3 +313,6 @@ anim.ResetTrigger(Fast_Run);
 8. Clear section separators with `///` comments
 9. **Always use explicit types**, avoid `var`
 10. **NO `Debug.Log`** unless explicitly requested
+11. **Single-line methods**: Use expression-bodied syntax (`=>`) instead of curly braces
+12. **Single-line if/else**: Omit curly braces for single statements
+13. **Spawned objects manage their own lifetime** with `Update()` timers, not spawner coroutines
