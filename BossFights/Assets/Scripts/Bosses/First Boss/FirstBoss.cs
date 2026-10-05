@@ -155,9 +155,9 @@ namespace Bosses.First_Boss
             // Double the fast run speed for more aggressive chase
             fastRunSpeed *= 2f;
             
-            // Double the navMeshAgent speed for faster movement
-            navMeshAgent.speed *= 2f;
-            navMeshOriginalSpeed *= 2f;
+            // Walk 1.5x faster in the second phase
+            navMeshAgent.speed *= 1.5f;
+            navMeshOriginalSpeed *= 1.5f;
             
             // Add two more rocks to base amount for second phase
             _originalRocksToThrow += 2;
