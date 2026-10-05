@@ -40,6 +40,8 @@ namespace Characters
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Skill_Dash = Animator.StringToHash("Skill_Dash");
 
+        public bool DebugInvulnerable { get; set; }
+
         /// *** Unity Events *** ///
         
         private void Awake()
@@ -199,7 +201,7 @@ namespace Characters
          
         public virtual void DamagePlayer(int damage)
         {
-            if (_damageImmuneCD > 0)
+            if (_damageImmuneCD > 0 || DebugInvulnerable)
                 return;
 
             // Important to reset player state and coroutines since this method cancels player animations

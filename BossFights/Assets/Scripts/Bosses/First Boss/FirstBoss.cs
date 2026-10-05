@@ -18,6 +18,18 @@ namespace Bosses.First_Boss
         public Transform[] rocksPositionDown;
     }
     
+    public enum FirstBossAttack
+    {
+        FastRun,
+        JumpAttack,
+        RockThrow,
+        FrontalAttack,
+        Meteors,
+        RockShower,
+        FissureLines,
+        Cataclysm
+    }
+
     public class FirstBoss : BossController
     {
         [Header("")] 
@@ -80,7 +92,6 @@ namespace Bosses.First_Boss
         [SerializeField] private int _fissurePhase2ExtraLines;
         [SerializeField] private float _fissurePhase2AngleBetweenLines;
         [SerializeField] private float _fissurePhase2TelegraphTime;
-        [SerializeField] private bool _debugOnlyUseFissureLines;
 
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
@@ -176,16 +187,9 @@ namespace Bosses.First_Boss
         {
             base.PerformAttack();
 
-            // Debug switch to review the skill on its own
-            if (_debugOnlyUseFissureLines)
-            {
-                StartFissureLines();
-                return;
-            }
-
             // Check if it's time to trigger Cataclysm
             if (_consecutiveNormalAttacks >= 3)
-                StartCataclysm();
+                StartAttack(FirstBossAttack.Cataclysm);
             else
             {
                 // Randomly select an attack, but never the same as the last one
@@ -205,37 +209,56 @@ namespace Bosses.First_Boss
                 } while (true);
                 
                 _lastAttackIndex = attackIndex;
-                
-                switch (attackIndex)
-                {
-                    case 0:
-                        StartCoroutine(FastRun());
-                        break;
-                    case 1:
-                        StartCoroutine(JumpAttack());
-                        break;
-                    case 2:
-                        StartThrowingRocks();
-                        break;
-                    case 3:
-                        StartFrontalAttack();
-                        break;
-                    case 4:
-                        StartMeteors();
-                        break;
-                    case 5:
-                        StartRockShower();
-                        break;
-                    case 6:
-                        StartFissureLines();
-                        break;
-                }
-                
+                StartAttack((FirstBossAttack)attackIndex);
+
                 // Increment counter after a normal attack
                 _consecutiveNormalAttacks++;
-            }  
+            }
         }
-        
+
+        private void StartAttack(FirstBossAttack attack)
+        {
+            switch (attack)
+            {
+                case FirstBossAttack.FastRun:
+                    StartCoroutine(FastRun());
+                    break;
+                case FirstBossAttack.JumpAttack:
+                    StartCoroutine(JumpAttack());
+                    break;
+                case FirstBossAttack.RockThrow:
+                    StartThrowingRocks();
+                    break;
+                case FirstBossAttack.FrontalAttack:
+                    StartFrontalAttack();
+                    break;
+                case FirstBossAttack.Meteors:
+                    StartMeteors();
+                    break;
+                case FirstBossAttack.RockShower:
+                    StartRockShower();
+                    break;
+                case FirstBossAttack.FissureLines:
+                    StartFissureLines();
+                    break;
+                case FirstBossAttack.Cataclysm:
+                    StartCataclysm();
+                    break;
+            }
+        }
+
+        /// *** Debug *** ///
+
+        // Used by the debug harness: starts an attack the same way PerformAttack does, ignoring the attack timer and rotation
+        public void DebugForceAttack(FirstBossAttack attack)
+        {
+            if (DebugIsBusy)
+                return;
+
+            base.PerformAttack();
+            StartAttack(attack);
+        }
+
         ///// ******* Skills ******* /////
         
         /// ***** Skill 1-1: Jump Attack ***** ///

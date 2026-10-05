@@ -11,7 +11,7 @@ Added as the pilot for the AI-assisted workflow (see CLAUDE.md "Direction").
 - `Bosses/First Boss/FissureLine.cs`: spikes and damage check for one line. Damage is a position check against the line (no trigger physics).
 - `FirstBoss.cs`: `[Header("Fissure Lines")]` tuning fields, `StartFissureLines()`, and the animation-event methods `FissureLinesTelegraph` / `FissureLinesErupt`. Attack index 6 in the random pool.
 - Animator: trigger `FissureLines`, state `Fissure Lines` using `Fissure Stomp.anim` (a copy of `Stomp.anim` with only these two events at 0.08 s and 0.72 s). The animation is slowed so the stomp lands when the telegraph ends (`FissureImpactAnimationTime` in `FirstBoss.cs` must match the `FissureLinesErupt` event time).
-- Prefabs in `Prefabs/Characters/Bosses/`: `FissureIndicator`, `FissureLine`, `FissureDust`. Values live on the `First Boss` prefab. `_debugOnlyUseFissureLines` on that prefab makes the boss use only this skill (keep it off in commits).
+- Prefabs in `Prefabs/Characters/Bosses/`: `FissureIndicator`, `FissureLine`, `FissureDust`. Values live on the `First Boss` prefab. To see the skill on its own, force it with the debug harness (F7, or `ForceAttack(FirstBossAttack.FissureLines)`) and turn boss auto attacks off with F9.
 
 **Starting values (tune in playtest):** damage 1, start distance 3, length 24, width 2.0, 3 lines at 36 degrees, 1.2 s telegraph; phase 2 adds 2 lines at 26 degrees, 1.0 s telegraph.
 

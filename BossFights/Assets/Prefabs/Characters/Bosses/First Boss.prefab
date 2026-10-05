@@ -44528,7 +44528,6 @@ MonoBehaviour:
   _fissurePhase2ExtraLines: 2
   _fissurePhase2AngleBetweenLines: 26
   _fissurePhase2TelegraphTime: 1
-  _debugOnlyUseFissureLines: 0
   _intermissionCenterPosition: {fileID: 0}
   _slimePositions: []
   _slimes: []

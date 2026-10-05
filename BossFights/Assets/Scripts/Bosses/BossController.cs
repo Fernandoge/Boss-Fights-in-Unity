@@ -31,7 +31,9 @@ namespace Bosses
         [SerializeField] private TextMeshProUGUI _healthText;
 
         public bool IsInSecondPhase => hasEnteredSecondPhase;
-        
+        public bool DebugAutoAttacksDisabled { get; set; }
+        public bool DebugIsBusy => isPerformingAttack || isPerformingAction;
+
         protected Transform player;
         protected NavMeshAgent navMeshAgent;
         protected NavMeshAgent playerNavMeshAgent;
@@ -78,7 +80,7 @@ namespace Bosses
         
         private void Update()
         {
-            if (timeBetweenAttacks <= 0)
+            if (timeBetweenAttacks <= 0 && !DebugAutoAttacksDisabled)
                 PerformAttack();
 
             if (isPerformingAttack || isPerformingAction) 
@@ -111,7 +113,9 @@ namespace Bosses
         }
         
         /// *** Base Methods *** ///
-        
+
+        public void DebugSetSecondPhaseFlag(bool value) => hasEnteredSecondPhase = value;
+
         private void PerformAction()
         {
             isPerformingAction = true;
