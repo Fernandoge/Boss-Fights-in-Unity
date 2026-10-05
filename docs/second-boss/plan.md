@@ -1,6 +1,6 @@
 # Second boss: plan
 
-Status: M1 (foundation) is built and verified; M2 waits on the concept for the new boss. TurtleShell was rejected, so the model comes from the user (Mixamo humanoid: `Nightshade J Friedrich` plus a magic/crouch/block animation set, dropped in `Assets/Asset Packs/Second Boss/`). `main` and `dev` are the safe rollback point.
+Status: M1 (foundation) and M2 (basic boss, with the first skill) are built and verified; see `docs/second-boss/spell-circles.md`. TurtleShell was rejected, so the model comes from the user (Mixamo humanoid: `Nightshade J Friedrich` plus a magic/crouch/block animation set, dropped in `Assets/Asset Packs/Second Boss/`). `main` and `dev` are the safe rollback point.
 
 ## Goal
 
@@ -50,7 +50,7 @@ Add a second boss that fights in the same arena. Milestone 1 is only the basics:
 - The harness works on the active boss; forced attacks exist for boss 1 only until the second boss has skills (then a small interface lets each boss list its debug attacks).
 - Smoke test boss 1: all 8 forced attacks play the right clip, a natural run uses every clip, the phase 2 transition works (walk 4 to 6), 0 console errors.
 
-**M2 Second boss basics.**
+**M2 Second boss basics (done, with the Spell Circles skill and teleport).**
 - Model prefab with agent, collider, layer, material, scale.
 - Animator controller following the contract (idle, walk, and the idle event).
 - `SecondBoss : BossController` with chase, health, flash and a no-op phase 2.

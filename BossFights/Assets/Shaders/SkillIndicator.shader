@@ -8,7 +8,7 @@ Shader "Indicators/SkillIndicator"
         _Fill ("Fill", Range(0, 1)) = 0
         _EdgeWidth ("Edge Width (world units)", Range(0, 0.5)) = 0.08
         _Size ("Size (width, length)", Vector) = (1, 1, 0, 0)
-        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows)", Float) = 0
+        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows, 2 = circle fill from the center)", Float) = 0
         _ArrowSpacing ("Arrow spacing (world units)", Float) = 6
         _ArrowSpeed ("Arrow scroll speed (world units / s)", Float) = 8
     }
@@ -59,6 +59,19 @@ Shader "Indicators/SkillIndicator"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col;
+                if (_Pattern > 1.5)
+                {
+                    // Circle inscribed in the quad; the fill grows from the center to the rim. _Size.x is the diameter
+                    float radius = _Size.x * 0.5;
+                    float r = length((i.uv - 0.5) * 2.0);
+                    clip(1.0 - r);
+
+                    col = lerp(_BaseColor, _FillColor, step(r, _Fill));
+                    col.rgb += step(abs(r - _Fill) * radius, 0.1) * step(0.001, _Fill) * step(_Fill, 0.999) * 0.35;
+                    col = lerp(col, _EdgeColor, step((1.0 - r) * radius, _EdgeWidth));
+                    return col;
+                }
+
                 if (_Pattern > 0.5)
                 {
                     // Chevrons pointing along +length, scrolling forward. Position in world units across (x) and along (y) the lane

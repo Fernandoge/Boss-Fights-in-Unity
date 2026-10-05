@@ -2,6 +2,7 @@
 using System;
 using Bosses;
 using Bosses.First_Boss;
+using Bosses.Second_Boss;
 using Manager.GameManager;
 using UnityEngine;
 
@@ -40,10 +41,19 @@ namespace Debugging
 
         private void Update()
         {
-            if (GetBoss() is FirstBoss)
+            BossController activeBoss = GetBoss();
+            if (activeBoss is FirstBoss)
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     if (Input.GetKeyDown(AttackKeys[i]))
                         ForceAttack(Attacks[i]);
+
+            if (activeBoss is SecondBoss secondBoss)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                    ForceSecondBossAction(secondBoss.DebugForceSpellCircles, "Forced SpellCircles");
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                    ForceSecondBossAction(secondBoss.DebugTeleport, "Forced Teleport");
+            }
 
             if (Input.GetKeyDown(KeyCode.F1))
                 ToggleAutoAttacks();
@@ -152,6 +162,18 @@ namespace Debugging
         // The boss of the current fight; falls back to the first boss in scenes without a BossSelector
         private static BossController GetBoss() => GameManager.Instance.ActiveBoss ? GameManager.Instance.ActiveBoss : GameManager.Instance.firstBoss;
 
+        private void ForceSecondBossAction(Action action, string message)
+        {
+            if (GetBoss().DebugIsBusy)
+            {
+                Show("Boss is busy");
+                return;
+            }
+
+            action();
+            Show(message);
+        }
+
         private void Show(string message)
         {
             _message = message;
@@ -178,6 +200,8 @@ namespace Debugging
             if (boss is FirstBoss)
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
+            else if (boss is SecondBoss)
+                text += "1  SpellCircles\n2  Teleport\n";
             else
                 text += "(no forced attacks for this boss yet)\n";
 

@@ -60,6 +60,17 @@ namespace Shared
             ApplyFill(0f);
         }
 
+        // A circle centered on a point whose fill grows from the center to the rim
+        public void ShowCircle(Vector3 center, float radius, float duration, bool hideWhenFilled = true)
+        {
+            _duration = Mathf.Max(duration, 0.01f);
+            _isArrowLane = false;
+            _hideWhenFilled = hideWhenFilled;
+            Place(center - Vector3.forward * radius, Vector3.forward, radius * 2f, radius * 2f);
+            _propertyBlock.SetFloat(Pattern_Mode, 2f);
+            ApplyFill(0f);
+        }
+
         // A lane of scrolling arrows pointing along the direction that stays until Hide() is called
         public void ShowArrowLane(Vector3 origin, Vector3 direction, float length, float width)
         {

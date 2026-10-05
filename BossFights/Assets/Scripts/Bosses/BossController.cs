@@ -90,7 +90,7 @@ namespace Bosses
             timeBetweenAttacks -= Time.deltaTime;
         }
         
-        private void IdleMovement()
+        protected virtual void IdleMovement()
         {
             navMeshAgent.SetDestination(player.position);
             if (navMeshAgent.remainingDistance > stopBetweenPlayer)
