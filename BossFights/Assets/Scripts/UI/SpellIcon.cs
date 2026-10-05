@@ -8,7 +8,8 @@ namespace UI
     {
         [SerializeField] private Image cooldownOverlay;
         [SerializeField] private TextMeshProUGUI cooldownText;
-        
+        [SerializeField] private TextMeshProUGUI keyLabel;
+
         private float cooldownDuration;
         private float cooldownRemaining;
         
@@ -19,6 +20,8 @@ namespace UI
             cooldownText.gameObject.SetActive(false);
         }
     
+        public void SetKeyLabel(KeyCode key) => keyLabel.text = key == KeyCode.Space ? "SPACE" : key.ToString();
+
         public void StartCooldown(float duration)
         {
             cooldownDuration = duration;

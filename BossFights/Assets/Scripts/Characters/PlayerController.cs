@@ -27,7 +27,8 @@ namespace Characters
         protected bool isAnimationLocked;
         protected static readonly int Casting = Animator.StringToHash("Casting");
         protected static readonly int Damaged = Animator.StringToHash("Damaged");
-        
+        protected const KeyCode DashKey = KeyCode.Space;
+
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private int _maxHealth;
@@ -58,6 +59,7 @@ namespace Characters
             _damageImmuneCD = 0;
             _maxHealth = _health;
             _playerHealthUI.UpdateHearts(_health);
+            _dashSpellIcon.SetKeyLabel(DashKey);
         }
         
         private void Update()
@@ -149,7 +151,7 @@ namespace Characters
 
         protected virtual void SkillsInput()
         {
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(DashKey))
                 SkillDash();
         }
         

@@ -60,6 +60,8 @@ namespace Characters.Ninja
         private static readonly int Skill_FlipKick = Animator.StringToHash("Skill_FlipKick");
         private static readonly int CastInput = Animator.StringToHash("CastInput");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
+        private const KeyCode HealKey = KeyCode.Q;
+        private const KeyCode ClonesKey = KeyCode.W;
 
         /// *** Unity Events *** ///
         
@@ -76,6 +78,9 @@ namespace Characters.Ninja
             _originalClonesCD = _clonesCD;
             _clonesCD = 0;
             _activeClones = new List<NinjaClone>();
+
+            _healSpellIcon.SetKeyLabel(HealKey);
+            _clonesSpellIcon.SetKeyLabel(ClonesKey);
         }
         
         /// *** Base Methods *** ///
@@ -163,10 +168,10 @@ namespace Characters.Ninja
             if (isAnimationLocked || anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                 return;
             
-            if (Input.GetKeyDown(KeyCode.Q) && _healCD <= 0)
-                StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, KeyCode.Q));
-            else if (Input.GetKeyDown(KeyCode.W) && _clonesCD <= 0)
-                StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, KeyCode.W));
+            if (Input.GetKeyDown(HealKey) && _healCD <= 0)
+                StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, HealKey));
+            else if (Input.GetKeyDown(ClonesKey) && _clonesCD <= 0)
+                StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, ClonesKey));
             else if (Input.GetKeyDown(KeyCode.D))
                 StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.D));
             else if (Input.GetKeyDown(KeyCode.E))
