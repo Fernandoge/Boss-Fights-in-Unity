@@ -71,6 +71,7 @@ namespace Bosses.First_Boss
         public int fissureDamage;
         [SerializeField] private SkillIndicator _fissureIndicatorPrefab;
         [SerializeField] private FissureLine _fissureLinePrefab;
+        [SerializeField] private float _fissureStartDistance;
         [SerializeField] private float _fissureLength;
         [SerializeField] private float _fissureWidth;
         [SerializeField] private int _fissureLineCount;
@@ -584,7 +585,7 @@ namespace Bosses.First_Boss
                 _fissureDirections[i] = Quaternion.Euler(0f, angle, 0f) * forward.normalized;
 
                 SkillIndicator indicator = Instantiate(_fissureIndicatorPrefab);
-                indicator.ShowLine(_fissureOrigin, _fissureDirections[i], _fissureLength, _fissureWidth, GetFissureTelegraphTime());
+                indicator.ShowLine(GetFissureLineStart(_fissureDirections[i]), _fissureDirections[i], _fissureLength, _fissureWidth, GetFissureTelegraphTime());
                 _activeFissureIndicators.Add(indicator);
             }
         }
@@ -600,8 +601,11 @@ namespace Bosses.First_Boss
             _activeFissureIndicators.Clear();
 
             foreach (Vector3 direction in _fissureDirections)
-                Instantiate(_fissureLinePrefab).Erupt(_fissureOrigin, direction, _fissureLength, _fissureWidth);
+                Instantiate(_fissureLinePrefab).Erupt(GetFissureLineStart(direction), direction, _fissureLength, _fissureWidth);
         }
+
+        // Lines start a bit in front of the boss instead of at its feet
+        private Vector3 GetFissureLineStart(Vector3 direction) => _fissureOrigin + direction * _fissureStartDistance;
 
         private float GetFissureTelegraphTime() => IsInSecondPhase ? _fissurePhase2TelegraphTime : _fissureTelegraphTime;
 

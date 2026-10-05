@@ -44519,6 +44519,7 @@ MonoBehaviour:
   fissureDamage: 1
   _fissureIndicatorPrefab: {fileID: 222205861945891569, guid: b3ed554e1da2244488d3c2ef4a92b6f3, type: 3}
   _fissureLinePrefab: {fileID: 429994169836869207, guid: 3889fed6739804d42a22c14e40df4605, type: 3}
+  _fissureStartDistance: 3
   _fissureLength: 24
   _fissureWidth: 2
   _fissureLineCount: 3
@@ -44527,6 +44528,7 @@ MonoBehaviour:
   _fissurePhase2ExtraLines: 2
   _fissurePhase2AngleBetweenLines: 26
   _fissurePhase2TelegraphTime: 1
+  _debugOnlyUseFissureLines: 0
   _intermissionCenterPosition: {fileID: 0}
   _slimePositions: []
   _slimes: []
