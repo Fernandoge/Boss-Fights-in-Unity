@@ -64642,6 +64642,10 @@ PrefabInstance:
       value: 34
       objectReference: {fileID: 0}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
+      propertyPath: _fissureTelegraphTime
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: '_slimes.Array.data[0]'
       value: 
       objectReference: {fileID: 4450813352931663628}
@@ -64660,6 +64664,10 @@ PrefabInstance:
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: _slimePositions.Array.size
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
+      propertyPath: _fissurePhase2TelegraphTime
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: _intermissionCenterPosition
