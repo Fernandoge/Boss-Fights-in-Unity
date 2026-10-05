@@ -1,7 +1,6 @@
 using System.Collections;
 using Characters.Ninja;
 using Shared;
-using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.AI;
@@ -12,7 +11,7 @@ namespace Characters
     public abstract class PlayerController : MonoBehaviour
     {
         [SerializeField] private int _health;
-        [SerializeField] private TextMeshProUGUI _healthText;
+        [SerializeField] private PlayerHealthUI _playerHealthUI;
         [SerializeField] private float _damageImmuneCD;
         [SerializeField] private GameObject[] _basicAttackPrefabs;
         [SerializeField] private Transform _basicAttackSpawnPoint;
@@ -31,6 +30,7 @@ namespace Characters
         
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
+        private int _maxHealth;
         private float _originalDashCD;
         private float _originalDamagedImmuneCD;
         private Vector3 _lastDestination;
@@ -46,7 +46,6 @@ namespace Characters
             _navMeshAgent = GetComponent<NavMeshAgent>();
             _mainCamera = Camera.main;
             anim = GetComponent<Animator>();
-            _healthText.text = _health.ToString();
             _reusablePath = new NavMeshPath(); // Initialize reusable path
         }
 
@@ -57,6 +56,8 @@ namespace Characters
             _originalDamagedImmuneCD = _damageImmuneCD;
             _dashCD = 0;
             _damageImmuneCD = 0;
+            _maxHealth = _health;
+            _playerHealthUI.UpdateHearts(_health);
         }
         
         private void Update()
@@ -204,14 +205,14 @@ namespace Characters
             anim.SetTrigger(Damaged);
             isAnimationLocked = true;
             _health -= damage;
-            _healthText.text = _health.ToString();
+            _playerHealthUI.UpdateHearts(_health);
             _damageImmuneCD = _originalDamagedImmuneCD;
         }
 
         protected void SetHealth(int healthToAdd)
         {
-            _health += healthToAdd;
-            _healthText.text = _health.ToString();
+            _health = Mathf.Min(_health + healthToAdd, _maxHealth);
+            _playerHealthUI.UpdateHearts(_health);
         }
         
         // Used in Damaged animation
