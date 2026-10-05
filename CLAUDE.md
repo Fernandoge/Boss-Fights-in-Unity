@@ -33,7 +33,18 @@ Start-Process "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" -
 
 Exit code 0 with no `error CS` lines means it compiled. Never run batch mode while the Editor has the project open (`Get-Process Unity`, `BossFights/Temp/UnityLockfile`).
 
-Branches: work happens on `dev`; `main` is the PR/merge target.
+Branches: work happens on `dev`; `main` is the PR/merge target. Commits use the repo-local identity `Fernandoge <fernando.polgati.g@gmail.com>` (never the global work identity). The `pre-ai-development` tag marks the code before AI-assisted work. The TerrainTexturesPackFree import is intentionally left untracked (files over 100 MB; GitHub rejects them).
+
+## Direction (current thinking, revisit freely)
+
+Goal: the user wants to add player skills, bosses and boss skills mostly by describing them, then playtest and tweak. The first boss fight already feels good, so keep its behaviour intact. Roughly: the user describes a feature in a few sentences, Claude proposes the design and the assets needed, implements it on a feature branch, checks it with the CLI loop (recompile, console, screenshots), and the user playtests and tunes.
+
+- **Split of work:** Claude handles code, Animator wiring, tuning fields and verification. The user sources art (Mixamo FBX downloads need their login), judges game feel, and playtests. Claude imports and configures dropped assets (humanoid rig, loops, prefab, colliders, NavMeshAgent, Animator states).
+- **Assets:** Mixamo stays for humanoids (shared skeleton, retargeting). Non-humanoid bosses and minions come from packs with built-in animations. AI-generated 3D is experimental, for props or minions only.
+- **Indicators and VFX are the costly part of each skill.** Planned: one reusable procedural `SkillIndicator` (circle, cone, line, ring, fill-up telegraph timing, shader or mesh drawn) replacing the PNG placeholders, so a new skill only picks a shape, size and duration. Build VFX from the existing packs (Hovl Studio, ParticlePack).
+- **Debug harness (planned):** a test scene or hotkeys that force any player skill or boss attack, so each new skill can be seen and screenshotted in seconds.
+- **Known risks:** animation events on read-only Mixamo clips are untested through the CLI (fallback: time skills in code); `FirstBoss.cs` is ~870 lines, so before a third boss consider splitting skills into reusable components; Claude has no memory between sessions, so keep short design notes per boss and skill under `docs/`.
+- **Pilot first:** the indicator system, the debug harness, one new player skill and one new boss skill, before committing to a bigger roadmap.
 
 ## Architecture
 
