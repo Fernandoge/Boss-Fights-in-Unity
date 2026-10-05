@@ -24,6 +24,7 @@ namespace Characters.Ninja
         [Header("Skill Wall")] 
         [SerializeField] private GameObject _wallPrefab;
         [SerializeField] private int _castInputsWall;
+        [SerializeField] private SpellIcon _wallSpellIcon;
         [Header("Skill Clones")]
         [SerializeField] private GameObject _clonePrefab;
         [SerializeField] private int _castInputsClones;
@@ -34,12 +35,14 @@ namespace Characters.Ninja
         [SerializeField] private Transform _kickHitPosition;
         [SerializeField] private float _kickHitArea;
         [SerializeField] private float _flipKickDistance;
-        [Header("Skill Katon")] 
+        [SerializeField] private SpellIcon _kickSpellIcon;
+        [Header("Skill Katon")]
         [SerializeField] private GameObject _katonPrefab;
         [SerializeField] private Transform _fireballSpawnPoint;
         [SerializeField] private float _fireballSpeed;
         [SerializeField] private int[] _castInputsKaton;
         [SerializeField] private int[] _katonDamage;
+        [SerializeField] private SpellIcon _katonSpellIcon;
 
         private GameObject _wallParticles;
         private bool _isKickWindowActive;
@@ -62,6 +65,9 @@ namespace Characters.Ninja
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private const KeyCode HealKey = KeyCode.Q;
         private const KeyCode ClonesKey = KeyCode.W;
+        private const KeyCode WallKey = KeyCode.D;
+        private const KeyCode KickKey = KeyCode.E;
+        private const KeyCode KatonKey = KeyCode.A;
 
         /// *** Unity Events *** ///
         
@@ -81,6 +87,9 @@ namespace Characters.Ninja
 
             _healSpellIcon.SetKeyLabel(HealKey);
             _clonesSpellIcon.SetKeyLabel(ClonesKey);
+            _wallSpellIcon.SetKeyLabel(WallKey);
+            _kickSpellIcon.SetKeyLabel(KickKey);
+            _katonSpellIcon.SetKeyLabel(KatonKey);
         }
         
         /// *** Base Methods *** ///
@@ -162,7 +171,7 @@ namespace Characters.Ninja
         {
             base.SkillsInput();
             
-            if (Input.GetKeyDown(KeyCode.E) && anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
+            if (Input.GetKeyDown(KickKey) && anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
                 StartCoroutine(StartSkillFlipKick());
             
             if (isAnimationLocked || anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
@@ -172,12 +181,12 @@ namespace Characters.Ninja
                 StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, HealKey));
             else if (Input.GetKeyDown(ClonesKey) && _clonesCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, ClonesKey));
-            else if (Input.GetKeyDown(KeyCode.D))
-                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, KeyCode.D));
-            else if (Input.GetKeyDown(KeyCode.E))
+            else if (Input.GetKeyDown(WallKey))
+                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, WallKey));
+            else if (Input.GetKeyDown(KickKey))
                 StartCoroutine(SkillKick());
-            else if (Input.GetKeyDown(KeyCode.A))
-                StartCoroutine(CastingSkill(Skill_Katon, _castInputsKaton[0], true, KeyCode.A, 
+            else if (Input.GetKeyDown(KatonKey))
+                StartCoroutine(CastingSkill(Skill_Katon, _castInputsKaton[0], true, KatonKey,
                     _castInputsKaton.Length));
         }
         
