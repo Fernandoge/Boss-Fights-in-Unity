@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Unity 2022.3.4f1 boss-fight game. The Unity project lives in `BossFights/` (open that folder in Unity Hub, not the repo root). All gameplay code is under `BossFights/Assets/Scripts/`. The main scene is `BossFights/Assets/Scenes/TestScene.unity`.
+A Unity 6000.3.25f1 (Unity 6.3 LTS) boss-fight game. The Unity project lives in `BossFights/` (open that folder in Unity Hub, not the repo root). All gameplay code is under `BossFights/Assets/Scripts/`. The main scene is `BossFights/Assets/Scenes/TestScene.unity`.
 
 There is no test suite or lint step, and Claude cannot playtest or verify Animator/scene wiring — ask the user to playtest and report results. The C# solution is `BossFights/BossFights.sln` (Rider is the configured IDE).
 
@@ -13,7 +13,7 @@ There is no test suite or lint step, and Claude cannot playtest or verify Animat
 ```powershell
 $log = "<scratchpad>\unity-compile.log"
 $args2 = '-batchmode -nographics -quit -projectPath "E:\Git Projects\Boss-Fights-In-Unity\BossFights" -logFile "' + $log + '"'
-Start-Process "C:\Program Files\Unity\Hub\Editor\2022.3.4f1\Editor\Unity.exe" -ArgumentList $args2 -Wait -PassThru
+Start-Process "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" -ArgumentList $args2 -Wait -PassThru
 ```
 
 Exit code 0 with no `error CS` lines in the log means it compiled. If Unity is running (`Get-Process Unity`) or `BossFights/Temp/UnityLockfile` exists, skip the check and ask the user to confirm compilation in the editor instead.
