@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
+using Bosses;
 using Bosses.First_Boss;
 using Manager.GameManager;
 using UnityEngine;
@@ -24,20 +25,25 @@ namespace Debugging
 
         private GUIStyle _style;
         private string _helpText;
+        private BossController _helpTextBoss;
         private string _message = "";
         private float _messageTimer;
         private bool _isHelpVisible = true;
         private bool _isSlowMotion;
 
-        private void Awake() => _helpText = BuildHelpText();
-
-        private void Start() => GameManager.Instance.firstBoss.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (FirstBossAttack?)null;
+        private void Start()
+        {
+            FirstBoss firstBoss = GetBoss() as FirstBoss;
+            if (firstBoss)
+                firstBoss.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (FirstBossAttack?)null;
+        }
 
         private void Update()
         {
-            for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
-                if (Input.GetKeyDown(AttackKeys[i]))
-                    ForceAttack(Attacks[i]);
+            if (GetBoss() is FirstBoss)
+                for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
+                    if (Input.GetKeyDown(AttackKeys[i]))
+                        ForceAttack(Attacks[i]);
 
             if (Input.GetKeyDown(KeyCode.F1))
                 ToggleAutoAttacks();
@@ -63,9 +69,17 @@ namespace Debugging
             if (_style == null)
                 _style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, fontSize = 13, richText = true };
 
-            if (_isHelpVisible)
+            BossController boss = GetBoss();
+            if (_isHelpVisible && boss)
             {
-                GUIContent content = new GUIContent(_helpText + "\n" + GetStatusText());
+                // The help text depends on which boss is active, so rebuild it when the active boss changes
+                if (_helpTextBoss != boss)
+                {
+                    _helpTextBoss = boss;
+                    _helpText = BuildHelpText(boss);
+                }
+
+                GUIContent content = new GUIContent(_helpText + "\n" + GetStatusText(boss));
                 Vector2 size = _style.CalcSize(content);
                 GUI.Box(new Rect(Screen.width - size.x - 10f, 50f, size.x, size.y), content, _style);
             }
@@ -76,7 +90,13 @@ namespace Debugging
 
         public void ForceAttack(FirstBossAttack attack)
         {
-            FirstBoss boss = GameManager.Instance.firstBoss;
+            FirstBoss boss = GetBoss() as FirstBoss;
+            if (!boss)
+            {
+                Show("No first boss attacks for this boss");
+                return;
+            }
+
             if (boss.DebugIsBusy)
             {
                 Show("Boss is busy");
@@ -89,7 +109,7 @@ namespace Debugging
 
         public void ToggleAutoAttacks()
         {
-            FirstBoss boss = GameManager.Instance.firstBoss;
+            BossController boss = GetBoss();
             boss.DebugAutoAttacksDisabled = !boss.DebugAutoAttacksDisabled;
             Show("Boss auto attacks " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON"));
         }
@@ -97,7 +117,13 @@ namespace Debugging
         // The boss repeats the attack picked in the Inspector instead of its normal attack rotation
         public void ToggleOnlyUseAttack()
         {
-            FirstBoss boss = GameManager.Instance.firstBoss;
+            FirstBoss boss = GetBoss() as FirstBoss;
+            if (!boss)
+            {
+                Show("Only use attack is not available for this boss");
+                return;
+            }
+
             boss.DebugOnlyAttack = boss.DebugOnlyAttack.HasValue ? (FirstBossAttack?)null : _attackToUse;
             Show("Only use attack: " + (boss.DebugOnlyAttack.HasValue ? boss.DebugOnlyAttack.Value.ToString() : "OFF"));
         }
@@ -111,7 +137,7 @@ namespace Debugging
         // Only switches the phase 2 versions of skills (more lines, etc.); it does not run the real phase 2 transition
         public void TogglePhaseTwoSkillVariants()
         {
-            FirstBoss boss = GameManager.Instance.firstBoss;
+            BossController boss = GetBoss();
             boss.DebugSetSecondPhaseFlag(!boss.IsInSecondPhase);
             Show("Phase 2 skill variants " + (boss.IsInSecondPhase ? "ON" : "OFF"));
         }
@@ -123,27 +149,38 @@ namespace Debugging
             Show("Slow motion " + (_isSlowMotion ? "ON" : "OFF"));
         }
 
+        // The boss of the current fight; falls back to the first boss in scenes without a BossSelector
+        private static BossController GetBoss() => GameManager.Instance.ActiveBoss ? GameManager.Instance.ActiveBoss : GameManager.Instance.firstBoss;
+
         private void Show(string message)
         {
             _message = message;
             _messageTimer = _messageDuration;
         }
 
-        private string GetStatusText()
+        private string GetStatusText(BossController boss)
         {
-            FirstBoss boss = GameManager.Instance.firstBoss;
-            return "Auto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
+            string onlyAttack = "n/a";
+            if (boss is FirstBoss firstBoss)
+                onlyAttack = firstBoss.DebugOnlyAttack.HasValue ? firstBoss.DebugOnlyAttack.Value.ToString() : "OFF";
+
+            return "Boss: " + boss.name +
+                   "\nAuto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
                    "   Invulnerable: " + (GameManager.Instance.player.DebugInvulnerable ? "ON" : "OFF") +
                    "   Phase 2 variants: " + (boss.IsInSecondPhase ? "ON" : "OFF") +
                    "   Slow motion: " + (_isSlowMotion ? "ON" : "OFF") +
-                   "\nOnly attack: " + (boss.DebugOnlyAttack.HasValue ? boss.DebugOnlyAttack.Value.ToString() : "OFF");
+                   "\nOnly attack: " + onlyAttack;
         }
 
-        private static string BuildHelpText()
+        private static string BuildHelpText(BossController boss)
         {
             string text = "<b>Debug harness</b> (Tab hides)\n";
-            for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
-                text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
+            if (boss is FirstBoss)
+                for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
+                    text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
+            else
+                text += "(no forced attacks for this boss yet)\n";
+
             text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack";
             return text;
         }

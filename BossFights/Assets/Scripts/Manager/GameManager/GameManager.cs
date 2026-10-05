@@ -11,6 +11,9 @@ namespace Manager.GameManager
 
         public PlayerController player;
         public FirstBoss firstBoss;
+
+        // The boss of the current fight; set by BossSelector
+        public BossController ActiveBoss { get; set; }
     
         private void Awake()
         {

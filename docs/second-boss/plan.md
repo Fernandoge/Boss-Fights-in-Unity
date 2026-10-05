@@ -1,6 +1,6 @@
 # Second boss: plan
 
-Status: plan for review. Nothing here has been built yet. `main` and `dev` are both at the commit before this branch and are the safe rollback point.
+Status: M1 (foundation) is built and verified; M2 waits on the concept for the new boss. TurtleShell was rejected, so the model comes from the user (Mixamo humanoid: `Nightshade J Friedrich` plus a magic/crouch/block animation set, dropped in `Assets/Asset Packs/Second Boss/`). `main` and `dev` are the safe rollback point.
 
 ## Goal
 
@@ -44,11 +44,11 @@ Add a second boss that fights in the same arena. Milestone 1 is only the basics:
 
 **M0 Decisions and assets (needs you).** See the checklist below.
 
-**M1 Foundation, with no behaviour change to boss 1.**
-- `GameManager` gets a `secondBoss` slot (and a general `ActiveBoss`).
+**M1 Foundation, with no behaviour change to boss 1 (done).**
+- `GameManager` gets a general `ActiveBoss` (a `secondBoss` slot is added in M2 when the class exists).
 - A small `BossSelector` component activates one boss group and deactivates the other, chosen in the Inspector.
-- The harness works on the active boss; a tiny interface lets each boss list its debug attacks.
-- Smoke test boss 1.
+- The harness works on the active boss; forced attacks exist for boss 1 only until the second boss has skills (then a small interface lets each boss list its debug attacks).
+- Smoke test boss 1: all 8 forced attacks play the right clip, a natural run uses every clip, the phase 2 transition works (walk 4 to 6), 0 console errors.
 
 **M2 Second boss basics.**
 - Model prefab with agent, collider, layer, material, scale.
@@ -62,11 +62,7 @@ Add a second boss that fights in the same arena. Milestone 1 is only the basics:
 
 ## What I need from you
 
-1. **The asset.** Options, with my recommendation first:
-   - **A. TurtleShell from the pack already in the project (RPG Monster DUO PBR Polyart).** No download. It comes with Idle, Walk (forward, back, left, right), Run, two Attacks, Defend, GetHit, Die, Dizzy, Taunt and Victory animations and a Standard-shader material, so the hit flash works. It is small (about 1.6 m), so it needs scaling up. It is the safest way to get the plumbing working.
-   - **B. A Mixamo humanoid character.** Your Maw rig is Humanoid, so all your existing Maw animations can be reused on another humanoid; you would download only the new character and any new animations (the Mixamo login is yours).
-   - **C. Another pack or model.** Tell me where it is and its rig type.
-   The C# code does not depend on the model, so the model can be swapped later.
+1. **The asset.** Done: a Mixamo humanoid (`Nightshade J Friedrich`) with magic attack, cast, block, crouch, walk/run, react and death animations. Because it is Humanoid, the existing Maw animations also retarget onto it.
 2. **Boss concept:** name, theme, rough size, how it fights (melee, ranged, summoner, trapper), how it differs from boss 1.
 3. **Skill ideas:** three to five in rough words, and what phase 2 should change.
 4. **Animations:** for option A I can map the existing clips to skills; for B tell me what to download; any clip missing for a skill is the main thing that can block a skill.
