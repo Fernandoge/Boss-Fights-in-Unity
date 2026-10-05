@@ -13,6 +13,7 @@ namespace Bosses.First_Boss
         [Header("Movement Settings")]
         [SerializeField] private float moveSpeed;
         [SerializeField] private float rotationSpeed;
+        [SerializeField] private float rampUpTime = 1f;
         
         private bool wasSpawnedInPhase2;
 
@@ -38,6 +39,9 @@ namespace Bosses.First_Boss
             
             var currentAngle = 0f; // Track angle separately for smooth acceleration
             
+            // Each meteor starts spiralling out in its own direction instead of all heading the same way
+            var startAngle = Random.Range(0f, 2f * Mathf.PI);
+            
             while (duration > 0)
             {
                 // Disable collider in the last 0.5 seconds
@@ -49,21 +53,18 @@ namespace Bosses.First_Boss
                 {
                     var movementTime = elapsedTime - delay;
                     
-                    // Gradually increase radius over 0.3 seconds to prevent initial jump/teleport
-                    var radiusMultiplier = Mathf.Min(movementTime / 0.3f, 1f);
-                    var currentRadius = moveSpeed * randomSpeedMultiplier * radiusMultiplier;
-                    
-                    // Gradually increase rotation speed with quadratic ease-in for more noticeable acceleration
-                    var speedRampUp = Mathf.Min(movementTime / 0.25f, 1f);
-                    speedRampUp = speedRampUp * speedRampUp; // Square it for exponential acceleration (slow to fast)
-                    var currentRotationSpeed = rotationSpeed * 2f * speedRampUp * randomDirection;
+                    // Radius and rotation speed ease in together (smoothstep) over rampUpTime, so the meteor spirals out from its
+                    // spawn point with no dash and no sudden change of speed or direction when the ramp ends
+                    var easedProgress = Mathf.SmoothStep(0f, 1f, movementTime / rampUpTime);
+                    var currentRadius = moveSpeed * randomSpeedMultiplier * easedProgress;
+                    var currentRotationSpeed = rotationSpeed * 2f * easedProgress * randomDirection;
                     
                     // Accumulate angle based on current rotation speed (proper physics integration)
                     currentAngle += currentRotationSpeed * Time.deltaTime;
                     
                     // Calculate circular motion offset from spawn position
-                    var x = Mathf.Sin(currentAngle) * currentRadius;
-                    var z = Mathf.Cos(currentAngle) * currentRadius;
+                    var x = Mathf.Sin(startAngle + currentAngle) * currentRadius;
+                    var z = Mathf.Cos(startAngle + currentAngle) * currentRadius;
                     
                     transform.position = startPosition + new Vector3(x, 0, z);
                 }
