@@ -12,24 +12,17 @@ namespace Bosses.First_Boss
         public float LaunchTime;
     }
 
-    // Plans boulder lanes that run horizontally or vertically on screen, start inside the real walls of the map and never let two boulders meet
+    // Plans parallel boulder lanes along the screen's horizontal or vertical axis. Lanes are spread across the map with a guaranteed gap
+    // between them, so arrows never overlap and boulders can never meet. Each boulder starts inside the real wall at the end of its lane.
     public static class BoulderLanePlanner
     {
-        private const int MaxAttempts = 30;
-        private const int AimWideningSteps = 4;
-        private const int CandidatesPerLane = 30;
-        private const int MinMixedWallLanes = 3;
-        private const float SimulationStep = 0.1f;
-        private const float CollisionMargin = 1.5f;
-        private const float FallbackLaneGap = 4f;
         private const float WalkableScanStep = 1.5f;
         private const float WalkableSampleRadius = 2.5f;
         private const float WalkableHorizontalTolerance = 0.75f;
+        private const float LateralScanStep = 2f;
         private const float LateralKeyResolution = 1f;
-        private const float MinLaneLength = 25f;
-
-        // Four lane directions along the screen axes: 0 = right, 1 = left, 2 = up the screen, 3 = down the screen
-        private const int DirectionCount = 4;
+        private const float MinLaneLength = 30f;
+        private const float MinLaneGapFloor = 2f;
 
         public static Bounds GetNavMeshBounds()
         {
@@ -40,88 +33,126 @@ namespace Bosses.First_Boss
             return bounds;
         }
 
-        public static BoulderLane[] Plan(Bounds map, Vector3 playerPosition, int count, float radius, float speed,
-            float firstLaunchTime, float launchInterval, float aimSpread, out bool usedFallback)
+        public static BoulderLane[] Plan(Bounds map, float groundY, int count, float radius, float minLaneGap, float firstLaunchTime,
+            float launchInterval)
         {
-            usedFallback = false;
             GetScreenAxes(out Vector3 screenRight, out Vector3 screenForward);
             Dictionary<int, Vector2> walkableCache = new Dictionary<int, Vector2>();
-            List<BoulderLane> best = new List<BoulderLane>();
 
-            // Build the set one boulder at a time, so every new lane is checked against the ones already accepted.
-            // If no full set is found, aim wider and try again (the player may be standing in a corner)
-            for (int attempt = 0; attempt < MaxAttempts * AimWideningSteps; attempt++)
+            // Pick horizontal or vertical lanes at random; if one orientation cannot fit all lanes, try the other and keep the best
+            int firstOrientation = Random.Range(0, 2);
+            BoulderLane[] best = new BoulderLane[0];
+            for (int attempt = 0; attempt < 2; attempt++)
             {
-                float spread = aimSpread * (1 + attempt / MaxAttempts);
-                List<BoulderLane> lanes = new List<BoulderLane>();
-                for (int i = 0; i < count; i++)
+                int orientation = (firstOrientation + attempt) % 2;
+                BoulderLane[] lanes = PlanOrientation(map, walkableCache, screenRight, screenForward, orientation, groundY, count, radius,
+                    minLaneGap);
+                if (lanes.Length == count)
                 {
-                    for (int candidateTry = 0; candidateTry < CandidatesPerLane; candidateTry++)
-                    {
-                        int wall = Random.Range(0, DirectionCount);
-                        float lateral = GetPlayerLateral(playerPosition, wall, screenRight, screenForward) + Random.Range(-spread, spread);
-                        if (!TryCreateLane(map, walkableCache, screenRight, screenForward, playerPosition.y, wall, lateral, radius,
-                                firstLaunchTime + i * launchInterval, out BoulderLane candidate))
-                            continue;
-
-                        if (!CollidesWithAny(candidate, lanes, radius, speed))
-                        {
-                            lanes.Add(candidate);
-                            break;
-                        }
-                    }
-
-                    // No lane fits among the accepted ones; stop this attempt (boulders launch in order, so the set stays valid)
-                    if (lanes.Count <= i)
-                        break;
+                    best = lanes;
+                    break;
                 }
-
-                if (lanes.Count == count)
-                    return lanes.ToArray();
-                if (lanes.Count > best.Count)
+                if (lanes.Length > best.Length)
                     best = lanes;
             }
 
-            // Prefer a mixed-direction set with a boulder or two fewer over parallel lanes from a single wall
-            if (best.Count >= Mathf.Min(count, MinMixedWallLanes))
-                return best.ToArray();
-
-            usedFallback = true;
-            return PlanParallelFallback(map, walkableCache, screenRight, screenForward, playerPosition, count, radius, firstLaunchTime, launchInterval);
+            AssignRandomLaunchOrder(best, firstLaunchTime, launchInterval);
+            return best;
         }
 
-        // Parallel lanes from one wall can never cross, so this always produces a valid (possibly smaller) set
-        private static BoulderLane[] PlanParallelFallback(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 screenRight,
-            Vector3 screenForward, Vector3 playerPosition, int count, float radius, float firstLaunchTime, float launchInterval)
+        // Spreads the lanes randomly over the widest stretch of the map where lanes are long enough, keeping at least minLaneGap between them
+        private static BoulderLane[] PlanOrientation(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 screenRight,
+            Vector3 screenForward, int orientation, float groundY, int count, float radius, float minLaneGap)
         {
-            int wall = Random.Range(0, DirectionCount);
-            float pitch = radius * 2f + FallbackLaneGap;
-            float playerLateral = GetPlayerLateral(playerPosition, wall, screenRight, screenForward);
+            Vector3 travelAxis = orientation == 0 ? screenRight : screenForward;
+            Vector3 lateralAxis = orientation == 0 ? screenForward : screenRight;
 
-            List<BoulderLane> lanes = new List<BoulderLane>();
-            for (int i = 0; i < count; i++)
+            if (!TryFindLateralRun(map, walkableCache, travelAxis, lateralAxis, orientation, groundY, out float runStart, out float runEnd))
+                return new BoulderLane[0];
+
+            // If the stretch is too narrow for the full gap, shrink the gap down to a floor, then use fewer lanes
+            float span = runEnd - runStart;
+            float pitch = radius * 2f + minLaneGap;
+            int laneCount = count;
+            if (laneCount > 1 && span < (laneCount - 1) * pitch)
             {
-                float lateral = playerLateral + (i - (count - 1) / 2f) * pitch;
-                if (TryCreateLane(map, walkableCache, screenRight, screenForward, playerPosition.y, wall, lateral, radius,
-                        firstLaunchTime + i * launchInterval, out BoulderLane lane))
-                    lanes.Add(lane);
+                float shrunkPitch = span / (laneCount - 1);
+                if (shrunkPitch >= radius * 2f + MinLaneGapFloor)
+                    pitch = shrunkPitch;
+                else
+                {
+                    pitch = radius * 2f + MinLaneGapFloor;
+                    laneCount = Mathf.Max(1, Mathf.FloorToInt(span / pitch) + 1);
+                }
             }
 
-            // Always return at least the lane through the player
-            if (lanes.Count == 0 && TryCreateLane(map, walkableCache, screenRight, screenForward, playerPosition.y, wall, playerLateral,
-                    radius, firstLaunchTime, out BoulderLane center))
-                lanes.Add(center);
+            // Give the leftover width to the gaps before, between and after the lanes at random
+            float slack = Mathf.Max(0f, span - (laneCount - 1) * pitch);
+            float[] shares = new float[laneCount + 1];
+            float total = 0f;
+            for (int i = 0; i < shares.Length; i++)
+            {
+                shares[i] = Random.value;
+                total += shares[i];
+            }
+
+            List<BoulderLane> lanes = new List<BoulderLane>();
+            float lateral = runStart;
+            for (int i = 0; i < laneCount; i++)
+            {
+                lateral += slack * shares[i] / total;
+                bool isPositive = Random.value < 0.5f;
+                if (TryCreateLane(map, walkableCache, travelAxis, lateralAxis, orientation, groundY, lateral, isPositive, radius, out BoulderLane lane))
+                    lanes.Add(lane);
+                lateral += pitch;
+            }
             return lanes.ToArray();
         }
 
+        // Finds the longest continuous stretch of lateral positions where a lane would be long enough
+        private static bool TryFindLateralRun(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 travelAxis, Vector3 lateralAxis,
+            int orientation, float groundY, out float runStart, out float runEnd)
+        {
+            GetProjectedRange(map, lateralAxis, out float lateralMin, out float lateralMax);
+
+            runStart = 0f;
+            runEnd = 0f;
+            bool isFound = false;
+            float currentStart = 0f;
+            bool isInRun = false;
+            for (float lateral = lateralMin; lateral <= lateralMax; lateral += LateralScanStep)
+            {
+                bool isValid = TryGetWalkableRange(map, walkableCache, travelAxis, lateralAxis, orientation, groundY, lateral, out float low, out float high) &&
+                               high - low >= MinLaneLength;
+                if (isValid && !isInRun)
+                {
+                    isInRun = true;
+                    currentStart = lateral;
+                }
+
+                // A run ends at the last valid lateral position before the first invalid one (or at the end of the scan)
+                bool isRunEnding = isInRun && (!isValid || lateral + LateralScanStep > lateralMax);
+                if (!isRunEnding)
+                    continue;
+
+                float currentEnd = isValid ? lateral : lateral - LateralScanStep;
+                isInRun = false;
+                if (!isFound || currentEnd - currentStart > runEnd - runStart)
+                {
+                    runStart = currentStart;
+                    runEnd = currentEnd;
+                    isFound = true;
+                }
+            }
+            return isFound;
+        }
+
         // The boulder starts one radius inside the wall, where the walkable ground begins along the lane, and ends past the far wall
-        private static bool TryCreateLane(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 screenRight, Vector3 screenForward,
-            float groundY, int wall, float lateral, float radius, float launchTime, out BoulderLane lane)
+        private static bool TryCreateLane(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 travelAxis, Vector3 lateralAxis,
+            int orientation, float groundY, float lateral, bool isPositive, float radius, out BoulderLane lane)
         {
             lane = default;
-            GetWallAxes(wall, screenRight, screenForward, out Vector3 travelAxis, out Vector3 lateralAxis, out bool isPositive);
-
-            if (!TryGetWalkableRange(map, walkableCache, travelAxis, lateralAxis, groundY, wall, lateral, out float low, out float high) ||
+            if (!TryGetWalkableRange(map, walkableCache, travelAxis, lateralAxis, orientation, groundY, lateral, out float low, out float high) ||
                 high - low < MinLaneLength)
                 return false;
 
@@ -133,17 +164,16 @@ namespace Bosses.First_Boss
             {
                 Start = start,
                 Direction = isPositive ? travelAxis : -travelAxis,
-                MaxDistance = high - low + radius * 2f,
-                LaunchTime = launchTime
+                MaxDistance = high - low + radius * 2f
             };
             return true;
         }
 
         // Scans the NavMesh along the lane to find where walkable ground starts and ends; results are cached per lane
         private static bool TryGetWalkableRange(Bounds map, Dictionary<int, Vector2> walkableCache, Vector3 travelAxis, Vector3 lateralAxis,
-            float groundY, int wall, float lateral, out float low, out float high)
+            int orientation, float groundY, float lateral, out float low, out float high)
         {
-            int key = wall * 100000 + Mathf.RoundToInt(lateral / LateralKeyResolution);
+            int key = orientation * 100000 + Mathf.RoundToInt(lateral / LateralKeyResolution);
             if (walkableCache.TryGetValue(key, out Vector2 cached))
             {
                 low = cached.x;
@@ -151,18 +181,7 @@ namespace Bosses.First_Boss
                 return low <= high;
             }
 
-            // The map is a box in world space, so project its corners onto the travel axis to get the scan range
-            float axisMin = float.MaxValue;
-            float axisMax = float.MinValue;
-            for (int corner = 0; corner < 4; corner++)
-            {
-                float x = (corner & 1) == 0 ? map.min.x : map.max.x;
-                float z = (corner & 2) == 0 ? map.min.z : map.max.z;
-                float projected = Vector3.Dot(new Vector3(x, 0f, z), travelAxis);
-                axisMin = Mathf.Min(axisMin, projected);
-                axisMax = Mathf.Max(axisMax, projected);
-            }
-
+            GetProjectedRange(map, travelAxis, out float axisMin, out float axisMax);
             low = float.MaxValue;
             high = float.MinValue;
             for (float axis = axisMin; axis <= axisMax; axis += WalkableScanStep)
@@ -191,23 +210,32 @@ namespace Bosses.First_Boss
             return dx * dx + dz * dz < WalkableHorizontalTolerance * WalkableHorizontalTolerance;
         }
 
-        // Simulates both boulders and reports whether their centers ever get closer than touching distance
-        private static bool CollidesWithAny(BoulderLane candidate, List<BoulderLane> accepted, float radius, float speed)
+        // The map is a box in world space, so project its corners onto an axis to get the range along it
+        private static void GetProjectedRange(Bounds map, Vector3 axis, out float min, out float max)
         {
-            float minDistance = radius * 2f + CollisionMargin;
-            foreach (BoulderLane other in accepted)
+            min = float.MaxValue;
+            max = float.MinValue;
+            for (int corner = 0; corner < 4; corner++)
             {
-                float from = Mathf.Max(candidate.LaunchTime, other.LaunchTime);
-                float to = Mathf.Min(candidate.LaunchTime + candidate.MaxDistance / speed, other.LaunchTime + other.MaxDistance / speed);
-                for (float time = from; time <= to; time += SimulationStep)
-                {
-                    Vector3 a = candidate.Start + candidate.Direction * (speed * (time - candidate.LaunchTime));
-                    Vector3 b = other.Start + other.Direction * (speed * (time - other.LaunchTime));
-                    if ((a - b).sqrMagnitude < minDistance * minDistance)
-                        return true;
-                }
+                float x = (corner & 1) == 0 ? map.min.x : map.max.x;
+                float z = (corner & 2) == 0 ? map.min.z : map.max.z;
+                float projected = Vector3.Dot(new Vector3(x, 0f, z), axis);
+                min = Mathf.Min(min, projected);
+                max = Mathf.Max(max, projected);
             }
-            return false;
+        }
+
+        // Shuffles the lanes so the order the arrows appear in (and the boulders spawn in) is random
+        private static void AssignRandomLaunchOrder(BoulderLane[] lanes, float firstLaunchTime, float launchInterval)
+        {
+            for (int i = lanes.Length - 1; i > 0; i--)
+            {
+                int swapIndex = Random.Range(0, i + 1);
+                (lanes[i], lanes[swapIndex]) = (lanes[swapIndex], lanes[i]);
+            }
+
+            for (int i = 0; i < lanes.Length; i++)
+                lanes[i].LaunchTime = firstLaunchTime + i * launchInterval;
         }
 
         // Horizontal on screen is the camera's right axis and vertical is its forward axis, both flattened onto the ground
@@ -224,17 +252,5 @@ namespace Bosses.First_Boss
 
             screenForward = Vector3.Cross(screenRight, Vector3.up);
         }
-
-        // Walls 0 and 1 travel along the screen's horizontal axis, walls 2 and 3 along its vertical axis
-        private static void GetWallAxes(int wall, Vector3 screenRight, Vector3 screenForward, out Vector3 travelAxis,
-            out Vector3 lateralAxis, out bool isPositive)
-        {
-            travelAxis = wall < 2 ? screenRight : screenForward;
-            lateralAxis = wall < 2 ? screenForward : screenRight;
-            isPositive = wall % 2 == 0;
-        }
-
-        private static float GetPlayerLateral(Vector3 playerPosition, int wall, Vector3 screenRight, Vector3 screenForward) =>
-            Vector3.Dot(playerPosition, wall < 2 ? screenForward : screenRight);
     }
 }

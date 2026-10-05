@@ -44531,14 +44531,14 @@ MonoBehaviour:
   boulderDamage: 1
   _boulderPrefab: {fileID: 2825438656326539346, guid: e5084c7ce8ac2d8438296d27f28781ea, type: 3}
   _boulderIndicatorPrefab: {fileID: 222205861945891569, guid: b3ed554e1da2244488d3c2ef4a92b6f3, type: 3}
-  _boulderCount: 3
-  _boulderPhase2ExtraCount: 2
+  _boulderCount: 5
+  _boulderPhase2ExtraCount: 0
   _boulderRadius: 3.2
   _boulderSpeed: 9
   _boulderArrowInterval: 0.7
   _boulderLaunchDelay: 1
   _boulderLaunchInterval: 0.9
-  _boulderAimSpread: 6
+  _boulderMinLaneGap: 4
   _intermissionCenterPosition: {fileID: 0}
   _slimePositions: []
   _slimes: []

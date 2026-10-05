@@ -105,7 +105,7 @@ namespace Bosses.First_Boss
         [SerializeField] private float _boulderArrowInterval;
         [SerializeField] private float _boulderLaunchDelay;
         [SerializeField] private float _boulderLaunchInterval;
-        [SerializeField] private float _boulderAimSpread;
+        [SerializeField] private float _boulderMinLaneGap;
 
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
@@ -674,9 +674,8 @@ namespace Bosses.First_Boss
             
             // Rocks launch in the same order the arrows appear, after the last arrow plus a short delay
             float firstLaunchTime = (count - 1) * _boulderArrowInterval + _boulderLaunchDelay;
-            bool usedFallback;
-            BoulderLane[] lanes = BoulderLanePlanner.Plan(BoulderLanePlanner.GetNavMeshBounds(), player.position, count,
-                _boulderRadius, _boulderSpeed, firstLaunchTime, _boulderLaunchInterval, _boulderAimSpread, out usedFallback);
+            BoulderLane[] lanes = BoulderLanePlanner.Plan(BoulderLanePlanner.GetNavMeshBounds(), player.position.y, count,
+                _boulderRadius, _boulderMinLaneGap, firstLaunchTime, _boulderLaunchInterval);
 
             BoulderRollSequence sequence = new GameObject("BoulderRollSequence").AddComponent<BoulderRollSequence>();
             sequence.Begin(lanes, _boulderIndicatorPrefab, _boulderPrefab, _boulderRadius, _boulderSpeed, boulderDamage, _boulderArrowInterval);
