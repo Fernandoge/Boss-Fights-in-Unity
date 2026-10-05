@@ -27,6 +27,7 @@ namespace Bosses.First_Boss
         Meteors,
         RockShower,
         FissureLines,
+        BoulderRoll,
         Cataclysm
     }
 
@@ -93,6 +94,20 @@ namespace Bosses.First_Boss
         [SerializeField] private float _fissurePhase2AngleBetweenLines;
         [SerializeField] private float _fissurePhase2TelegraphTime;
 
+        [Header("Boulder Roll")]
+        public int boulderDamage;
+        [SerializeField] private BoulderProjectile _boulderPrefab;
+        [SerializeField] private SkillIndicator _boulderIndicatorPrefab;
+        [SerializeField] private GameObject _boulderBoundaries;
+        [SerializeField] private int _boulderCount;
+        [SerializeField] private int _boulderPhase2ExtraCount;
+        [SerializeField] private float _boulderRadius;
+        [SerializeField] private float _boulderSpeed;
+        [SerializeField] private float _boulderArrowInterval;
+        [SerializeField] private float _boulderLaunchDelay;
+        [SerializeField] private float _boulderLaunchInterval;
+        [SerializeField] private float _boulderAimSpread;
+
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
         [SerializeField] private Transform[] _slimePositions; // 4 positions in the scene
@@ -131,6 +146,7 @@ namespace Bosses.First_Boss
         private static readonly int Meteors = Animator.StringToHash("Meteors");
         private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
         private static readonly int Fissure_Lines = Animator.StringToHash("FissureLines");
+        private static readonly int Boulder_Roll = Animator.StringToHash("BoulderRoll");
         private static readonly int Cataclysm = Animator.StringToHash("Cataclysm");
         private static readonly int Grab_Slimes = Animator.StringToHash("GrabSlimes");
         private static readonly int BackFlip = Animator.StringToHash("BackFlip");
@@ -196,7 +212,7 @@ namespace Bosses.First_Boss
                 int attackIndex;
                 do
                 {
-                    attackIndex = Random.Range(0, 7); // 7 different attacks
+                    attackIndex = Random.Range(0, 8); // 8 different attacks
                     
                     // If meteors are selected but still active, reroll
                     if (attackIndex == 4 && _areMeteorsActive)
@@ -240,6 +256,9 @@ namespace Bosses.First_Boss
                     break;
                 case FirstBossAttack.FissureLines:
                     StartFissureLines();
+                    break;
+                case FirstBossAttack.BoulderRoll:
+                    StartBoulderRoll();
                     break;
                 case FirstBossAttack.Cataclysm:
                     StartCataclysm();
@@ -632,6 +651,30 @@ namespace Bosses.First_Boss
 
         private float GetFissureTelegraphTime() => IsInSecondPhase ? _fissurePhase2TelegraphTime : _fissureTelegraphTime;
 
+        /// *** Skill 9-1: Boulder Roll *** ///
+
+        private void StartBoulderRoll()
+        {
+            transform.LookAt(player);
+            anim.SetTrigger(Boulder_Roll);
+        }
+
+        // Used in Boulder Stomp animation (stomp impact)
+        public void BoulderRollStart()
+        {
+            int count = IsInSecondPhase ? _boulderCount + _boulderPhase2ExtraCount : _boulderCount;
+            
+            // Rocks launch in the same order the arrows appear, after the last arrow plus a short delay
+            float firstLaunchTime = (count - 1) * _boulderArrowInterval + _boulderLaunchDelay;
+            Bounds arena = _boulderBoundaries.GetComponent<Renderer>().bounds;
+            bool usedFallback;
+            BoulderLane[] lanes = BoulderLanePlanner.Plan(arena, player.position, count, _boulderRadius, _boulderSpeed,
+                firstLaunchTime, _boulderLaunchInterval, _boulderAimSpread, out usedFallback);
+
+            BoulderRollSequence sequence = new GameObject("BoulderRollSequence").AddComponent<BoulderRollSequence>();
+            sequence.Begin(lanes, _boulderIndicatorPrefab, _boulderPrefab, _boulderRadius, _boulderSpeed, boulderDamage, _boulderArrowInterval);
+        }
+        
         /// *** Phase 2 Intermission *** ///
 
         // Called in Agony animation (phase 2 start animation)

@@ -12,7 +12,10 @@ namespace Debugging
         [SerializeField] private float _messageDuration = 2f;
 
         private static readonly KeyCode[] AttackKeys =
-            { KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4, KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8 };
+        {
+            KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5,
+            KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0
+        };
         private static readonly FirstBossAttack[] Attacks = (FirstBossAttack[])Enum.GetValues(typeof(FirstBossAttack));
 
         private GUIStyle _style;
@@ -26,17 +29,17 @@ namespace Debugging
 
         private void Update()
         {
-            for (int i = 0; i < AttackKeys.Length; i++)
+            for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                 if (Input.GetKeyDown(AttackKeys[i]))
                     ForceAttack(Attacks[i]);
 
-            if (Input.GetKeyDown(KeyCode.F9))
+            if (Input.GetKeyDown(KeyCode.F1))
                 ToggleAutoAttacks();
-            if (Input.GetKeyDown(KeyCode.F10))
+            if (Input.GetKeyDown(KeyCode.F2))
                 ToggleInvulnerable();
-            if (Input.GetKeyDown(KeyCode.F11))
+            if (Input.GetKeyDown(KeyCode.F3))
                 TogglePhaseTwoSkillVariants();
-            if (Input.GetKeyDown(KeyCode.F12))
+            if (Input.GetKeyDown(KeyCode.F4))
                 ToggleSlowMotion();
             if (Input.GetKeyDown(KeyCode.Tab))
                 _isHelpVisible = !_isHelpVisible;
@@ -122,9 +125,9 @@ namespace Debugging
         private static string BuildHelpText()
         {
             string text = "<b>Debug harness</b> (Tab hides)\n";
-            for (int i = 0; i < AttackKeys.Length; i++)
-                text += AttackKeys[i] + "  " + Attacks[i] + "\n";
-            text += "F9  Toggle boss auto attacks\nF10 Toggle player invulnerable\nF11 Toggle phase 2 skill variants\nF12 Toggle slow motion";
+            for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
+                text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
+            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion";
             return text;
         }
     }
