@@ -6,9 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Unity 6000.3.25f1 (Unity 6.3 LTS) boss-fight game. The Unity project lives in `BossFights/` (open that folder in Unity Hub, not the repo root). All gameplay code is under `BossFights/Assets/Scripts/`. The main scene is `BossFights/Assets/Scenes/TestScene.unity`.
 
-There is no test suite or lint step, and Claude cannot playtest or verify Animator/scene wiring — ask the user to playtest and report results. The C# solution is `BossFights/BossFights.sln` (Rider is the configured IDE).
+There is no lint step and no committed test suite. The C# solution is `BossFights/BossFights.sln` (Rider is the configured IDE).
 
-**Compile check:** after editing C# files, verify compilation with Unity's batch mode (the editor must be closed, since a project can only be open once; the project path contains a space, so it must be quoted):
+## Unity CLI (driving the open Editor)
+
+The `unity` CLI (winget `Unity.CLI`, at `%LOCALAPPDATA%\Microsoft\WindowsApps`, may need adding to `PATH`) talks to the open Editor through the `com.unity.pipeline` package (server on port 7800, no sign-in needed). Run it from `BossFights/`. `unity status` shows the connected Editor; `unity list` lists the ~160 tools; call a tool as `unity command <tool> --param value`. In Git Bash set `MSYS_NO_PATHCONV=1` or hierarchy paths like `/Player` get rewritten. Flags use underscores (`--save_path`); a tool called without arguments names its first missing required parameter.
+
+**After editing C#:** `unity recompile`, poll `unity command recompile_status` until `completed`, then `unity command console_status` — `compilationFailed: false` and 0 errors means it compiled; `unity command console` shows the entries. Tool failures are also logged to the console, so clear it (`clear_console`) before judging errors.
+
+**Verifying behaviour (tested):**
+- `get_scene_hierarchy`, `find_gameobjects`, `get_serialized_fields --target <path> --component <Type>` (a GameObject target needs `--component`), `get_animator_controller --controller <asset path>`.
+- Playtest: `editor_play`, drive the player with `eval` (e.g. `NavMeshAgent.SetDestination`; `eval` takes statements and needs `return ...;`), `set_timescale --scale N` (reset to 1 afterwards), `capture_game_view --save_path Assets/<folder>/x.png --width 960 --height 540`, then Read the PNG to look at the game. Always `editor_stop` when done. Save paths must be inside the project — delete captures afterwards.
+- `simulate_key` / `simulate_pointer` do NOT work: they need the Input System package and this project uses the old Input Manager.
+- Animator editing works (`add_animator_parameter`, `add_animator_state --isDefault`, `add_animator_transition --fromState --toState --conditions`, `create_animation_clip`, `set_animation_curve --keys`), as do scene, prefab (`create_prefab --source`, `instantiate_prefab --prefab`, `apply_prefab_overrides --instance`) and asset tools (`rename_asset --new_name`, `copy_asset`/`move_asset --destination`, `find_assets`; use `--type RuntimeAnimatorController` because `AnimatorController` returns nothing). Animation events still need to be checked by looking at the result.
+- Tools that change project settings, packages or delete assets refuse without `--confirm true`; use `--dry_run true` first to preview. Settings take `--settings '{...}'`.
+- Tests: the Test Framework package is not installed. To use it, `package_add --identifier com.unity.test-framework --confirm true`, then `list_tests` / `run_tests --mode EditMode` (verified working).
+- Do experiments in a throwaway folder (e.g. `Assets/_CliTest`) and delete it afterwards. Save the scene (`save_scene`) after scene edits and leave `TestScene` not dirty.
+
+Fallback when the Editor is closed: batch mode (the path contains a space, so it must be quoted):
 
 ```powershell
 $log = "<scratchpad>\unity-compile.log"
@@ -16,7 +31,7 @@ $args2 = '-batchmode -nographics -quit -projectPath "E:\Git Projects\Boss-Fights
 Start-Process "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" -ArgumentList $args2 -Wait -PassThru
 ```
 
-Exit code 0 with no `error CS` lines in the log means it compiled. If Unity is running (`Get-Process Unity`) or `BossFights/Temp/UnityLockfile` exists, skip the check and ask the user to confirm compilation in the editor instead.
+Exit code 0 with no `error CS` lines means it compiled. Never run batch mode while the Editor has the project open (`Get-Process Unity`, `BossFights/Temp/UnityLockfile`).
 
 Branches: work happens on `dev`; `main` is the PR/merge target.
 
@@ -32,7 +47,7 @@ The game is player-vs-boss encounters driven by Unity's NavMesh, Animator state 
 
 - **Interfaces** (`Interfaces/`): `IDamageableByPlayer` (`TakeDamage(int)`) and `ICounterable` (`TriggerCounter()`) are how the player's attacks talk to bosses/minions.
 
-- **Animation is load-bearing**: most skill sequencing runs through Animator triggers + animation events calling public methods on the scripts (e.g. `BasicAttack`, `ActivateSkillIndicator`, `StopPerformingAttack`). When adding a skill, the C# side is only half the work — Animator parameters, states, and event hookups must be done in the editor by the user. Always call this out.
+- **Animation is load-bearing**: most skill sequencing runs through Animator triggers + animation events calling public methods on the scripts (e.g. `BasicAttack`, `ActivateSkillIndicator`, `StopPerformingAttack`). When adding a skill, the C# side is only half the work — Animator parameters, states and transitions can be added through the Unity CLI (see above), but animation-event hookups on clips and anything visual still need to be checked in a playtest (screenshot via the CLI, or ask the user). Always call out what was and wasn't verified.
 
 - **Attack/skill pattern** (see `FirstBoss`): serialized tuning fields grouped by `[Header("Skill Name")]`, a static readonly Animator hash per skill, a trigger method, and animation-event callbacks. Skill telegraphs use `TriggerSkillWithIndicator()` from the base class.
 
