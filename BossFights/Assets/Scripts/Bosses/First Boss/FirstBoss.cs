@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Bosses.First_Boss.Slime;
+using Shared;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -65,7 +66,20 @@ namespace Bosses.First_Boss
         [SerializeField] private GameObject _meteorsIndicatorParent;
         [SerializeField] private int _meteorsAmount;
         [SerializeField] private float _meteorsMinDistance;
-        
+
+        [Header("Fissure Lines")]
+        public int fissureDamage;
+        [SerializeField] private SkillIndicator _fissureIndicatorPrefab;
+        [SerializeField] private FissureLine _fissureLinePrefab;
+        [SerializeField] private float _fissureLength;
+        [SerializeField] private float _fissureWidth;
+        [SerializeField] private int _fissureLineCount;
+        [SerializeField] private float _fissureAngleBetweenLines;
+        [SerializeField] private float _fissureTelegraphTime;
+        [SerializeField] private int _fissurePhase2ExtraLines;
+        [SerializeField] private float _fissurePhase2AngleBetweenLines;
+        [SerializeField] private float _fissurePhase2TelegraphTime;
+
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
         [SerializeField] private Transform[] _slimePositions; // 4 positions in the scene
@@ -86,7 +100,10 @@ namespace Bosses.First_Boss
         private int _lastAttackIndex = -1;
         private RockShowerPattern _selectedRockShowerPattern;
         private int _consecutiveNormalAttacks;
-        
+        private readonly List<SkillIndicator> _activeFissureIndicators = new();
+        private Vector3[] _fissureDirections;
+        private Vector3 _fissureOrigin;
+
         // Shell game tracking
         private IntermissionStone[] _intermissionStones; // All 4 stones
         private int _kickedStoneIndex; // Track which stone was kicked for punishment
@@ -100,11 +117,13 @@ namespace Bosses.First_Boss
         private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
         private static readonly int Meteors = Animator.StringToHash("Meteors");
         private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
+        private static readonly int Fissure_Lines = Animator.StringToHash("FissureLines");
         private static readonly int Cataclysm = Animator.StringToHash("Cataclysm");
         private static readonly int Grab_Slimes = Animator.StringToHash("GrabSlimes");
         private static readonly int BackFlip = Animator.StringToHash("BackFlip");
         private static readonly int IntermissionPunish = Animator.StringToHash("IntermissionPunish");
         private static readonly int RevealSlimeStones = Animator.StringToHash("RevealSlimeStones");
+        private const float FissureImpactAnimationTime = 0.72f; // Time of the FissureLinesErupt event in the Fissure Stomp clip
 
         /// *** Unity Events *** ///
 
@@ -164,7 +183,7 @@ namespace Bosses.First_Boss
                 int attackIndex;
                 do
                 {
-                    attackIndex = Random.Range(0, 6); // 6 different attacks
+                    attackIndex = Random.Range(0, 7); // 7 different attacks
                     
                     // If meteors are selected but still active, reroll
                     if (attackIndex == 4 && _areMeteorsActive)
@@ -197,6 +216,9 @@ namespace Bosses.First_Boss
                         break;
                     case 5:
                         StartRockShower();
+                        break;
+                    case 6:
+                        StartFissureLines();
                         break;
                 }
                 
@@ -526,8 +548,57 @@ namespace Bosses.First_Boss
             }
         }
         
+        /// *** Skill 8-1: Fissure Lines *** ///
+
+        private void StartFissureLines()
+        {
+            transform.LookAt(player);
+
+            // The stomp lands at FissureImpactAnimationTime, so slow the animation to match the telegraph duration
+            anim.speed = FissureImpactAnimationTime / GetFissureTelegraphTime();
+            anim.SetTrigger(Fissure_Lines);
+        }
+
+        // Used in Fissure Stomp animation (start of the telegraph)
+        public void FissureLinesTelegraph()
+        {
+            int lineCount = IsInSecondPhase ? _fissureLineCount + _fissurePhase2ExtraLines : _fissureLineCount;
+            float angleBetweenLines = IsInSecondPhase ? _fissurePhase2AngleBetweenLines : _fissureAngleBetweenLines;
+
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+            _fissureOrigin = transform.position;
+            _fissureDirections = new Vector3[lineCount];
+
+            for (int i = 0; i < lineCount; i++)
+            {
+                float angle = (i - (lineCount - 1) / 2f) * angleBetweenLines;
+                _fissureDirections[i] = Quaternion.Euler(0f, angle, 0f) * forward.normalized;
+
+                SkillIndicator indicator = Instantiate(_fissureIndicatorPrefab);
+                indicator.ShowLine(_fissureOrigin, _fissureDirections[i], _fissureLength, _fissureWidth, GetFissureTelegraphTime());
+                _activeFissureIndicators.Add(indicator);
+            }
+        }
+
+        // Used in Fissure Stomp animation (stomp impact)
+        public void FissureLinesErupt()
+        {
+            anim.speed = 1f;
+
+            foreach (SkillIndicator indicator in _activeFissureIndicators)
+                if (indicator)
+                    indicator.Hide();
+            _activeFissureIndicators.Clear();
+
+            foreach (Vector3 direction in _fissureDirections)
+                Instantiate(_fissureLinePrefab).Erupt(_fissureOrigin, direction, _fissureLength, _fissureWidth);
+        }
+
+        private float GetFissureTelegraphTime() => IsInSecondPhase ? _fissurePhase2TelegraphTime : _fissureTelegraphTime;
+
         /// *** Phase 2 Intermission *** ///
-        
+
         // Called in Agony animation (phase 2 start animation)
         private IEnumerator GoToCenterForIntermission()
         {
