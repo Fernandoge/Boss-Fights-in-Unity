@@ -19,6 +19,7 @@ namespace Shared
         private float _duration;
         private float _elapsed;
         private bool _isArrowLane;
+        private bool _hideWhenFilled = true;
 
         private void Awake()
         {
@@ -31,9 +32,12 @@ namespace Shared
         {
             _elapsed += Time.deltaTime;
 
-            // Arrow lanes stay until Hide() is called by their owner; the lifetime is only a safety net
-            if (_isArrowLane)
+            // Arrow lanes (and lines that stay after filling) wait for Hide() from their owner; the lifetime is only a safety net
+            if (_isArrowLane || !_hideWhenFilled)
             {
+                if (!_isArrowLane)
+                    ApplyFill(Mathf.Clamp01(_elapsed / _duration));
+
                 if (_elapsed >= _maxArrowLaneLifetime)
                     Hide();
                 return;
@@ -46,10 +50,11 @@ namespace Shared
         }
 
         // The line starts at the origin and extends along the direction; the fill sweeps from the origin outward
-        public void ShowLine(Vector3 origin, Vector3 direction, float length, float width, float duration)
+        public void ShowLine(Vector3 origin, Vector3 direction, float length, float width, float duration, bool hideWhenFilled = true)
         {
             _duration = Mathf.Max(duration, 0.01f);
             _isArrowLane = false;
+            _hideWhenFilled = hideWhenFilled;
             Place(origin, direction, length, width);
             _propertyBlock.SetFloat(Pattern_Mode, 0f);
             ApplyFill(0f);

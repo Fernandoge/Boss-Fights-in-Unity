@@ -9,7 +9,7 @@
 **Pieces**
 - `Shared/SkillIndicator.cs` + `Shaders/SkillIndicator.shader`: `ShowArrowLane` draws scrolling chevrons along a lane and stays until `Hide()`.
 - `BoulderLanePlanner.cs`, `BoulderRollSequence.cs` (shows the arrows and launches the boulders on a timer, then removes itself), `BoulderProjectile.cs` (moves, rolls, damages, breaks).
-- `FirstBoss.cs`: `[Header("Boulder Roll")]` fields, `StartBoulderRoll()`, animation event `BoulderRollStart`. Attack `BoulderRoll` in `FirstBossAttack` (index 7 in the random pool).
+- `FirstBoss.cs`: `[Header("Boulder Roll")]` fields, `StartBoulderRoll()`, animation event `BoulderRollStart`. Attack `BoulderRoll` in `FirstBossAttack` (in the random pool; harness key 7).
 - Animator: trigger `BoulderRoll`, state `Boulder Roll` using `Boulder Stomp.anim` (copy of `Stomp.anim` with only the `BoulderRollStart` event at 0.72 s).
 - Prefabs in `Prefabs/Characters/Bosses/`: `Boulder`, `BoulderBreak` (uses `FissureDust`); the arrows reuse the `FissureIndicator` prefab. Values live on the `First Boss` prefab.
 

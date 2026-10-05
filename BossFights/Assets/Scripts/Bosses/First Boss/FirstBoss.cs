@@ -23,7 +23,6 @@ namespace Bosses.First_Boss
         FastRun,
         JumpAttack,
         RockThrow,
-        FrontalAttack,
         Meteors,
         RockShower,
         FissureLines,
@@ -66,11 +65,6 @@ namespace Bosses.First_Boss
         [SerializeField] private float _rockShowerSpeed;
         [SerializeField] private RockShowerPattern[] _rockShowerPatterns;
 
-        [Header("Frontal Attack")] 
-        [SerializeField] private GameObject _frontalAttackParticles;
-        [SerializeField] private GameObject _frontalAttackSkillIndicator;
-        [SerializeField] private float _frontalAimVariance;
-
         [Header("Meteors")] 
         public int meteorsDamage;
         public float meteorsDuration;
@@ -93,6 +87,7 @@ namespace Bosses.First_Boss
         [SerializeField] private int _fissurePhase2ExtraLines;
         [SerializeField] private float _fissurePhase2AngleBetweenLines;
         [SerializeField] private float _fissurePhase2TelegraphTime;
+        [SerializeField] private float _fissureHoldAfterFillTime;
 
         [Header("Boulder Roll")]
         public int boulderDamage;
@@ -141,7 +136,6 @@ namespace Bosses.First_Boss
         private static readonly int Fast_Run = Animator.StringToHash("FastRun");
         private static readonly int Melee_Attack = Animator.StringToHash("MeleeAttack");
         private static readonly int Rock_Throw = Animator.StringToHash("RockThrow");
-        private static readonly int Frontal_Attack = Animator.StringToHash("FrontalAttack");
         private static readonly int Meteors = Animator.StringToHash("Meteors");
         private static readonly int Rock_Shower = Animator.StringToHash("RockShower");
         private static readonly int Fissure_Lines = Animator.StringToHash("FissureLines");
@@ -151,6 +145,7 @@ namespace Bosses.First_Boss
         private static readonly int BackFlip = Animator.StringToHash("BackFlip");
         private static readonly int IntermissionPunish = Animator.StringToHash("IntermissionPunish");
         private static readonly int RevealSlimeStones = Animator.StringToHash("RevealSlimeStones");
+        private const float FissureTelegraphAnimationTime = 0.08f; // Time of the FissureLinesTelegraph event in the Fissure Stomp clip
         private const float FissureImpactAnimationTime = 0.72f; // Time of the FissureLinesErupt event in the Fissure Stomp clip
 
         public FirstBossAttack? DebugOnlyAttack { get; set; }
@@ -220,10 +215,10 @@ namespace Bosses.First_Boss
                 int attackIndex;
                 do
                 {
-                    attackIndex = Random.Range(0, 8); // 8 different attacks
+                    attackIndex = Random.Range(0, 7); // 7 different attacks
                     
                     // If meteors are selected but still active, reroll
-                    if (attackIndex == 4 && _areMeteorsActive)
+                    if (attackIndex == (int)FirstBossAttack.Meteors && _areMeteorsActive)
                         continue;
                     
                     // Break if we found a valid attack
@@ -252,9 +247,6 @@ namespace Bosses.First_Boss
                     break;
                 case FirstBossAttack.RockThrow:
                     StartThrowingRocks();
-                    break;
-                case FirstBossAttack.FrontalAttack:
-                    StartFrontalAttack();
                     break;
                 case FirstBossAttack.Meteors:
                     StartMeteors();
@@ -521,14 +513,6 @@ namespace Bosses.First_Boss
             bulletScript.Shoot(speed, rock.transform.position, direction);
         }
 
-        /// *** Skill 5-1: Frontal Attack *** ///
-        
-        private void StartFrontalAttack()
-        {
-            LookAtWithVariance(player, _frontalAimVariance);
-            TriggerSkillWithIndicator(Frontal_Attack, _frontalAttackSkillIndicator, _frontalAttackParticles);
-        }
-
         /// *** Skill 6-1: Skill Meteors *** ///
 
         private void StartMeteors()
@@ -613,8 +597,9 @@ namespace Bosses.First_Boss
         {
             transform.LookAt(player);
 
-            // The stomp lands at FissureImpactAnimationTime, so slow the animation to match the telegraph duration
-            anim.speed = FissureImpactAnimationTime / GetFissureTelegraphTime();
+            // The indicator fills for the telegraph time, then stays full for a short hold before the spikes erupt. The time between the two
+            // animation events must equal that, so scale the animation speed to fit
+            anim.speed = (FissureImpactAnimationTime - FissureTelegraphAnimationTime) / (GetFissureTelegraphTime() + _fissureHoldAfterFillTime);
             anim.SetTrigger(Fissure_Lines);
         }
 
@@ -635,7 +620,8 @@ namespace Bosses.First_Boss
                 _fissureDirections[i] = Quaternion.Euler(0f, angle, 0f) * forward.normalized;
 
                 SkillIndicator indicator = Instantiate(_fissureIndicatorPrefab);
-                indicator.ShowLine(GetFissureLineStart(_fissureDirections[i]), _fissureDirections[i], _fissureLength, _fissureWidth, GetFissureTelegraphTime());
+                indicator.ShowLine(GetFissureLineStart(_fissureDirections[i]), _fissureDirections[i], _fissureLength, _fissureWidth,
+                    GetFissureTelegraphTime(), false);
                 _activeFissureIndicators.Add(indicator);
             }
         }
