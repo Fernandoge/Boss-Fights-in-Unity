@@ -8,6 +8,9 @@ Shader "Indicators/SkillIndicator"
         _Fill ("Fill", Range(0, 1)) = 0
         _EdgeWidth ("Edge Width (world units)", Range(0, 0.5)) = 0.08
         _Size ("Size (width, length)", Vector) = (1, 1, 0, 0)
+        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows)", Float) = 0
+        _ArrowSpacing ("Arrow spacing (world units)", Float) = 6
+        _ArrowSpeed ("Arrow scroll speed (world units / s)", Float) = 8
     }
     SubShader
     {
@@ -41,6 +44,9 @@ Shader "Indicators/SkillIndicator"
             float _Fill;
             float _EdgeWidth;
             float4 _Size;
+            float _Pattern;
+            float _ArrowSpacing;
+            float _ArrowSpeed;
 
             v2f vert (appdata v)
             {
@@ -52,11 +58,24 @@ Shader "Indicators/SkillIndicator"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = lerp(_BaseColor, _FillColor, step(i.uv.y, _Fill));
+                fixed4 col;
+                if (_Pattern > 0.5)
+                {
+                    // Chevrons pointing along +length, scrolling forward. Position in world units across (x) and along (y) the lane
+                    float2 p = float2((i.uv.x - 0.5) * _Size.x, i.uv.y * _Size.y);
+                    float phase = frac((p.y + abs(p.x) * 0.9 - _Time.y * _ArrowSpeed) / _ArrowSpacing);
+                    float arrow = step(phase, 0.3);
+                    col = lerp(_BaseColor, _FillColor, arrow);
+                    col.rgb += arrow * 0.25;
+                }
+                else
+                {
+                    col = lerp(_BaseColor, _FillColor, step(i.uv.y, _Fill));
 
-                // Bright band at the leading edge of the fill, constant width in world units
-                float frontDistance = abs(i.uv.y - _Fill) * _Size.y;
-                col.rgb += step(frontDistance, 0.15) * step(0.001, _Fill) * step(_Fill, 0.999) * 0.35;
+                    // Bright band at the leading edge of the fill, constant width in world units
+                    float frontDistance = abs(i.uv.y - _Fill) * _Size.y;
+                    col.rgb += step(frontDistance, 0.15) * step(0.001, _Fill) * step(_Fill, 0.999) * 0.35;
+                }
 
                 // Border, constant thickness in world units regardless of the indicator size
                 float2 edgeDistance = min(i.uv, 1.0 - i.uv) * _Size.xy;

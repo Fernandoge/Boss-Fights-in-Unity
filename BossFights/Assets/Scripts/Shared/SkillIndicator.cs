@@ -7,15 +7,18 @@ namespace Shared
     {
         [SerializeField] private float _groundOffset = 0.05f;
         [SerializeField] private float _lingerAfterFill = 0.1f;
+        [SerializeField] private float _maxArrowLaneLifetime = 20f;
 
         private static Mesh _lineMesh;
         private static readonly int Fill_Amount = Shader.PropertyToID("_Fill");
         private static readonly int Indicator_Size = Shader.PropertyToID("_Size");
+        private static readonly int Pattern_Mode = Shader.PropertyToID("_Pattern");
 
         private MeshRenderer _meshRenderer;
         private MaterialPropertyBlock _propertyBlock;
         private float _duration;
         private float _elapsed;
+        private bool _isArrowLane;
 
         private void Awake()
         {
@@ -27,6 +30,15 @@ namespace Shared
         private void Update()
         {
             _elapsed += Time.deltaTime;
+
+            // Arrow lanes stay until Hide() is called by their owner; the lifetime is only a safety net
+            if (_isArrowLane)
+            {
+                if (_elapsed >= _maxArrowLaneLifetime)
+                    Hide();
+                return;
+            }
+
             ApplyFill(Mathf.Clamp01(_elapsed / _duration));
 
             if (_elapsed >= _duration + _lingerAfterFill)
@@ -37,6 +49,25 @@ namespace Shared
         public void ShowLine(Vector3 origin, Vector3 direction, float length, float width, float duration)
         {
             _duration = Mathf.Max(duration, 0.01f);
+            _isArrowLane = false;
+            Place(origin, direction, length, width);
+            _propertyBlock.SetFloat(Pattern_Mode, 0f);
+            ApplyFill(0f);
+        }
+
+        // A lane of scrolling arrows pointing along the direction that stays until Hide() is called
+        public void ShowArrowLane(Vector3 origin, Vector3 direction, float length, float width)
+        {
+            _isArrowLane = true;
+            Place(origin, direction, length, width);
+            _propertyBlock.SetFloat(Pattern_Mode, 1f);
+            ApplyFill(0f);
+        }
+
+        public void Hide() => Destroy(gameObject);
+
+        private void Place(Vector3 origin, Vector3 direction, float length, float width)
+        {
             _elapsed = 0f;
 
             direction.y = 0f;
@@ -47,10 +78,7 @@ namespace Shared
 
             _meshRenderer.GetPropertyBlock(_propertyBlock);
             _propertyBlock.SetVector(Indicator_Size, new Vector4(width, length, 0f, 0f));
-            ApplyFill(0f);
         }
-
-        public void Hide() => Destroy(gameObject);
 
         private void ApplyFill(float fill)
         {
