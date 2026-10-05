@@ -79,6 +79,7 @@ namespace Bosses.First_Boss
         [SerializeField] private int _fissurePhase2ExtraLines;
         [SerializeField] private float _fissurePhase2AngleBetweenLines;
         [SerializeField] private float _fissurePhase2TelegraphTime;
+        [SerializeField] private bool _debugOnlyUseFissureLines;
 
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
@@ -173,7 +174,14 @@ namespace Bosses.First_Boss
         protected override void PerformAttack()
         {
             base.PerformAttack();
-            
+
+            // Debug switch to review the skill on its own
+            if (_debugOnlyUseFissureLines)
+            {
+                StartFissureLines();
+                return;
+            }
+
             // Check if it's time to trigger Cataclysm
             if (_consecutiveNormalAttacks >= 3)
                 StartCataclysm();
