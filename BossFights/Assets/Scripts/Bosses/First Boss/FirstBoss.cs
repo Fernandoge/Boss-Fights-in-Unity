@@ -98,7 +98,6 @@ namespace Bosses.First_Boss
         public int boulderDamage;
         [SerializeField] private BoulderProjectile _boulderPrefab;
         [SerializeField] private SkillIndicator _boulderIndicatorPrefab;
-        [SerializeField] private GameObject _boulderBoundaries;
         [SerializeField] private int _boulderCount;
         [SerializeField] private int _boulderPhase2ExtraCount;
         [SerializeField] private float _boulderRadius;
@@ -154,6 +153,8 @@ namespace Bosses.First_Boss
         private static readonly int RevealSlimeStones = Animator.StringToHash("RevealSlimeStones");
         private const float FissureImpactAnimationTime = 0.72f; // Time of the FissureLinesErupt event in the Fissure Stomp clip
 
+        public FirstBossAttack? DebugOnlyAttack { get; set; }
+
         /// *** Unity Events *** ///
 
         protected override void Start()
@@ -202,6 +203,13 @@ namespace Bosses.First_Boss
         protected override void PerformAttack()
         {
             base.PerformAttack();
+
+            // Debug harness: repeat a single attack to test and tune it
+            if (DebugOnlyAttack.HasValue)
+            {
+                StartAttack(DebugOnlyAttack.Value);
+                return;
+            }
 
             // Check if it's time to trigger Cataclysm
             if (_consecutiveNormalAttacks >= 3)
@@ -666,10 +674,9 @@ namespace Bosses.First_Boss
             
             // Rocks launch in the same order the arrows appear, after the last arrow plus a short delay
             float firstLaunchTime = (count - 1) * _boulderArrowInterval + _boulderLaunchDelay;
-            Bounds arena = _boulderBoundaries.GetComponent<Renderer>().bounds;
             bool usedFallback;
-            BoulderLane[] lanes = BoulderLanePlanner.Plan(arena, player.position, count, _boulderRadius, _boulderSpeed,
-                firstLaunchTime, _boulderLaunchInterval, _boulderAimSpread, out usedFallback);
+            BoulderLane[] lanes = BoulderLanePlanner.Plan(BoulderLanePlanner.GetNavMeshBounds(), player.position, count,
+                _boulderRadius, _boulderSpeed, firstLaunchTime, _boulderLaunchInterval, _boulderAimSpread, out usedFallback);
 
             BoulderRollSequence sequence = new GameObject("BoulderRollSequence").AddComponent<BoulderRollSequence>();
             sequence.Begin(lanes, _boulderIndicatorPrefab, _boulderPrefab, _boulderRadius, _boulderSpeed, boulderDamage, _boulderArrowInterval);

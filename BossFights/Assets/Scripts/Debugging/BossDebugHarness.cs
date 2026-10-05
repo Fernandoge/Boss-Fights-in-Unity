@@ -11,6 +11,10 @@ namespace Debugging
         [SerializeField] private float _slowMotionScale = 0.25f;
         [SerializeField] private float _messageDuration = 2f;
 
+        [Header("Only Use One Attack")]
+        [SerializeField] private bool _onlyUseAttack;
+        [SerializeField] private FirstBossAttack _attackToUse = FirstBossAttack.BoulderRoll;
+
         private static readonly KeyCode[] AttackKeys =
         {
             KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5,
@@ -27,6 +31,8 @@ namespace Debugging
 
         private void Awake() => _helpText = BuildHelpText();
 
+        private void Start() => GameManager.Instance.firstBoss.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (FirstBossAttack?)null;
+
         private void Update()
         {
             for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
@@ -41,6 +47,8 @@ namespace Debugging
                 TogglePhaseTwoSkillVariants();
             if (Input.GetKeyDown(KeyCode.F4))
                 ToggleSlowMotion();
+            if (Input.GetKeyDown(KeyCode.F5))
+                ToggleOnlyUseAttack();
             if (Input.GetKeyDown(KeyCode.Tab))
                 _isHelpVisible = !_isHelpVisible;
 
@@ -86,6 +94,14 @@ namespace Debugging
             Show("Boss auto attacks " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON"));
         }
 
+        // The boss repeats the attack picked in the Inspector instead of its normal attack rotation
+        public void ToggleOnlyUseAttack()
+        {
+            FirstBoss boss = GameManager.Instance.firstBoss;
+            boss.DebugOnlyAttack = boss.DebugOnlyAttack.HasValue ? (FirstBossAttack?)null : _attackToUse;
+            Show("Only use attack: " + (boss.DebugOnlyAttack.HasValue ? boss.DebugOnlyAttack.Value.ToString() : "OFF"));
+        }
+
         public void ToggleInvulnerable()
         {
             GameManager.Instance.player.DebugInvulnerable = !GameManager.Instance.player.DebugInvulnerable;
@@ -119,7 +135,8 @@ namespace Debugging
             return "Auto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
                    "   Invulnerable: " + (GameManager.Instance.player.DebugInvulnerable ? "ON" : "OFF") +
                    "   Phase 2 variants: " + (boss.IsInSecondPhase ? "ON" : "OFF") +
-                   "   Slow motion: " + (_isSlowMotion ? "ON" : "OFF");
+                   "   Slow motion: " + (_isSlowMotion ? "ON" : "OFF") +
+                   "\nOnly attack: " + (boss.DebugOnlyAttack.HasValue ? boss.DebugOnlyAttack.Value.ToString() : "OFF");
         }
 
         private static string BuildHelpText()
@@ -127,7 +144,7 @@ namespace Debugging
             string text = "<b>Debug harness</b> (Tab hides)\n";
             for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                 text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
-            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion";
+            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack";
             return text;
         }
     }

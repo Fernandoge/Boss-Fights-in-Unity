@@ -20834,6 +20834,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Debugging.BossDebugHarness
   _slowMotionScale: 0.25
   _messageDuration: 2
+  _onlyUseAttack: 0
+  _attackToUse: 7
 --- !u!4 &493136008
 Transform:
   m_ObjectHideFlags: 0
@@ -66408,10 +66410,6 @@ PrefabInstance:
       propertyPath: _timeBetweenSwaps
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
-      propertyPath: _boulderBoundaries
-      value: 
-      objectReference: {fileID: 122314330}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: _meteorsBoundaries
       value: 
