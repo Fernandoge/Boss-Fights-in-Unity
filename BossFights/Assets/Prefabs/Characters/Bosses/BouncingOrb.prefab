@@ -83,7 +83,7 @@ TrailRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Time: 0.35
+  m_Time: 0.45
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -93,7 +93,7 @@ TrailRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 1.1
+        value: 0.6
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -115,7 +115,7 @@ TrailRenderer:
     colorGradient:
       serializedVersion: 2
       key0: {r: 1, g: 1, b: 1, a: 1}
-      key1: {r: 1, g: 1, b: 1, a: 1}
+      key1: {r: 1, g: 1, b: 1, a: 0}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
@@ -200,7 +200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.BouncingOrb
   _visual: {fileID: 7119225379337717207}
   _markerPrefab: {fileID: 222205861945891569, guid: 288fe7eaddf4fb8429129ac9df49e797, type: 3}
-  _bounceEffectPrefab: {fileID: 0}
+  _bounceEffectPrefab: {fileID: 2965222256817593503, guid: e4c341b428752c647b587cf3113d426c, type: 3}
   _radius: 0.8
   _floatHeight: 1.1
   _spawnHeight: 2.4
@@ -249,7 +249,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 2
-  m_Color: {r: 0.6, g: 0.25, b: 1, a: 1}
+  m_Color: {r: 0.6, g: 0.2, b: 1, a: 1}
   m_Intensity: 2
   m_Range: 6
   m_SpotAngle: 30

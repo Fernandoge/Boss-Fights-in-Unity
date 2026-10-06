@@ -17,10 +17,12 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _playerHitPadding = 0.2f;
         [SerializeField] private float _growTime = 0.3f;
         [SerializeField] private float _fadeTime = 0.4f;
+        [SerializeField] private Vector2 _bounceSpeedBonus = new Vector2(0.2f, 0.4f);
 
         private SkillIndicator _marker;
         private Vector4 _bounds;
         private Vector3 _velocity;
+        private float _baseSpeed;
         private float _speed;
         private float _lifetime;
         private float _age;
@@ -67,6 +69,7 @@ namespace Bosses.Second_Boss
         public void Begin(Vector3 position, Vector3 direction, float speed, Vector4 bounds, float lifetime, int damage)
         {
             _bounds = bounds;
+            _baseSpeed = speed;
             _speed = speed;
             _lifetime = lifetime;
             _damage = damage;
@@ -126,6 +129,12 @@ namespace Bosses.Second_Boss
 
             transform.position = position;
 
+            if (bounced)
+            {
+                RollBounceSpeed();
+                _velocity = _velocity.normalized * _speed;
+            }
+
             if (bounced && IsSolid)
                 SpawnBounceEffect(position);
         }
@@ -151,6 +160,8 @@ namespace Bosses.Second_Boss
 
                 _velocity -= normal * approach;
                 other._velocity += normal * approach;
+                RollBounceSpeed();
+                other.RollBounceSpeed();
                 _velocity = KeepSpeed(_velocity, -normal);
                 other._velocity = other.KeepSpeed(other._velocity, normal);
 
@@ -162,6 +173,9 @@ namespace Bosses.Second_Boss
                 SpawnBounceEffect(transform.position + normal * _radius);
             }
         }
+
+        // Every bounce gives the orb a new random speed above its launch speed
+        private void RollBounceSpeed() => _speed = _baseSpeed * (1f + Random.Range(_bounceSpeedBonus.x, _bounceSpeedBonus.y));
 
         private Vector3 KeepSpeed(Vector3 velocity, Vector3 fallbackDirection)
             => velocity.sqrMagnitude > 0.0001f ? velocity.normalized * _speed : fallbackDirection * _speed;

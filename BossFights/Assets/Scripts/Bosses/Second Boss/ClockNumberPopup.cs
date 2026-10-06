@@ -7,6 +7,7 @@ namespace Bosses.Second_Boss
     public class ClockNumberPopup : MonoBehaviour
     {
         [SerializeField] private TextMeshPro _text;
+        [SerializeField] private SpriteRenderer _icon;
         [SerializeField] private float _fadeInTime = 0.15f;
         [SerializeField] private float _fadeOutTime = 0.5f;
         [SerializeField] private float _maxLifetime = 12f;
@@ -49,7 +50,7 @@ namespace Bosses.Second_Boss
             if (_hideTime >= 0f)
                 alpha = Mathf.Min(alpha, 1f - (_elapsed - _hideTime) / _fadeOutTime);
 
-            _text.alpha = Mathf.Clamp01(alpha) * _peakAlpha;
+            SetAlpha(Mathf.Clamp01(alpha) * _peakAlpha);
 
             if (_hideTime >= 0f && _elapsed >= _hideTime + _fadeOutTime)
                 Destroy(gameObject);
@@ -58,18 +59,34 @@ namespace Bosses.Second_Boss
         // With a follow target the offset is relative to it; without one it is the world position
         public void Begin(string text, Transform follow, Vector3 offset, float peakAlpha)
         {
-            _text.text = text;
+            if (_text)
+                _text.text = text;
+
             _follow = follow;
             _offset = offset;
             _peakAlpha = peakAlpha;
             transform.position = follow ? follow.position + offset : offset;
-            _text.alpha = 0f;
+            SetAlpha(0f);
         }
 
         public void Hide()
         {
             if (_hideTime < 0f)
                 _hideTime = _elapsed;
+        }
+
+        // The popup shows text, a sprite (the clock icon) or both
+        private void SetAlpha(float alpha)
+        {
+            if (_text)
+                _text.alpha = alpha;
+
+            if (_icon)
+            {
+                Color color = _icon.color;
+                color.a = alpha;
+                _icon.color = color;
+            }
         }
     }
 }

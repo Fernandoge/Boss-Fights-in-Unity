@@ -49,6 +49,10 @@ namespace Bosses.Second_Boss
 
         [Header("Clock Mechanic")]
         [SerializeField] private ClockNumberPopup _clockNumberPrefab;
+        [SerializeField] private ClockNumberPopup _clockIconPrefab;
+        [SerializeField, Range(0f, 1f)] private float _clockStartChance = 0.35f;
+        [SerializeField] private int _clockMinAttacksBetween = 2;
+        [SerializeField] private float _clockStartCastTime = 1.6f;
         [SerializeField] private ClockWaveBlast _clockWavePrefab;
         [SerializeField] private Vector3 _clockNumberOffset = new Vector3(0f, 5.2f, 0f);
         [SerializeField] private float _clockIntroTime = 1f;
@@ -82,6 +86,9 @@ namespace Bosses.Second_Boss
         private readonly List<int> _clockNumbers = new List<int>();
         private int _clockNumbersShown;
         private ClockNumberPopup _activeClockNumber;
+        private ClockNumberPopup _activeClockIcon;
+        private int _attacksSinceClock;
+        private bool _clockActive;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
@@ -137,6 +144,15 @@ namespace Bosses.Second_Boss
             StartCoroutine(ClockIntermissionSequence());
         }
 
+        public void DebugForceClockStart()
+        {
+            if (DebugIsBusy)
+                return;
+
+            base.PerformAttack();
+            StartCoroutine(ClockStartSequence());
+        }
+
         public void DebugForceSpellCircles() => DebugForceAttack(SecondBossAttack.SpellCircles);
 
         public void DebugForceDiagonalLines() => DebugForceAttack(SecondBossAttack.DiagonalLines);
@@ -166,16 +182,25 @@ namespace Bosses.Second_Boss
         {
             base.PerformAttack();
 
-            // After a number has appeared for each clock position, the intermission replaces the next attack (not while one attack is being tested on its own)
-            if (!DebugOnlyAttack.HasValue && _clockNumbersShown >= ClockPositions.Length)
+            // The clock mechanic is not running all the time: sometimes the boss casts the clock, then the next four attacks show a number each, then the intermission comes (not while one attack is being tested on its own)
+            bool clockMechanicEnabled = !DebugOnlyAttack.HasValue;
+            if (clockMechanicEnabled && _clockActive && _clockNumbersShown >= ClockPositions.Length)
             {
                 StartCoroutine(ClockIntermissionSequence());
                 return;
             }
 
+            if (clockMechanicEnabled && !_clockActive && _attacksSinceClock >= _clockMinAttacksBetween && Random.value < _clockStartChance)
+            {
+                StartCoroutine(ClockStartSequence());
+                return;
+            }
+
             SecondBossAttack attack = ChooseAttack();
-            if (!DebugOnlyAttack.HasValue)
+            if (clockMechanicEnabled && _clockActive)
                 ShowNextClockNumber();
+            else if (clockMechanicEnabled)
+                _attacksSinceClock++;
 
             StartAttack(attack);
         }
@@ -363,7 +388,29 @@ namespace Bosses.Second_Boss
 
         /// *** Clock Mechanic *** ///
 
-        // Every attack drops one clock number (3, 6, 9 or 12) next to the boss; after all four the intermission asks the player to remember them in order
+        // A turn on its own: the boss casts a clock above its head, and the next four attacks show the numbers
+        private IEnumerator ClockStartSequence()
+        {
+            _clockActive = true;
+            _clockNumbersShown = 0;
+
+            if (_clockIconPrefab)
+            {
+                _activeClockIcon = Instantiate(_clockIconPrefab);
+                _activeClockIcon.Begin(string.Empty, transform, _clockNumberOffset, 1f);
+            }
+
+            anim.SetTrigger(Cast_Area);
+            yield return WaitFacingPlayer(_clockStartCastTime);
+
+            if (_activeClockIcon)
+                _activeClockIcon.Hide();
+
+            _activeClockIcon = null;
+            FinishAttack();
+        }
+
+        // While the clock runs, every attack drops one clock number (3, 6, 9 or 12) next to the boss; after all four the intermission asks the player to remember them in order
         private void ShowNextClockNumber()
         {
             if (_clockNumbersShown == 0)
@@ -436,6 +483,8 @@ namespace Bosses.Second_Boss
 
             _clockNumbers.Clear();
             _clockNumbersShown = 0;
+            _clockActive = false;
+            _attacksSinceClock = 0;
             yield return TeleportThenFinishAttack();
         }
 
