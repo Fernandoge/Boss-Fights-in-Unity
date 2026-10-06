@@ -10,9 +10,9 @@ namespace Bosses.Second_Boss
         [SerializeField] private SpellCircle _spellCirclePrefab;
         [SerializeField] private int _circleCount = 6;
         [SerializeField] private float _circleRadius = 1.2f;
-        [SerializeField] private float _circleWindUpTime = 0.5f;
-        [SerializeField] private float _circleInterval = 0.35f;
-        [SerializeField] private float _circleTelegraphTime = 0.9f;
+        [SerializeField] private float _castReleaseDelay = 0.35f;
+        [SerializeField] private float _circleInterval = 0.55f;
+        [SerializeField] private float _circleTelegraphTime = 0.6f;
         [SerializeField] private float _afterCastTime = 0.4f;
         [SerializeField] private int _circleDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _leadPlayerChance = 0.5f;
@@ -24,6 +24,8 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _teleportMaxPlayerDistance = 22f;
         [SerializeField] private float _teleportMinMoveDistance = 8f;
         [SerializeField] private float _teleportWallClearance = 3f;
+        [SerializeField] private float _teleportSkinnyWidthScale = 0.02f;
+        [SerializeField] private float _teleportStretchHeightScale = 1.3f;
         [SerializeField] private float _teleportVanishTime = 0.25f;
         [SerializeField] private float _teleportAppearTime = 0.25f;
         [SerializeField] private int _teleportAttempts = 30;
@@ -31,6 +33,7 @@ namespace Bosses.Second_Boss
         private Vector3 _originalScale;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
+        private static readonly int Idle = Animator.StringToHash("Idle");
 
         protected override void Start()
         {
@@ -81,13 +84,13 @@ namespace Bosses.Second_Boss
 
         private IEnumerator SpellCirclesSequence()
         {
-            anim.SetTrigger(Cast);
-            yield return WaitFacingPlayer(_circleWindUpTime);
-
+            // Every circle restarts the cast animation, so the boss looks like it is spamming the spell
             for (int i = 0; i < _circleCount; i++)
             {
+                anim.SetTrigger(Cast);
+                yield return WaitFacingPlayer(_castReleaseDelay);
                 SpawnSpellCircle();
-                yield return WaitFacingPlayer(_circleInterval);
+                yield return WaitFacingPlayer(Mathf.Max(0f, _circleInterval - _castReleaseDelay));
             }
 
             // Let the last circles land before vanishing
@@ -129,15 +132,22 @@ namespace Bosses.Second_Boss
         private IEnumerator TeleportThenFinishAttack()
         {
             isImmuneToDamage = true;
-            yield return ScaleOverTime(_originalScale, Vector3.one * 0.01f, _teleportVanishTime);
+            anim.CrossFade(Idle, 0.1f);
+            yield return ScaleOverTime(_originalScale, GetSkinnyScale(), _teleportVanishTime);
 
             navMeshAgent.Warp(FindTeleportPosition());
             FacePlayer(1000f);
 
-            yield return ScaleOverTime(Vector3.one * 0.01f, _originalScale, _teleportAppearTime);
+            yield return ScaleOverTime(GetSkinnyScale(), _originalScale, _teleportAppearTime);
             isImmuneToDamage = false;
             isPerformingAttack = false;
         }
+
+        // Thin and tall, like the boss is pulled into a line of light
+        private Vector3 GetSkinnyScale() => new Vector3(
+            _originalScale.x * _teleportSkinnyWidthScale,
+            _originalScale.y * _teleportStretchHeightScale,
+            _originalScale.z * _teleportSkinnyWidthScale);
 
         // A random spot on the NavMesh in a ring around the player, away from the walls and from where the boss stands now
         private Vector3 FindTeleportPosition()

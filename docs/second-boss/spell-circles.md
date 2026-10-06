@@ -2,19 +2,19 @@
 
 The second boss ("SecondBoss", placeholder name) is a wizard that never walks. It stands still, faces the player, and repeats one cycle: cast Spell Circles, then teleport to another spot.
 
-**Spell Circles:** after a short wind-up the boss spawns 6 small circles, one every 0.35 s (Karthus Q style). Each circle is a `SkillIndicator` circle (radius 1.2 m) whose fill grows from the centre over 0.9 s; when the fill reaches the rim it explodes (placeholder `SmallExplosion` prefab) and hurts the player once if they are inside it (1 damage; the player's own damage immunity applies). Each circle picks its position separately:
+**Spell Circles:** the boss spawns 6 small circles, one every 0.55 s (Karthus Q style), restarting the cast animation for each one (the circle appears 0.35 s after the animation restarts). Each circle is a `SkillIndicator` circle (radius 1.2 m) whose fill grows from the centre over 0.6 s; when the fill reaches the rim it explodes (`SpellCircleImpact` prefab: a copy of `SmallExplosion`, scaled to 0.4 so it fits the circle, parts scaled together, fireball and embers lifted about 0.9 m so the floor does not cut them, shockwave laid flat on the ground, played 1.4x faster) and hurts the player once if they are inside it (1 damage; the player's own damage immunity applies). Each circle picks its position separately:
 - 50% "lead": where the player is heading (their NavMeshAgent velocity times the telegraph time) plus up to 0.8 m of random offset.
 - 50% "offset": the player's current position plus a random offset of 0.5 to 2.5 m. A player who stands still is only safe if the offset happens to miss them.
 Positions are snapped to the NavMesh so circles never appear inside walls.
 
-**Teleport:** after the last circle lands the boss shrinks to nothing (0.25 s, immune to damage meanwhile), warps to a random NavMesh spot 10 to 22 m from the player, at least 8 m from where it stood and at least 3 m from the nearest wall, faces the player and grows back (0.25 s). Then it waits `timeBetweenAttacks` (2.5 s) and repeats.
+**Teleport:** after the last circle lands the boss is squeezed into a thin, tall line (width 2% of normal, height 130%, 0.25 s, immune to damage meanwhile), warps to a random NavMesh spot 10 to 22 m from the player, at least 8 m from where it stood and at least 3 m from the nearest wall, faces the player and springs back out of the line (0.25 s). Then it waits `timeBetweenAttacks` (2.5 s) and repeats.
 
 **Pieces**
 - `Bosses/Second Boss/SecondBoss.cs`: the boss. Overrides `IdleMovement` (face the player only, never chase), `PerformAttack` (starts the cast sequence coroutine) and `EnterSecondPhase` (does nothing: no phase 2 yet, and the base version would freeze the boss). The whole sequence is timed in code, not by animation events, so the attack ends by itself (no `StopPerformingAttack` event needed). `DebugForceSpellCircles()` and `DebugTeleport()` are for the harness.
 - `Bosses/Second Boss/SpellCircle.cs`: one circle. Owns its telegraph timer, the position-check damage and its own lifetime. Prefab `SpellCircle`, indicator prefab `SpellCircleIndicator` (copy of the line indicator with a 0.25 s hold after filling).
 - `Shared/SkillIndicator.cs` `ShowCircle` plus pattern 2 in `Shaders/SkillIndicator.shader`.
 - `BossController.IdleMovement` became `protected virtual` (the only change to shared boss code; boss 1 behaves the same).
-- Animator `Second Boss Controller` (in `Assets/Animations/Second Boss/`): `Idle` (default, looping) and `Cast` (trigger `Cast`, returns to Idle at 95%), plus the base-class parameters (`Walking`, `PerformingAction`, `EnterSecondPhase`, `Countered`) so the base class never hits a missing parameter. Placeholder clips: `standing idle` and `Standing 2H Magic Area Attack 01`.
+- Animator `Second Boss Controller` (in `Assets/Animations/Second Boss/`): `Idle` (default, looping, speed 1.25) and `Cast` (speed 1.5; reached from any state by trigger `Cast`, also from itself so it restarts for every circle; returns to Idle at 95%), plus the base-class parameters (`Walking`, `PerformingAction`, `EnterSecondPhase`, `Countered`) so the base class never hits a missing parameter. Placeholder clips: `standing idle` and `Standing 2H Magic Area Attack 01`.
 - Prefab `Prefabs/Characters/Bosses/Second Boss.prefab`: scale 2, NavMeshAgent copied from boss 1 (only used for `Warp` and NavMesh queries), capsule collider on the root, layer Ignore Raycast. The scene instance sets the shared health text reference.
 - `BossSelector` in `TestScene` has the entries First Boss and Second Boss; set `Starting Boss Index` to 1 to fight the second boss.
 - Harness with the second boss active: key 1 forces Spell Circles, key 2 forces a Teleport, F1, F2, F4 work as for boss 1.
@@ -23,6 +23,6 @@ Positions are snapped to the NavMesh so circles never appear inside walls.
 
 **Animation import note:** Mixamo FBXs import as Generic. Only the model and the six clips in use were switched to Humanoid (animation type Humanoid, avatar copied from the model, `standing idle` set to loop). Switch any other clip the same way before using it.
 
-**Starting values (tune in playtest):** 6 circles, radius 1.2, interval 0.35 s, telegraph 0.9 s, damage 1, 50% lead chance, offset 0.5 to 2.5 m, attack every 2.5 s, health 100.
+**Starting values (tune in playtest):** 6 circles, radius 1.2, interval 0.55 s, telegraph 0.6 s, damage 1, 50% lead chance, offset 0.5 to 2.5 m, attack every 2.5 s, health 100.
 
-**Known limits:** the cast animation is a placeholder and is not synced to the circles; the impact effect is a copy of an existing explosion; no teleport VFX (it only shrinks and grows); no phase 2; no death handling; no sound.
+**Known limits:** the cast animation is a placeholder and its release moment is only approximately synced to the circles; the impact effect is a copy of an existing explosion; no teleport VFX (it only squeezes into a line); no phase 2; no death handling; no sound.

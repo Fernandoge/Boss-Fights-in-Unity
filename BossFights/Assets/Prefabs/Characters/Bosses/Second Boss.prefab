@@ -478,9 +478,9 @@ MonoBehaviour:
   _spellCirclePrefab: {fileID: 2045114574471164713, guid: 428bf483f520a694791248faafb20295, type: 3}
   _circleCount: 6
   _circleRadius: 1.2
-  _circleWindUpTime: 0.5
-  _circleInterval: 0.35
-  _circleTelegraphTime: 0.9
+  _castReleaseDelay: 0.35
+  _circleInterval: 0.55
+  _circleTelegraphTime: 0.6
   _afterCastTime: 0.4
   _circleDamage: 1
   _leadPlayerChance: 0.5
@@ -490,6 +490,8 @@ MonoBehaviour:
   _teleportMaxPlayerDistance: 22
   _teleportMinMoveDistance: 8
   _teleportWallClearance: 3
+  _teleportSkinnyWidthScale: 0.02
+  _teleportStretchHeightScale: 1.3
   _teleportVanishTime: 0.25
   _teleportAppearTime: 0.25
   _teleportAttempts: 30
