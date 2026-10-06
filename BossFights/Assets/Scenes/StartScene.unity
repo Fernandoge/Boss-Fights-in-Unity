@@ -4349,8 +4349,8 @@ MonoBehaviour:
     bossIndex: 0
   - name: Second Boss
     button: {fileID: 525317109}
-    sceneName: TestScene
-    bossIndex: 1
+    sceneName: SecondBossScene
+    bossIndex: 0
 --- !u!4 &1080550106
 Transform:
   m_ObjectHideFlags: 0
