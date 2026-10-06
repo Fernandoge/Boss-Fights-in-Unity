@@ -19,7 +19,7 @@ Positions are snapped to the NavMesh so circles never appear inside walls.
 - `BossSelector` in `TestScene` has the entries First Boss and Second Boss; set `Starting Boss Index` to 1 to fight the second boss.
 - Harness with the second boss active: key 1 forces Spell Circles, key 2 forces a Teleport, F1, F2, F4 work as for boss 1.
 
-**Model and textures:** `Nightshade J Friedrich` (Mixamo). The FBX embeds its textures but Unity did not extract them, so the four PNGs were extracted into `Asset Packs/Second Boss/Textures/` and a Standard-shader material `Nightshade.mat` is remapped onto the model in its importer (diffuse, normal and glow maps; the specular map is not used).
+**Model and textures:** `Nightshade J Friedrich` (Mixamo). The FBX embeds its textures but Unity did not extract them, so the four PNGs were extracted into `Asset Packs/Second Boss/Textures/` and a "Standard (Specular setup)" material `Nightshade.mat` is remapped onto the model in its importer (diffuse, normal, specular and glow maps; the specular map is what gives the gold trim and shine of the Mixamo preview).
 
 **Animation import note:** Mixamo FBXs import as Generic. Only the model and the six clips in use were switched to Humanoid (animation type Humanoid, avatar copied from the model, `standing idle` set to loop). Switch any other clip the same way before using it.
 
