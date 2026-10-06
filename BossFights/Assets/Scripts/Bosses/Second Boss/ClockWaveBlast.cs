@@ -87,7 +87,8 @@ namespace Bosses.Second_Boss
             Vector3 relative = position - _center;
             float along = Vector3.Dot(relative, _direction);
             float across = Mathf.Abs(Vector3.Dot(relative, _side));
-            return along >= _startDistance - _safeTolerance && along <= _length + _safeTolerance && across <= _halfWidth + _safeTolerance;
+            // No tolerance on the near edge: the ground at the boss's feet must stay dangerous in every wave, or standing against the boss would be safe
+            return along >= _startDistance && along <= _length + _safeTolerance && across <= _halfWidth + _safeTolerance;
         }
 
         private void GetSpokeRect(out float minX, out float minZ, out float maxX, out float maxZ)

@@ -504,21 +504,33 @@ MonoBehaviour:
     telegraphTime: 1.4
     damage: 1
   _arenaEdgePadding: 0.6
+  _orbPrefab: {fileID: 7251576215965526806, guid: c2e1c0b8a483fbc42940283787dcfdaa, type: 3}
+  _orbCount: 3
+  _orbSpeed: 7
+  _orbLifetime: 9
+  _orbDamage: 1
+  _orbReleaseDelay: 0.28
+  _orbThrowInterval: 0.7
+  _orbAfterThrowTime: 0.5
+  _orbAimSpread: 25
+  _orbSpawnDistance: 1.5
+  _orbWallInset: 0.2
   _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
   _clockWavePrefab: {fileID: 5282451612537052843, guid: 54acaabfcec1ada4299c10acdb68713f, type: 3}
   _clockNumberOffset: {x: 0, y: 5.2, z: 0}
-  _clockNumberHoldTime: 1.5
   _clockIntroTime: 1
   _clockWaveInterval: 2.4
   _clockWaveTelegraphTime: 1.4
   _clockEndTime: 1
   _clockWaveDamage: 2
-  _clockSpokeWidth: 4
-  _clockSpokeStartDistance: 2
+  _clockUpDownSpokeWidth: 3
+  _clockSideSpokeWidth: 6
+  _clockSpokeStartDistance: 1
   _teleportMinPlayerDistance: 10
   _teleportMaxPlayerDistance: 22
   _teleportMinMoveDistance: 8
   _teleportWallClearance: 3
+  _teleportHighChance: 0.2
   _teleportSkinnyWidthScale: 0.02
   _teleportStretchHeightScale: 1.3
   _teleportVanishTime: 0.25

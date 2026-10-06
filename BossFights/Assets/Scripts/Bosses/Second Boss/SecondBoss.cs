@@ -34,6 +34,19 @@ namespace Bosses.Second_Boss
         [SerializeField] private LineBlastSettings _lineBlast = new LineBlastSettings();
         [SerializeField] private float _arenaEdgePadding = 0.6f;
 
+        [Header("Orb Barrage")]
+        [SerializeField] private BouncingOrb _orbPrefab;
+        [SerializeField] private int _orbCount = 3;
+        [SerializeField] private float _orbSpeed = 7f;
+        [SerializeField] private float _orbLifetime = 9f;
+        [SerializeField] private int _orbDamage = 1;
+        [SerializeField] private float _orbReleaseDelay = 0.28f;
+        [SerializeField] private float _orbThrowInterval = 0.7f;
+        [SerializeField] private float _orbAfterThrowTime = 0.5f;
+        [SerializeField] private float _orbAimSpread = 25f;
+        [SerializeField] private float _orbSpawnDistance = 1.5f;
+        [SerializeField] private float _orbWallInset = 0.2f;
+
         [Header("Clock Mechanic")]
         [SerializeField] private ClockNumberPopup _clockNumberPrefab;
         [SerializeField] private ClockWaveBlast _clockWavePrefab;
@@ -43,8 +56,9 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _clockWaveTelegraphTime = 1.4f;
         [SerializeField] private float _clockEndTime = 1f;
         [SerializeField] private int _clockWaveDamage = 2;
-        [SerializeField] private float _clockSpokeWidth = 4f;
-        [SerializeField] private float _clockSpokeStartDistance = 2f;
+        [SerializeField] private float _clockUpDownSpokeWidth = 3f;
+        [SerializeField] private float _clockSideSpokeWidth = 6f;
+        [SerializeField] private float _clockSpokeStartDistance = 1f;
 
         [Header("Teleport")]
         [SerializeField] private float _teleportMinPlayerDistance = 10f;
@@ -127,6 +141,8 @@ namespace Bosses.Second_Boss
 
         public void DebugForceDiagonalLines() => DebugForceAttack(SecondBossAttack.DiagonalLines);
 
+        public void DebugForceOrbBarrage() => DebugForceAttack(SecondBossAttack.OrbBarrage);
+
         public void DebugTeleport()
         {
             if (DebugIsBusy)
@@ -190,7 +206,18 @@ namespace Bosses.Second_Boss
         private void StartAttack(SecondBossAttack attack)
         {
             _lastAttack = attack;
-            StartCoroutine(attack == SecondBossAttack.DiagonalLines ? DiagonalLinesSequence() : SpellCirclesSequence());
+            switch (attack)
+            {
+                case SecondBossAttack.DiagonalLines:
+                    StartCoroutine(DiagonalLinesSequence());
+                    break;
+                case SecondBossAttack.OrbBarrage:
+                    StartCoroutine(OrbBarrageSequence());
+                    break;
+                default:
+                    StartCoroutine(SpellCirclesSequence());
+                    break;
+            }
         }
 
         /// *** Spell Circles *** ///
@@ -239,6 +266,57 @@ namespace Bosses.Second_Boss
             Vector2 direction = Random.insideUnitCircle.normalized;
             float distance = Random.Range(minDistance, maxDistance);
             return new Vector3(direction.x, 0f, direction.y) * distance;
+        }
+
+        /// *** Orb Barrage *** ///
+
+        // Throws the orbs one after the other, each at a different angle around the player; they keep bouncing after the boss has teleported away
+        private IEnumerator OrbBarrageSequence()
+        {
+            List<float> angles = GetOrbAimAngles();
+            for (int i = 0; i < _orbCount; i++)
+            {
+                anim.SetTrigger(Cast);
+                yield return WaitFacingPlayer(_orbReleaseDelay);
+                SpawnOrb(angles[i]);
+                yield return WaitFacingPlayer(Mathf.Max(0f, _orbThrowInterval - _orbReleaseDelay));
+            }
+
+            yield return WaitFacingPlayer(_orbAfterThrowTime);
+            yield return TeleportThenFinishAttack();
+        }
+
+        // The throw angles are spread evenly across the aim cone in a random order, so one dodge does not beat all of them
+        private List<float> GetOrbAimAngles()
+        {
+            List<float> angles = new List<float>();
+            for (int i = 0; i < _orbCount; i++)
+                angles.Add(_orbCount > 1 ? Mathf.Lerp(-_orbAimSpread, _orbAimSpread, i / (float)(_orbCount - 1)) : 0f);
+
+            for (int i = angles.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (angles[i], angles[j]) = (angles[j], angles[i]);
+            }
+
+            return angles;
+        }
+
+        private void SpawnOrb(float aimAngle)
+        {
+            Vector3 toPlayer = _perceivedPlayerPosition - transform.position;
+            toPlayer.y = 0f;
+            Vector3 direction = Quaternion.Euler(0f, aimAngle, 0f) * (toPlayer == Vector3.zero ? transform.forward : toPlayer.normalized);
+
+            BouncingOrb orb = Instantiate(_orbPrefab);
+            orb.Begin(transform.position + direction * _orbSpawnDistance, direction, _orbSpeed, GetOrbBounds(), _orbLifetime, _orbDamage);
+        }
+
+        // Where the center of an orb may go: the walkable area, pulled in so the orb touches the wall instead of sinking into it
+        private Vector4 GetOrbBounds()
+        {
+            float inset = _arenaEdgePadding + _orbWallInset;
+            return new Vector4(_arenaRect.x + inset, _arenaRect.y + inset, _arenaRect.z - inset, _arenaRect.w - inset);
         }
 
         /// *** Diagonal Lines *** ///
@@ -334,6 +412,9 @@ namespace Bosses.Second_Boss
             if (_clockNumbers.Count != ClockPositions.Length)
                 ShuffleClockNumbers();
 
+            // Orbs still bouncing from an earlier attack would turn the memory test into a dodge test
+            BouncingOrb.DespawnAll();
+
             Vector3 center = GetArenaCenter();
             yield return TeleportRoutine(center);
 
@@ -344,8 +425,10 @@ namespace Bosses.Second_Boss
             for (int i = 0; i < _clockNumbers.Count; i++)
             {
                 anim.SetTrigger(Cast_Area);
+                // The camera squashes the depth axis by half, so the side spokes (which are wide along the depth) need twice the width to look as thick as the up/down ones
+                bool isUpDown = _clockNumbers[i] == 12 || _clockNumbers[i] == 6;
                 Instantiate(_clockWavePrefab).Begin(_arenaRect, transform.position.y, center, GetClockDirection(_clockNumbers[i]),
-                    _clockSpokeWidth, _clockSpokeStartDistance, _clockWaveTelegraphTime, _clockWaveDamage);
+                    isUpDown ? _clockUpDownSpokeWidth : _clockSideSpokeWidth, _clockSpokeStartDistance, _clockWaveTelegraphTime, _clockWaveDamage);
 
                 bool isLastWave = i == _clockNumbers.Count - 1;
                 yield return WaitFacingPlayer(isLastWave ? _clockWaveTelegraphTime + _clockEndTime : _clockWaveInterval);

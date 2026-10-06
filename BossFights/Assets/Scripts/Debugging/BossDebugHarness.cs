@@ -60,6 +60,8 @@ namespace Debugging
                     ForceSecondBossAction(secondBoss.DebugForceDiagonalLines, "Forced DiagonalLines");
                 if (Input.GetKeyDown(KeyCode.Alpha4))
                     ForceSecondBossAction(secondBoss.DebugForceIntermission, "Forced Intermission");
+                if (Input.GetKeyDown(KeyCode.Alpha5))
+                    ForceSecondBossAction(secondBoss.DebugForceOrbBarrage, "Forced OrbBarrage");
             }
 
             if (Input.GetKeyDown(KeyCode.F1))
@@ -217,7 +219,7 @@ namespace Debugging
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
             else if (boss is SecondBoss)
-                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n";
+                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n";
             else
                 text += "(no forced attacks for this boss yet)\n";
 
