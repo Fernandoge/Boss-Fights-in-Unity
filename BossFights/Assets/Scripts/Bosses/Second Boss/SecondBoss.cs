@@ -21,6 +21,10 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _leadOffsetDistance = 0.8f;
         [SerializeField] private Vector2 _randomOffsetDistanceRange = new Vector2(0.5f, 2.5f);
 
+        [Header("Aiming")]
+        [SerializeField] private float _jumpReactionDelay = 1f;
+        [SerializeField] private float _jumpDetectDistance = 2.5f;
+
         [Header("Diagonal Lines")]
         [SerializeField] private DiagonalLineBlast _lineBlastPrefab;
         [SerializeField] private float _lineWindUpTime = 0.45f;
@@ -42,6 +46,9 @@ namespace Bosses.Second_Boss
 
         private Vector3 _originalScale;
         private Vector4 _arenaRect;
+        private Vector3 _perceivedPlayerPosition;
+        private Vector3 _lastPlayerPosition;
+        private float _jumpReactionTimer;
         private SecondBossAttack? _lastAttack;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
@@ -58,6 +65,22 @@ namespace Bosses.Second_Boss
             base.Start();
             _originalScale = transform.localScale;
             _arenaRect = GetArenaRect();
+            _perceivedPlayerPosition = player.position;
+            _lastPlayerPosition = player.position;
+        }
+
+        // The boss keeps aiming at where the player was for a moment after a jump, as if it needs a second to notice the new spot
+        private void LateUpdate()
+        {
+            if ((player.position - _lastPlayerPosition).sqrMagnitude > _jumpDetectDistance * _jumpDetectDistance)
+                _jumpReactionTimer = _jumpReactionDelay;
+
+            _lastPlayerPosition = player.position;
+
+            if (_jumpReactionTimer > 0f)
+                _jumpReactionTimer -= Time.deltaTime;
+            else
+                _perceivedPlayerPosition = player.position;
         }
 
         /// *** Debug *** ///
@@ -156,17 +179,18 @@ namespace Bosses.Second_Boss
         // Either aims where the player is heading or lands at a random offset from where they stand, so players cannot rely on one dodge habit
         private Vector3 GetSpellCircleCenter()
         {
-            Vector3 center = player.position;
+            Vector3 center = _perceivedPlayerPosition;
             if (Random.value < _leadPlayerChance)
             {
-                Vector3 velocity = playerNavMeshAgent.velocity;
+                // Right after a jump the boss does not know where the player is heading
+                Vector3 velocity = _jumpReactionTimer > 0f ? Vector3.zero : playerNavMeshAgent.velocity;
                 velocity.y = 0f;
                 center += velocity * _circleTelegraphTime + GetRandomFlatOffset(0f, _leadOffsetDistance);
             }
             else
                 center += GetRandomFlatOffset(_randomOffsetDistanceRange.x, _randomOffsetDistanceRange.y);
 
-            return NavMesh.SamplePosition(center, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : player.position;
+            return NavMesh.SamplePosition(center, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : _perceivedPlayerPosition;
         }
 
         private static Vector3 GetRandomFlatOffset(float minDistance, float maxDistance)
@@ -295,7 +319,7 @@ namespace Bosses.Second_Boss
 
         private void FacePlayer(float deltaTime)
         {
-            Vector3 direction = player.position - transform.position;
+            Vector3 direction = _perceivedPlayerPosition - transform.position;
             direction.y = 0f;
             if (direction == Vector3.zero)
                 return;

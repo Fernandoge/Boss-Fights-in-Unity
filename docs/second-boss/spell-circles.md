@@ -9,6 +9,8 @@ The second boss ("SecondBoss", placeholder name) is a wizard that never walks. I
 - 50% "offset": the player's current position plus a random offset of 0.5 to 2.5 m. A player who stands still is only safe if the offset happens to miss them.
 Positions are snapped to the NavMesh so circles never appear inside walls.
 
+**Reaction to jumps:** the circles (and the boss's facing) use a "perceived" player position. When the player moves more than 2.5 m in a single frame (the space-bar jump moves the player instantly), the boss keeps aiming at the old spot for 1 s (`Jump Reaction Delay`, `Jump Detect Distance` on the boss) before it notices the new one, and it does not lead the player's movement during that second. Verified by jumping the player 8 m mid-cast: the next two circles landed on the old spot and the following ones on the new one.
+
 **Teleport:** after the last circle lands the boss is squeezed into a thin, tall line (width 2% of normal, height 130%, 0.25 s, immune to damage meanwhile), warps to a random NavMesh spot 10 to 22 m from the player (8 to 20 m in the second level), at least 8 m from where it stood and at least 3 m from the nearest wall, faces the player and springs back out of the line (0.25 s). Then it waits `timeBetweenAttacks` (0.35 s) and casts again, so the fight is nearly continuous.
 
 **Pieces**
