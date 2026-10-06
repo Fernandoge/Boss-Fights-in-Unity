@@ -18,7 +18,7 @@ namespace Bosses.Second_Boss
         // World X is horizontal on screen and Z is vertical; the camera flattens Z, so lines need more room from horizontal
         [Range(0f, 45f)] public float minAngleFromHorizontal = 30f;
         [Range(0f, 45f)] public float minAngleFromVertical = 15f;
-        public float telegraphTime = 1.8f;
+        public float telegraphTime = 1.4f;
         public int damage = 1;
     }
 

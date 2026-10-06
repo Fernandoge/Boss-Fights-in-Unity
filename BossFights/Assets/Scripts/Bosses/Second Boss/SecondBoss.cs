@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using Random = UnityEngine.Random;
 
 namespace Bosses.Second_Boss
 {
@@ -8,11 +10,11 @@ namespace Bosses.Second_Boss
     {
         [Header("Spell Circles")]
         [SerializeField] private SpellCircle _spellCirclePrefab;
-        [SerializeField] private int _circleCount = 6;
+        [SerializeField] private int _circleCount = 7;
         [SerializeField] private float _circleRadius = 1.2f;
-        [SerializeField] private float _castReleaseDelay = 0.35f;
-        [SerializeField] private float _circleInterval = 0.55f;
-        [SerializeField] private float _circleTelegraphTime = 0.6f;
+        [SerializeField] private float _castReleaseDelay = 0.28f;
+        [SerializeField] private float _circleInterval = 0.42f;
+        [SerializeField] private float _circleTelegraphTime = 0.5f;
         [SerializeField] private float _afterCastTime = 0.4f;
         [SerializeField] private int _circleDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _leadPlayerChance = 0.5f;
@@ -21,10 +23,9 @@ namespace Bosses.Second_Boss
 
         [Header("Diagonal Lines")]
         [SerializeField] private DiagonalLineBlast _lineBlastPrefab;
-        [SerializeField, Range(0f, 1f)] private float _lineAttackChance = 0.45f;
-        [SerializeField] private float _lineWindUpTime = 0.6f;
-        [SerializeField] private float _lineTeleportDelay = 0.4f;
-        [SerializeField] private float _lineAfterBlastTime = 0.3f;
+        [SerializeField] private float _lineWindUpTime = 0.45f;
+        [SerializeField] private float _lineTeleportDelay = 0.3f;
+        [SerializeField] private float _lineAfterBlastTime = 0.2f;
         [SerializeField] private LineBlastSettings _lineBlast = new LineBlastSettings();
         [SerializeField] private float _arenaEdgePadding = 0.6f;
 
@@ -41,7 +42,7 @@ namespace Bosses.Second_Boss
 
         private Vector3 _originalScale;
         private Vector4 _arenaRect;
-        private SecondBossAttack _lastAttack;
+        private SecondBossAttack? _lastAttack;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
@@ -107,16 +108,19 @@ namespace Bosses.Second_Boss
 
         /// *** Attack Selection *** ///
 
-        // Mostly spell circles, with diagonal lines mixed in (never twice in a row, since the lines are the heavier skill)
+        // A random attack, but never the same one as the last (with two attacks they simply alternate)
         private SecondBossAttack ChooseAttack()
         {
             if (DebugOnlyAttack.HasValue)
                 return DebugOnlyAttack.Value;
 
-            if (_lastAttack != SecondBossAttack.DiagonalLines && Random.value < _lineAttackChance)
-                return SecondBossAttack.DiagonalLines;
+            SecondBossAttack[] attacks = (SecondBossAttack[])Enum.GetValues(typeof(SecondBossAttack));
+            SecondBossAttack attack;
+            do
+                attack = attacks[Random.Range(0, attacks.Length)];
+            while (attacks.Length > 1 && _lastAttack.HasValue && attack == _lastAttack.Value);
 
-            return SecondBossAttack.SpellCircles;
+            return attack;
         }
 
         private void StartAttack(SecondBossAttack attack)

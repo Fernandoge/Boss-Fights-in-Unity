@@ -473,29 +473,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.SecondBoss
   rotationSpeed: 3
   stopBetweenPlayer: 4.5
-  timeBetweenAttacks: 0.5
+  timeBetweenAttacks: 0.35
   maxHealth: 100
   _healthText: {fileID: 0}
   _spellCirclePrefab: {fileID: 2045114574471164713, guid: 428bf483f520a694791248faafb20295, type: 3}
-  _circleCount: 6
+  _circleCount: 7
   _circleRadius: 1.2
-  _castReleaseDelay: 0.35
-  _circleInterval: 0.55
-  _circleTelegraphTime: 0.6
+  _castReleaseDelay: 0.28
+  _circleInterval: 0.42
+  _circleTelegraphTime: 0.5
   _afterCastTime: 0.2
   _circleDamage: 1
   _leadPlayerChance: 0.5
   _leadOffsetDistance: 0.8
   _randomOffsetDistanceRange: {x: 0.5, y: 2.5}
   _lineBlastPrefab: {fileID: 945328694918007655, guid: fe663267f6ea78d43a9e6732eca01a17, type: 3}
-  _lineAttackChance: 0.45
-  _lineWindUpTime: 0.6
-  _lineSpacing: 2.6
-  _lineWidth: 0.7
-  _lineTelegraphTime: 1.8
-  _lineTeleportDelay: 0.4
-  _lineAfterBlastTime: 0.3
-  _lineDamage: 1
+  _lineWindUpTime: 0.45
+  _lineTeleportDelay: 0.3
+  _lineAfterBlastTime: 0.2
+  _lineBlast:
+    layerCountRange: {x: 2, y: 3}
+    spacingRange: {x: 2.4, y: 3.4}
+    widthRange: {x: 0.55, y: 0.95}
+    dropChance: 0.1
+    perpendicularChance: 0.35
+    minAngleFromHorizontal: 30
+    minAngleFromVertical: 15
+    telegraphTime: 1.4
+    damage: 1
   _arenaEdgePadding: 0.6
   _teleportMinPlayerDistance: 10
   _teleportMaxPlayerDistance: 22
