@@ -66,6 +66,8 @@ namespace Debugging
                     ForceSecondBossAction(secondBoss.DebugForceClockStart, "Forced ClockStart");
                 if (Input.GetKeyDown(KeyCode.Alpha7))
                     ForceSecondBossAction(secondBoss.DebugForceStarfall, "Forced Starfall");
+                if (Input.GetKeyDown(KeyCode.Alpha8))
+                    ForceSecondBossAction(secondBoss.DebugForceTimedExplosions, "Forced TimedExplosions");
             }
 
             if (Input.GetKeyDown(KeyCode.F1))
@@ -223,7 +225,7 @@ namespace Debugging
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
             else if (boss is SecondBoss)
-                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n";
+                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n8  TimedExplosions\n";
             else
                 text += "(no forced attacks for this boss yet)\n";
 

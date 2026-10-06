@@ -16,6 +16,8 @@ The wizard's core mechanic, the equivalent of the first boss's Cataclysm. It is 
 
 **Animation sync.** The `Cast Area` clip only leaves `Idle` through the `CastArea` trigger, so triggers set while it was still playing waited in line and replayed later (the old intermission set one at the intro and one per wave, which looked out of sync). The intermission now plays the cast with `PlayCastArea` (resets the trigger and cross-fades into the state, restarting it) once per wave, `Clock Cast Strike Time` (0.82 s, measured on the clip: hands raised at about 0.6 s, lowest at about 0.82 s at the state's speed of 1.7) before the wave explodes, and the intro no longer casts. Measured in play: the hands are at their lowest point within about 0.1 s of every explosion.
 
+**Leftovers from earlier attacks keep running.** The intermission does not clear anything: orbs still bouncing, stars still falling, lasers still flying and explosion zones still to go off carry on while the waves run (the attacks that end early, Starfall and Timed Explosions, hand the boss back before their effects are over). The memory test is therefore also a dodge test when the attack before the intermission was one of those.
+
 **Pieces**
 - `Bosses/Second Boss/ClockNumberPopup.cs` (prefab `ClockNumber`, 3D text with the `ClockNumber` material): the floating number; it follows the boss, faces the camera and is hidden with `Hide()`.
 - `Bosses/Second Boss/ClockWaveBlast.cs` (prefab `ClockWaveBlast`): one wave. Owns its timers, draws the red warning (`DiagonalLineIndicator`), the explosion flash on everything except the spoke (`LineBlastFlash`, drawn as up to four rectangles around the spoke), the green safe line (`ClockSafeIndicator`, material `ClockSafeLine`) and the damage check.

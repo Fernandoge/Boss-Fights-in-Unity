@@ -60,6 +60,17 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _starEdgeMargin = 3f;
         [SerializeField] private StarfallSettings _starfall = new StarfallSettings();
 
+        [Header("Timed Explosions")]
+        [SerializeField] private TimedExplosionZone _zonePrefab;
+        [SerializeField] private float _zoneCastDelay = 0.5f;
+        [SerializeField] private float _zoneLightTime = 0.5f;
+        [SerializeField] private float _zoneLightGap = 0.2f;
+        [SerializeField] private float _zonePauseTime = 1.2f;
+        [SerializeField] private float _zoneExplosionInterval = 1.3f;
+        [SerializeField] private float _zoneTeleportDelay = 0.3f;
+        [SerializeField] private int _zoneDamage = 1;
+        [SerializeField, Range(0f, 1f)] private float _zoneVerticalChance = 0.5f;
+
         [Header("Clock Mechanic")]
         [SerializeField] private ClockNumberPopup _clockNumberPrefab;
         [SerializeField] private ClockNumberPopup _clockIconPrefab;
@@ -178,6 +189,8 @@ namespace Bosses.Second_Boss
 
         public void DebugForceStarfall() => DebugForceAttack(SecondBossAttack.Starfall);
 
+        public void DebugForceTimedExplosions() => DebugForceAttack(SecondBossAttack.TimedExplosions);
+
         public void DebugTeleport()
         {
             if (DebugIsBusy)
@@ -260,6 +273,9 @@ namespace Bosses.Second_Boss
                     break;
                 case SecondBossAttack.Starfall:
                     StartCoroutine(StarfallSequence());
+                    break;
+                case SecondBossAttack.TimedExplosions:
+                    StartCoroutine(TimedExplosionsSequence());
                     break;
                 default:
                     StartCoroutine(SpellCirclesSequence());
@@ -375,16 +391,22 @@ namespace Bosses.Second_Boss
             yield return WaitFacingPlayer(_starCastDelay);
 
             List<Vector3> centers = new List<Vector3>();
+            float lastLandingTime = 0f;
             for (int i = 0; i < _starCount; i++)
             {
                 Vector3 center = GetStarCenter(centers);
                 centers.Add(center);
                 Instantiate(_starPrefab).Begin(center, _starfall, _arenaRect);
+                lastLandingTime = Time.time + _starfall.telegraphTime;
                 yield return WaitFacingPlayer(_starInterval);
             }
 
             yield return WaitFacingPlayer(_starAfterTime);
-            yield return TeleportThenFinishAttack();
+            yield return TeleportRoutine();
+
+            // The next attack starts casting as the last star lands, so the player is not asked to dodge a new one while the stars are still falling
+            yield return WaitFacingPlayer(Mathf.Max(0f, lastLandingTime - timeBetweenAttacks - Time.time));
+            FinishAttack();
         }
 
         // Each star either aims near the player like a spell circle or lands at a random spot not too far from them, and never close to a star already placed, so the stars spread over the arena; they also stay away from the edges so the whole star on the floor is inside the map
@@ -431,6 +453,47 @@ namespace Bosses.Second_Boss
                 nearest = Mathf.Min(nearest, Vector3.Distance(position, other));
 
             return nearest;
+        }
+
+        /// *** Timed Explosions *** ///
+
+        // Three zones (a third of the arena each) light up one after the other and go dark; after a pause they explode in the same order, with no warning
+        private IEnumerator TimedExplosionsSequence()
+        {
+            PlayCastArea();
+            yield return WaitFacingPlayer(_zoneCastDelay);
+
+            List<Vector4> zones = GetExplosionZones(Random.value < _zoneVerticalChance);
+            float lightPhase = zones.Count * _zoneLightTime + (zones.Count - 1) * _zoneLightGap;
+            for (int i = 0; i < zones.Count; i++)
+                Instantiate(_zonePrefab).Begin(zones[i], transform.position.y, i * (_zoneLightTime + _zoneLightGap), _zoneLightTime, lightPhase + _zonePauseTime + i * _zoneExplosionInterval, _zoneDamage);
+
+            // The boss teleports once the lights are out; the next attack starts casting as the first explosion goes off, while the others are still to come
+            float firstExplosionTime = Time.time + lightPhase + _zonePauseTime;
+            yield return WaitFacingPlayer(lightPhase + _zoneTeleportDelay);
+            yield return TeleportRoutine();
+            yield return WaitFacingPlayer(Mathf.Max(0f, firstExplosionTime - timeBetweenAttacks - Time.time));
+            FinishAttack();
+        }
+
+        // Either three vertical strips (left, center, right) or three horizontal bands (bottom, middle, top), in a random order
+        private List<Vector4> GetExplosionZones(bool vertical)
+        {
+            List<Vector4> zones = new List<Vector4>();
+            float width = (_arenaRect.z - _arenaRect.x) / 3f;
+            float depth = (_arenaRect.w - _arenaRect.y) / 3f;
+            for (int i = 0; i < 3; i++)
+                zones.Add(vertical
+                    ? new Vector4(_arenaRect.x + i * width, _arenaRect.y, _arenaRect.x + (i + 1) * width, _arenaRect.w)
+                    : new Vector4(_arenaRect.x, _arenaRect.y + i * depth, _arenaRect.z, _arenaRect.y + (i + 1) * depth));
+
+            for (int i = zones.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (zones[i], zones[j]) = (zones[j], zones[i]);
+            }
+
+            return zones;
         }
 
         /// *** Diagonal Lines *** ///
@@ -558,9 +621,6 @@ namespace Bosses.Second_Boss
         {
             if (_clockNumbers.Count != ClockPositions.Length)
                 ShuffleClockNumbers();
-
-            // Orbs still bouncing from an earlier attack would turn the memory test into a dodge test
-            BouncingOrb.DespawnAll();
 
             Vector3 center = GetArenaCenter();
             yield return TeleportRoutine(center);

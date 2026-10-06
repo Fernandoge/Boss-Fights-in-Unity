@@ -533,6 +533,16 @@ MonoBehaviour:
     laserWidth: 0.6
     laserLength: 5
     laserDamage: 1
+  _zonePrefab: {fileID: 15793102629447127, guid: 7549c2bee8f8bb649898a091b2d53113, type: 3}
+  _zoneCastDelay: 0.5
+  _zoneLightTime: 0.5
+  _zoneLightGap: 0.2
+  _zonePauseTime: 1.2
+  _zoneExplosionInterval: 1.3
+  _zoneTeleportDelay: 0.3
+  _zoneAfterTime: 0.5
+  _zoneDamage: 1
+  _zoneVerticalChance: 0.5
   _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
   _clockIconPrefab: {fileID: 8136150661759407743, guid: f7bb2e12418384a41b17abda5e38b28b, type: 3}
   _clockStartChance: 0.35

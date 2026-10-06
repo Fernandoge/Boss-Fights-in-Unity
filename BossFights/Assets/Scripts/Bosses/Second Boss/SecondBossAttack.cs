@@ -5,6 +5,7 @@ namespace Bosses.Second_Boss
         SpellCircles,
         DiagonalLines,
         OrbBarrage,
-        Starfall
+        Starfall,
+        TimedExplosions
     }
 }
