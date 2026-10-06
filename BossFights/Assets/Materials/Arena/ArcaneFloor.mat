@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _EdgeLine: 0.35
     - _EdgeStrength: 0.75
     - _GridSize: 4
     - _GridStrength: 0.3
@@ -37,13 +38,13 @@ Material:
     - _StarCell: 0.5
     - _StarDensity: 0.14
     m_Colors:
-    - _ArenaRect: {r: -16.051113, g: -15.419999, b: 16.051113, a: 14.167949}
+    - _ArenaRect: {r: -16.751112, g: -15.4, b: 16.751112, a: 16.10718}
     - _BaseColor: {r: 0.03, g: 0.02, b: 0.07, a: 1}
     - _EdgeColor: {r: 0.75, g: 0.35, b: 1, a: 1}
     - _GridColor: {r: 0.55, g: 0.3, b: 1, a: 1}
     - _NebulaColorA: {r: 0.38, g: 0.1, b: 0.75, a: 1}
     - _NebulaColorB: {r: 0.1, g: 0.22, b: 0.85, a: 1}
-    - _RuneCenter: {r: 0, g: -0.6260252, b: 0, a: 0}
+    - _RuneCenter: {r: 0, g: 0.35359, b: 0, a: 0}
     - _RuneColor: {r: 0.75, g: 0.45, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
