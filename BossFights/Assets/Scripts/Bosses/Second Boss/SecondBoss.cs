@@ -34,6 +34,9 @@ namespace Bosses.Second_Boss
 
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Idle = Animator.StringToHash("Idle");
+        private static readonly int Empty = Animator.StringToHash("Empty");
+
+        private const int CastHandLayer = 1;
 
         protected override void Start()
         {
@@ -133,6 +136,7 @@ namespace Bosses.Second_Boss
         {
             isImmuneToDamage = true;
             anim.CrossFade(Idle, 0.1f);
+            anim.CrossFade(Empty, 0.1f, CastHandLayer);
             yield return ScaleOverTime(_originalScale, GetSkinnyScale(), _teleportVanishTime);
 
             navMeshAgent.Warp(FindTeleportPosition());
