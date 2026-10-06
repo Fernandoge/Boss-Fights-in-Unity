@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -33,6 +34,18 @@ namespace Bosses.Second_Boss
         [SerializeField] private LineBlastSettings _lineBlast = new LineBlastSettings();
         [SerializeField] private float _arenaEdgePadding = 0.6f;
 
+        [Header("Clock Mechanic")]
+        [SerializeField] private ClockNumberPopup _clockNumberPrefab;
+        [SerializeField] private ClockWaveBlast _clockWavePrefab;
+        [SerializeField] private Vector3 _clockNumberOffset = new Vector3(0f, 5.2f, 0f);
+        [SerializeField] private float _clockIntroTime = 1f;
+        [SerializeField] private float _clockWaveInterval = 2.4f;
+        [SerializeField] private float _clockWaveTelegraphTime = 1.4f;
+        [SerializeField] private float _clockEndTime = 1f;
+        [SerializeField] private int _clockWaveDamage = 2;
+        [SerializeField] private float _clockSpokeWidth = 4f;
+        [SerializeField] private float _clockSpokeStartDistance = 2f;
+
         [Header("Teleport")]
         [SerializeField] private float _teleportMinPlayerDistance = 10f;
         [SerializeField] private float _teleportMaxPlayerDistance = 22f;
@@ -50,11 +63,15 @@ namespace Bosses.Second_Boss
         private Vector3 _lastPlayerPosition;
         private float _jumpReactionTimer;
         private SecondBossAttack? _lastAttack;
+        private readonly List<int> _clockNumbers = new List<int>();
+        private int _clockNumbersShown;
+        private ClockNumberPopup _activeClockNumber;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int Empty = Animator.StringToHash("Empty");
+        private static readonly int[] ClockPositions = { 3, 6, 9, 12 };
 
         private const int CastHandLayer = 1;
 
@@ -94,6 +111,15 @@ namespace Bosses.Second_Boss
             StartAttack(attack);
         }
 
+        public void DebugForceIntermission()
+        {
+            if (DebugIsBusy)
+                return;
+
+            base.PerformAttack();
+            StartCoroutine(ClockIntermissionSequence());
+        }
+
         public void DebugForceSpellCircles() => DebugForceAttack(SecondBossAttack.SpellCircles);
 
         public void DebugForceDiagonalLines() => DebugForceAttack(SecondBossAttack.DiagonalLines);
@@ -120,7 +146,19 @@ namespace Bosses.Second_Boss
         protected override void PerformAttack()
         {
             base.PerformAttack();
-            StartAttack(ChooseAttack());
+
+            // After a number has appeared for each clock position, the intermission replaces the next attack (not while one attack is being tested on its own)
+            if (!DebugOnlyAttack.HasValue && _clockNumbersShown >= ClockPositions.Length)
+            {
+                StartCoroutine(ClockIntermissionSequence());
+                return;
+            }
+
+            SecondBossAttack attack = ChooseAttack();
+            if (!DebugOnlyAttack.HasValue)
+                ShowNextClockNumber();
+
+            StartAttack(attack);
         }
 
         // No second phase yet; the base version would freeze the boss without a transition animation
@@ -215,7 +253,7 @@ namespace Bosses.Second_Boss
             yield return TeleportRoutine();
 
             yield return WaitFacingPlayer(Mathf.Max(0f, blastTime - Time.time) + _lineAfterBlastTime);
-            isPerformingAttack = false;
+            FinishAttack();
         }
 
         private void SpawnLineBlast()
@@ -242,22 +280,113 @@ namespace Bosses.Second_Boss
             return new Vector4(min.x - _arenaEdgePadding, min.z - _arenaEdgePadding, max.x + _arenaEdgePadding, max.z + _arenaEdgePadding);
         }
 
+        /// *** Clock Mechanic *** ///
+
+        // Every attack drops one clock number (3, 6, 9 or 12) next to the boss; after all four the intermission asks the player to remember them in order
+        private void ShowNextClockNumber()
+        {
+            if (_clockNumbersShown == 0)
+                ShuffleClockNumbers();
+
+            int number = _clockNumbers[_clockNumbersShown];
+            _clockNumbersShown++;
+
+            // The number stays next to the boss while the skill is being cast and goes away when it ends
+            if (_clockNumberPrefab)
+            {
+                HideClockNumber();
+                _activeClockNumber = Instantiate(_clockNumberPrefab);
+                _activeClockNumber.Begin(number.ToString(), transform, _clockNumberOffset, 1f);
+            }
+        }
+
+        private void HideClockNumber()
+        {
+            if (_activeClockNumber)
+                _activeClockNumber.Hide();
+
+            _activeClockNumber = null;
+        }
+
+        private void FinishAttack()
+        {
+            isPerformingAttack = false;
+            HideClockNumber();
+        }
+
+        private void ShuffleClockNumbers()
+        {
+            _clockNumbers.Clear();
+            _clockNumbers.AddRange(ClockPositions);
+            for (int i = _clockNumbers.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (_clockNumbers[i], _clockNumbers[j]) = (_clockNumbers[j], _clockNumbers[i]);
+            }
+        }
+
+        // The boss goes to the middle and sends one wave per number, in the order the numbers appeared; each wave is safe only on the line of its number
+        private IEnumerator ClockIntermissionSequence()
+        {
+            if (_clockNumbers.Count != ClockPositions.Length)
+                ShuffleClockNumbers();
+
+            Vector3 center = GetArenaCenter();
+            yield return TeleportRoutine(center);
+
+            isImmuneToDamage = true;
+            anim.SetTrigger(Cast_Area);
+            yield return WaitFacingPlayer(_clockIntroTime);
+
+            for (int i = 0; i < _clockNumbers.Count; i++)
+            {
+                anim.SetTrigger(Cast_Area);
+                Instantiate(_clockWavePrefab).Begin(_arenaRect, transform.position.y, center, GetClockDirection(_clockNumbers[i]),
+                    _clockSpokeWidth, _clockSpokeStartDistance, _clockWaveTelegraphTime, _clockWaveDamage);
+
+                bool isLastWave = i == _clockNumbers.Count - 1;
+                yield return WaitFacingPlayer(isLastWave ? _clockWaveTelegraphTime + _clockEndTime : _clockWaveInterval);
+            }
+
+            _clockNumbers.Clear();
+            _clockNumbersShown = 0;
+            yield return TeleportThenFinishAttack();
+        }
+
+        // 12 is up on the screen, 3 right, 6 down and 9 left
+        private static Vector3 GetClockDirection(int number)
+        {
+            switch (number)
+            {
+                case 3: return Vector3.right;
+                case 6: return Vector3.back;
+                case 9: return Vector3.left;
+                default: return Vector3.forward;
+            }
+        }
+
+        private Vector3 GetArenaCenter()
+        {
+            Vector3 center = new Vector3((_arenaRect.x + _arenaRect.z) * 0.5f, transform.position.y, (_arenaRect.y + _arenaRect.w) * 0.5f);
+            return NavMesh.SamplePosition(center, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : center;
+        }
+
         /// *** Teleport *** ///
 
         private IEnumerator TeleportThenFinishAttack()
         {
             yield return TeleportRoutine();
-            isPerformingAttack = false;
+            FinishAttack();
         }
 
-        private IEnumerator TeleportRoutine()
+        private IEnumerator TeleportRoutine(Vector3? destination = null)
         {
             isImmuneToDamage = true;
             anim.CrossFade(Idle, 0.1f);
             anim.CrossFade(Empty, 0.1f, CastHandLayer);
             yield return ScaleOverTime(_originalScale, GetSkinnyScale(), _teleportVanishTime);
 
-            navMeshAgent.Warp(FindTeleportPosition());
+            navMeshAgent.Warp(destination ?? FindTeleportPosition());
             FacePlayer(1000f);
 
             yield return ScaleOverTime(GetSkinnyScale(), _originalScale, _teleportAppearTime);

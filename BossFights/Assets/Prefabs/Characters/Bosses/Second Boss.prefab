@@ -487,6 +487,8 @@ MonoBehaviour:
   _leadPlayerChance: 0.5
   _leadOffsetDistance: 0.8
   _randomOffsetDistanceRange: {x: 0.5, y: 2.5}
+  _jumpReactionDelay: 1
+  _jumpDetectDistance: 2.5
   _lineBlastPrefab: {fileID: 945328694918007655, guid: fe663267f6ea78d43a9e6732eca01a17, type: 3}
   _lineWindUpTime: 0.45
   _lineTeleportDelay: 0.3
@@ -502,6 +504,17 @@ MonoBehaviour:
     telegraphTime: 1.4
     damage: 1
   _arenaEdgePadding: 0.6
+  _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
+  _clockWavePrefab: {fileID: 5282451612537052843, guid: 54acaabfcec1ada4299c10acdb68713f, type: 3}
+  _clockNumberOffset: {x: 0, y: 5.2, z: 0}
+  _clockNumberHoldTime: 1.5
+  _clockIntroTime: 1
+  _clockWaveInterval: 2.4
+  _clockWaveTelegraphTime: 1.4
+  _clockEndTime: 1
+  _clockWaveDamage: 2
+  _clockSpokeWidth: 4
+  _clockSpokeStartDistance: 2
   _teleportMinPlayerDistance: 10
   _teleportMaxPlayerDistance: 22
   _teleportMinMoveDistance: 8
