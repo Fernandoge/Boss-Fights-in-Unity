@@ -19,6 +19,7 @@ Shader "Arena/ArcaneFloor"
         _ArenaRect ("Arena Rect (minX, minZ, maxX, maxZ)", Vector) = (-18, -12, 18, 10)
         _EdgeColor ("Edge Color", Color) = (0.75, 0.35, 1, 1)
         _EdgeStrength ("Edge Glow", Range(0, 6)) = 1.6
+        _EdgeLine ("Edge Line", Range(0, 3)) = 0.8
         _Smoothness ("Smoothness", Range(0, 1)) = 0.5
         _Metallic ("Metallic", Range(0, 1)) = 0.25
     }
@@ -53,6 +54,7 @@ Shader "Arena/ArcaneFloor"
         float4 _ArenaRect;
         fixed4 _EdgeColor;
         float _EdgeStrength;
+        float _EdgeLine;
         half _Smoothness;
         half _Metallic;
 
@@ -148,7 +150,7 @@ Shader "Arena/ArcaneFloor"
 
             // Glowing border where the floor meets the walls
             float edgeDistance = min(min(p.x - _ArenaRect.x, _ArenaRect.z - p.x), min(p.y - _ArenaRect.y, _ArenaRect.w - p.y));
-            float3 edge = _EdgeColor.rgb * (exp(-edgeDistance * 1.4) * _EdgeStrength + smoothstep(0.12, 0.0, abs(edgeDistance - 0.25)) * 0.8);
+            float3 edge = _EdgeColor.rgb * (exp(-edgeDistance * 1.4) * _EdgeStrength + smoothstep(0.12, 0.0, abs(edgeDistance - 0.25)) * _EdgeLine);
 
             float variation = 0.75 + 0.5 * cloud;
             o.Albedo = _BaseColor.rgb * variation;

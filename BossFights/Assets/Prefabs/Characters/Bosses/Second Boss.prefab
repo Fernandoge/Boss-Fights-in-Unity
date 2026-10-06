@@ -473,7 +473,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.SecondBoss
   rotationSpeed: 3
   stopBetweenPlayer: 4.5
-  timeBetweenAttacks: 2.5
+  timeBetweenAttacks: 0.5
   maxHealth: 100
   _healthText: {fileID: 0}
   _spellCirclePrefab: {fileID: 2045114574471164713, guid: 428bf483f520a694791248faafb20295, type: 3}
@@ -482,7 +482,7 @@ MonoBehaviour:
   _castReleaseDelay: 0.35
   _circleInterval: 0.55
   _circleTelegraphTime: 0.6
-  _afterCastTime: 0.4
+  _afterCastTime: 0.2
   _circleDamage: 1
   _leadPlayerChance: 0.5
   _leadOffsetDistance: 0.8
