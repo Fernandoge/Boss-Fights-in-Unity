@@ -10,12 +10,16 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _fadeInTime = 0.15f;
         [SerializeField] private float _fadeOutTime = 0.5f;
         [SerializeField] private float _maxLifetime = 12f;
+        [SerializeField, Range(0.5f, 1f)] private float _maxViewportY = 0.9f;
 
         private Transform _follow;
         private Vector3 _offset;
         private float _peakAlpha = 1f;
         private float _elapsed;
         private float _hideTime = -1f;
+
+        // The highest point of the screen (0 to 1) the number may be at; above it the number is pushed down so it never leaves the screen
+        public float MaxViewportY => _maxViewportY;
 
         private void LateUpdate()
         {
@@ -24,8 +28,18 @@ namespace Bosses.Second_Boss
             if (_follow)
                 transform.position = _follow.position + _offset;
 
-            if (Camera.main)
-                transform.rotation = Camera.main.transform.rotation;
+            Camera mainCamera = Camera.main;
+            if (mainCamera)
+            {
+                transform.rotation = mainCamera.transform.rotation;
+
+                Vector3 viewport = mainCamera.WorldToViewportPoint(transform.position);
+                if (viewport.y > _maxViewportY)
+                {
+                    viewport.y = _maxViewportY;
+                    transform.position = mainCamera.ViewportToWorldPoint(viewport);
+                }
+            }
 
             // The number stays until Hide() is called; the lifetime is only a safety net
             if (_hideTime < 0f && _elapsed >= _maxLifetime)

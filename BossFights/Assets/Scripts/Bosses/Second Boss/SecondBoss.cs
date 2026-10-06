@@ -51,6 +51,7 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _teleportMaxPlayerDistance = 22f;
         [SerializeField] private float _teleportMinMoveDistance = 8f;
         [SerializeField] private float _teleportWallClearance = 3f;
+        [SerializeField, Range(0f, 1f)] private float _teleportHighChance = 0.2f;
         [SerializeField] private float _teleportSkinnyWidthScale = 0.02f;
         [SerializeField] private float _teleportStretchHeightScale = 1.3f;
         [SerializeField] private float _teleportVanishTime = 0.25f;
@@ -58,6 +59,7 @@ namespace Bosses.Second_Boss
         [SerializeField] private int _teleportAttempts = 30;
 
         private Vector3 _originalScale;
+        private Camera _camera;
         private Vector4 _arenaRect;
         private Vector3 _perceivedPlayerPosition;
         private Vector3 _lastPlayerPosition;
@@ -82,6 +84,7 @@ namespace Bosses.Second_Boss
             base.Start();
             _originalScale = transform.localScale;
             _arenaRect = GetArenaRect();
+            _camera = Camera.main;
             _perceivedPlayerPosition = player.position;
             _lastPlayerPosition = player.position;
         }
@@ -402,6 +405,8 @@ namespace Bosses.Second_Boss
         // A random spot on the NavMesh in a ring around the player, away from the walls and from where the boss stands now
         private Vector3 FindTeleportPosition()
         {
+            // Mostly stay low enough on the screen for the clock number above the head to be seen; sometimes go anywhere
+            bool allowHigh = Random.value < _teleportHighChance;
             for (int i = 0; i < _teleportAttempts; i++)
             {
                 Vector3 offset = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward
@@ -418,10 +423,21 @@ namespace Bosses.Second_Boss
                 if (NavMesh.FindClosestEdge(hit.position, out NavMeshHit edge, NavMesh.AllAreas) && edge.distance < _teleportWallClearance)
                     continue;
 
+                if (!allowHigh && !IsClockNumberVisibleAt(hit.position))
+                    continue;
+
                 return hit.position;
             }
 
             return transform.position;
+        }
+
+        private bool IsClockNumberVisibleAt(Vector3 position)
+        {
+            if (!_camera || !_clockNumberPrefab)
+                return true;
+
+            return _camera.WorldToViewportPoint(position + _clockNumberOffset).y <= _clockNumberPrefab.MaxViewportY;
         }
 
         private IEnumerator ScaleOverTime(Vector3 from, Vector3 to, float duration)

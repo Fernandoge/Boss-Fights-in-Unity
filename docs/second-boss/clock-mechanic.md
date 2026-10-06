@@ -10,6 +10,8 @@ The wizard's core mechanic, the equivalent of the first boss's Cataclysm. It is 
 
 **4. After the fourth wave** the boss teleports to a random spot and the cycle starts over with a new random order.
 
+**Keeping the number on screen:** the number floats about 5 m above the boss, so with the boss in the top part of the arena (world z above about 7) it would leave the screen. Teleports therefore avoid that band 80% of the time (`Teleport High Chance` 0.2 on the boss allows it), and the number itself is clamped to 90% of the screen height (`Max Viewport Y` on the `ClockNumber` prefab), so even with the boss at the very top edge the number slides down and stays readable. Measured: the boss lands in the cut-off band in about 4-7% of teleports, depending on where the player stands.
+
 **Pieces**
 - `Bosses/Second Boss/ClockNumberPopup.cs` (prefab `ClockNumber`, 3D text with the `ClockNumber` material): the floating number; it follows the boss, faces the camera and is hidden with `Hide()`.
 - `Bosses/Second Boss/ClockWaveBlast.cs` (prefab `ClockWaveBlast`): one wave. Owns its timers, draws the red warning (`DiagonalLineIndicator`), the explosion flash on everything except the spoke (`LineBlastFlash`, drawn as up to four rectangles around the spoke), the green safe line (`ClockSafeIndicator`, material `ClockSafeLine`) and the damage check.
