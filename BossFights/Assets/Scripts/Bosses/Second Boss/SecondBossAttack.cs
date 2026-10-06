@@ -4,6 +4,7 @@ namespace Bosses.Second_Boss
     {
         SpellCircles,
         DiagonalLines,
-        OrbBarrage
+        OrbBarrage,
+        Starfall
     }
 }

@@ -515,11 +515,32 @@ MonoBehaviour:
   _orbAimSpread: 25
   _orbSpawnDistance: 1.5
   _orbWallInset: 0.2
+  _starPrefab: {fileID: 6320980237470315722, guid: 49b459d26bbb61f43b034bf3ba13a30e, type: 3}
+  _starCount: 4
+  _starCastDelay: 0.5
+  _starInterval: 0.4
+  _starAfterTime: 0.5
+  _starNearPlayerChance: 0.4
+  _starMinSpacing: 7
+  _starMaxPlayerDistance: 15
+  _starPlacementAttempts: 25
+  _starEdgeMargin: 3
+  _starfall:
+    radius: 1.2
+    telegraphTime: 2.2
+    damage: 1
+    laserSpeed: 14
+    laserWidth: 0.6
+    laserLength: 5
+    laserDamage: 1
   _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
   _clockIconPrefab: {fileID: 8136150661759407743, guid: f7bb2e12418384a41b17abda5e38b28b, type: 3}
   _clockStartChance: 0.35
   _clockMinAttacksBetween: 4
   _clockStartCastTime: 1.6
+  _clockIconDelay: 0.5
+  _clockStartTeleportDelay: 0.3
+  _clockCastStrikeTime: 0.82
   _clockWavePrefab: {fileID: 5282451612537052843, guid: 54acaabfcec1ada4299c10acdb68713f, type: 3}
   _clockNumberOffset: {x: 0, y: 5.2, z: 0}
   _clockIntroTime: 1

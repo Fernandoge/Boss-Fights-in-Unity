@@ -47,6 +47,19 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _orbSpawnDistance = 1.5f;
         [SerializeField] private float _orbWallInset = 0.2f;
 
+        [Header("Starfall")]
+        [SerializeField] private StarfallStar _starPrefab;
+        [SerializeField] private int _starCount = 4;
+        [SerializeField] private float _starCastDelay = 0.5f;
+        [SerializeField] private float _starInterval = 0.4f;
+        [SerializeField] private float _starAfterTime = 0.5f;
+        [SerializeField, Range(0f, 1f)] private float _starNearPlayerChance = 0.4f;
+        [SerializeField] private float _starMinSpacing = 7f;
+        [SerializeField] private float _starMaxPlayerDistance = 15f;
+        [SerializeField] private int _starPlacementAttempts = 25;
+        [SerializeField] private float _starEdgeMargin = 3f;
+        [SerializeField] private StarfallSettings _starfall = new StarfallSettings();
+
         [Header("Clock Mechanic")]
         [SerializeField] private ClockNumberPopup _clockNumberPrefab;
         [SerializeField] private ClockNumberPopup _clockIconPrefab;
@@ -163,6 +176,8 @@ namespace Bosses.Second_Boss
 
         public void DebugForceOrbBarrage() => DebugForceAttack(SecondBossAttack.OrbBarrage);
 
+        public void DebugForceStarfall() => DebugForceAttack(SecondBossAttack.Starfall);
+
         public void DebugTeleport()
         {
             if (DebugIsBusy)
@@ -242,6 +257,9 @@ namespace Bosses.Second_Boss
                     break;
                 case SecondBossAttack.OrbBarrage:
                     StartCoroutine(OrbBarrageSequence());
+                    break;
+                case SecondBossAttack.Starfall:
+                    StartCoroutine(StarfallSequence());
                     break;
                 default:
                     StartCoroutine(SpellCirclesSequence());
@@ -346,6 +364,73 @@ namespace Bosses.Second_Boss
         {
             float inset = _arenaEdgePadding + _orbWallInset;
             return new Vector4(_arenaRect.x + inset, _arenaRect.y + inset, _arenaRect.z - inset, _arenaRect.w - inset);
+        }
+
+        /// *** Starfall *** ///
+
+        // Raises both hands and calls the stars down one after the other, each aimed near the player like the spell circles; they keep falling after the boss has teleported away
+        private IEnumerator StarfallSequence()
+        {
+            PlayCastArea();
+            yield return WaitFacingPlayer(_starCastDelay);
+
+            List<Vector3> centers = new List<Vector3>();
+            for (int i = 0; i < _starCount; i++)
+            {
+                Vector3 center = GetStarCenter(centers);
+                centers.Add(center);
+                Instantiate(_starPrefab).Begin(center, _starfall, _arenaRect);
+                yield return WaitFacingPlayer(_starInterval);
+            }
+
+            yield return WaitFacingPlayer(_starAfterTime);
+            yield return TeleportThenFinishAttack();
+        }
+
+        // Each star either aims near the player like a spell circle or lands at a random spot not too far from them, and never close to a star already placed, so the stars spread over the arena; they also stay away from the edges so the whole star on the floor is inside the map
+        private Vector3 GetStarCenter(List<Vector3> placed)
+        {
+            Vector3 best = KeepAwayFromEdges(GetSpellCircleCenter());
+            float bestSpacing = -1f;
+            for (int attempt = 0; attempt < _starPlacementAttempts; attempt++)
+            {
+                Vector3 candidate = KeepAwayFromEdges(Random.value < _starNearPlayerChance ? GetSpellCircleCenter() : GetRandomStarSpot());
+                float spacing = GetDistanceToNearest(candidate, placed);
+                if (spacing >= _starMinSpacing)
+                    return candidate;
+
+                if (spacing > bestSpacing)
+                {
+                    bestSpacing = spacing;
+                    best = candidate;
+                }
+            }
+
+            return best;
+        }
+
+        private Vector3 GetRandomStarSpot()
+        {
+            Vector3 spot = _perceivedPlayerPosition + GetRandomFlatOffset(0f, _starMaxPlayerDistance);
+            spot.x = Mathf.Clamp(spot.x, _arenaRect.x, _arenaRect.z);
+            spot.z = Mathf.Clamp(spot.z, _arenaRect.y, _arenaRect.w);
+            return NavMesh.SamplePosition(spot, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : _perceivedPlayerPosition;
+        }
+
+        private Vector3 KeepAwayFromEdges(Vector3 position)
+        {
+            position.x = Mathf.Clamp(position.x, _arenaRect.x + _starEdgeMargin, _arenaRect.z - _starEdgeMargin);
+            position.z = Mathf.Clamp(position.z, _arenaRect.y + _starEdgeMargin, _arenaRect.w - _starEdgeMargin);
+            return position;
+        }
+
+        private static float GetDistanceToNearest(Vector3 position, List<Vector3> others)
+        {
+            float nearest = float.MaxValue;
+            foreach (Vector3 other in others)
+                nearest = Mathf.Min(nearest, Vector3.Distance(position, other));
+
+            return nearest;
         }
 
         /// *** Diagonal Lines *** ///
