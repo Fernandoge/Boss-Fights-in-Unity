@@ -17,7 +17,7 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _playerHitPadding = 0.2f;
         [SerializeField] private float _growTime = 0.3f;
         [SerializeField] private float _fadeTime = 0.4f;
-        [SerializeField] private Vector2 _bounceSpeedBonus = new Vector2(0.2f, 0.4f);
+        [SerializeField] private Vector2 _bounceSpeedBonus = new Vector2(0.45f, 0.65f);
 
         private SkillIndicator _marker;
         private Vector4 _bounds;

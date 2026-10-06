@@ -490,9 +490,9 @@ MonoBehaviour:
   _jumpReactionDelay: 1
   _jumpDetectDistance: 2.5
   _lineBlastPrefab: {fileID: 945328694918007655, guid: fe663267f6ea78d43a9e6732eca01a17, type: 3}
-  _lineWindUpTime: 0.45
-  _lineTeleportDelay: 0.3
-  _lineAfterBlastTime: 0.2
+  _lineWindUpTime: 0.375
+  _lineTeleportDelay: 0.25
+  _lineAfterBlastTime: 0.167
   _lineBlast:
     layerCountRange: {x: 2, y: 3}
     spacingRange: {x: 2.4, y: 3.4}
@@ -501,12 +501,12 @@ MonoBehaviour:
     perpendicularChance: 0.35
     minAngleFromHorizontal: 30
     minAngleFromVertical: 15
-    telegraphTime: 1.4
+    telegraphTime: 1.167
     damage: 1
   _arenaEdgePadding: 0.6
   _orbPrefab: {fileID: 7251576215965526806, guid: c2e1c0b8a483fbc42940283787dcfdaa, type: 3}
   _orbCount: 3
-  _orbSpeed: 11.375
+  _orbSpeed: 12.5
   _orbLifetime: 9
   _orbDamage: 1
   _orbReleaseDelay: 0.28
@@ -518,12 +518,12 @@ MonoBehaviour:
   _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
   _clockIconPrefab: {fileID: 8136150661759407743, guid: f7bb2e12418384a41b17abda5e38b28b, type: 3}
   _clockStartChance: 0.35
-  _clockMinAttacksBetween: 2
+  _clockMinAttacksBetween: 4
   _clockStartCastTime: 1.6
   _clockWavePrefab: {fileID: 5282451612537052843, guid: 54acaabfcec1ada4299c10acdb68713f, type: 3}
   _clockNumberOffset: {x: 0, y: 5.2, z: 0}
   _clockIntroTime: 1
-  _clockWaveInterval: 1.5
+  _clockWaveInterval: 1.3
   _clockWaveTelegraphTime: 1.4
   _clockEndTime: 1
   _clockWaveDamage: 2

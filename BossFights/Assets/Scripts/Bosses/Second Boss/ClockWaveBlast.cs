@@ -12,7 +12,6 @@ namespace Bosses.Second_Boss
         [SerializeField] private SkillIndicator _safeLinePrefab;
         [SerializeField] private float _safeTolerance = 0.2f;
         [SerializeField] private float _lifetimeAfterBlast = 1.2f;
-        [SerializeField] private float _maxHitImmunityTime = 1f;
 
         private SkillIndicator _telegraph;
         private Vector3 _center;
@@ -80,11 +79,7 @@ namespace Bosses.Second_Boss
             ShowRect(Instantiate(_safeLinePrefab), spokeMinX, spokeMinZ, spokeMaxX, spokeMaxZ, 0.01f, true);
 
             if (!IsSafe(GameManager.Instance.player.transform.position))
-            {
                 GameManager.Instance.player.DamagePlayer(_damage);
-                // Waves come closer together than the player's normal hit immunity, so the next one must still be able to hurt
-                GameManager.Instance.player.LimitDamageImmunity(_maxHitImmunityTime);
-            }
         }
 
         private bool IsSafe(Vector3 position)

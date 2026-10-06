@@ -213,8 +213,6 @@ namespace Characters
             _damageImmuneCD = _originalDamagedImmuneCD;
         }
 
-        public void LimitDamageImmunity(float maxSeconds) => _damageImmuneCD = Mathf.Min(_damageImmuneCD, maxSeconds);
-
         protected void SetHealth(int healthToAdd)
         {
             _health = Mathf.Min(_health + healthToAdd, _maxHealth);

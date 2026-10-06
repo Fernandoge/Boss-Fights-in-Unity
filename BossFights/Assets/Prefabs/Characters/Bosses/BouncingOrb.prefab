@@ -207,6 +207,7 @@ MonoBehaviour:
   _playerHitPadding: 0.2
   _growTime: 0.3
   _fadeTime: 0.4
+  _bounceSpeedBonus: {x: 0.45, y: 0.65}
 --- !u!1 &4858154425489554148
 GameObject:
   m_ObjectHideFlags: 0

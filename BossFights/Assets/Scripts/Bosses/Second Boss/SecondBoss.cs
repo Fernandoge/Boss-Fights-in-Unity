@@ -53,6 +53,9 @@ namespace Bosses.Second_Boss
         [SerializeField, Range(0f, 1f)] private float _clockStartChance = 0.35f;
         [SerializeField] private int _clockMinAttacksBetween = 2;
         [SerializeField] private float _clockStartCastTime = 1.6f;
+        [SerializeField] private float _clockIconDelay = 0.5f;
+        [SerializeField] private float _clockStartTeleportDelay = 0.3f;
+        [SerializeField] private float _clockCastStrikeTime = 0.82f;
         [SerializeField] private ClockWaveBlast _clockWavePrefab;
         [SerializeField] private Vector3 _clockNumberOffset = new Vector3(0f, 5.2f, 0f);
         [SerializeField] private float _clockIntroTime = 1f;
@@ -92,6 +95,7 @@ namespace Bosses.Second_Boss
 
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
+        private static readonly int Cast_Area_State = Animator.StringToHash("Cast Area");
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int Empty = Animator.StringToHash("Empty");
         private static readonly int[] ClockPositions = { 3, 6, 9, 12 };
@@ -388,26 +392,30 @@ namespace Bosses.Second_Boss
 
         /// *** Clock Mechanic *** ///
 
-        // A turn on its own: the boss casts a clock above its head, and the next four attacks show the numbers
+        // A turn on its own: the boss casts a clock above its head, then teleports so the first number appears at a new spot; the next four attacks show the numbers
         private IEnumerator ClockStartSequence()
         {
             _clockActive = true;
             _clockNumbersShown = 0;
 
+            anim.SetTrigger(Cast_Area);
+
+            // The clock shows up when the hands are raised
+            yield return WaitFacingPlayer(_clockIconDelay);
             if (_clockIconPrefab)
             {
                 _activeClockIcon = Instantiate(_clockIconPrefab);
                 _activeClockIcon.Begin(string.Empty, transform, _clockNumberOffset, 1f);
             }
 
-            anim.SetTrigger(Cast_Area);
-            yield return WaitFacingPlayer(_clockStartCastTime);
+            yield return WaitFacingPlayer(Mathf.Max(0f, _clockStartCastTime - _clockIconDelay));
 
             if (_activeClockIcon)
                 _activeClockIcon.Hide();
 
             _activeClockIcon = null;
-            FinishAttack();
+            yield return WaitFacingPlayer(_clockStartTeleportDelay);
+            yield return TeleportThenFinishAttack();
         }
 
         // While the clock runs, every attack drops one clock number (3, 6, 9 or 12) next to the boss; after all four the intermission asks the player to remember them in order
@@ -434,6 +442,13 @@ namespace Bosses.Second_Boss
                 _activeClockNumber.Hide();
 
             _activeClockNumber = null;
+        }
+
+        // Restarts the area cast from its first frame even if the last one is still playing, so a trigger never waits in line and replays later
+        private void PlayCastArea()
+        {
+            anim.ResetTrigger(Cast_Area);
+            anim.CrossFadeInFixedTime(Cast_Area_State, 0.1f);
         }
 
         private void FinishAttack()
@@ -466,19 +481,22 @@ namespace Bosses.Second_Boss
             yield return TeleportRoutine(center);
 
             isImmuneToDamage = true;
-            anim.SetTrigger(Cast_Area);
             yield return WaitFacingPlayer(_clockIntroTime);
 
             for (int i = 0; i < _clockNumbers.Count; i++)
             {
-                anim.SetTrigger(Cast_Area);
                 // The camera squashes the depth axis by half, so the side spokes (which are wide along the depth) need twice the width to look as thick as the up/down ones
                 bool isUpDown = _clockNumbers[i] == 12 || _clockNumbers[i] == 6;
                 Instantiate(_clockWavePrefab).Begin(_arenaRect, transform.position.y, center, GetClockDirection(_clockNumbers[i]),
                     isUpDown ? _clockUpDownSpokeWidth : _clockSideSpokeWidth, _clockSpokeStartDistance, _clockWaveTelegraphTime, _clockWaveDamage);
 
+                // The cast starts late enough for the hands to come down just as the wave explodes
+                float castDelay = Mathf.Max(0f, _clockWaveTelegraphTime - _clockCastStrikeTime);
+                yield return WaitFacingPlayer(castDelay);
+                PlayCastArea();
+
                 bool isLastWave = i == _clockNumbers.Count - 1;
-                yield return WaitFacingPlayer(isLastWave ? _clockWaveTelegraphTime + _clockEndTime : _clockWaveInterval);
+                yield return WaitFacingPlayer(Mathf.Max(0f, (isLastWave ? _clockWaveTelegraphTime + _clockEndTime : _clockWaveInterval) - castDelay));
             }
 
             _clockNumbers.Clear();
