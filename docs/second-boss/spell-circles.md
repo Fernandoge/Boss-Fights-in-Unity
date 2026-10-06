@@ -1,5 +1,7 @@
 # Second boss: Spell Circles and Teleport
 
+(The boss's second skill, Diagonal Lines, is in `diagonal-lines.md`; between attacks it picks one of the two.)
+
 The second boss ("SecondBoss", placeholder name) is a wizard that never walks. It stands still, faces the player, and repeats one cycle: cast Spell Circles, then teleport to another spot.
 
 **Spell Circles:** the boss spawns 6 small circles, one every 0.55 s (Karthus Q style), restarting a hand-only cast animation for each one (the circle appears 0.35 s after the animation restarts, when the hand reaches its peak). Each circle is a `SkillIndicator` circle (radius 1.2 m) whose fill grows from the centre over 0.6 s; when the fill reaches the rim it explodes (`SpellCircleImpact` prefab: a copy of `SmallExplosion`, scaled to 0.4 so it fits the circle, parts scaled together, fireball and embers lifted about 0.9 m so the floor does not cut them, shockwave laid flat on the ground, played 1.4x faster) and hurts the player once if they are inside it (1 damage; the player's own damage immunity applies). Each circle picks its position separately:

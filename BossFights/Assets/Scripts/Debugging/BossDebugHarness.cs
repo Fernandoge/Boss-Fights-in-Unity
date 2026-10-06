@@ -16,6 +16,7 @@ namespace Debugging
         [Header("Only Use One Attack")]
         [SerializeField] private bool _onlyUseAttack;
         [SerializeField] private FirstBossAttack _attackToUse = FirstBossAttack.BoulderRoll;
+        [SerializeField] private SecondBossAttack _secondBossAttackToUse = SecondBossAttack.DiagonalLines;
 
         private static readonly KeyCode[] AttackKeys =
         {
@@ -34,9 +35,11 @@ namespace Debugging
 
         private void Start()
         {
-            FirstBoss firstBoss = GetBoss() as FirstBoss;
-            if (firstBoss)
+            BossController boss = GetBoss();
+            if (boss is FirstBoss firstBoss)
                 firstBoss.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (FirstBossAttack?)null;
+            else if (boss is SecondBoss secondBoss)
+                secondBoss.DebugOnlyAttack = _onlyUseAttack ? _secondBossAttackToUse : (SecondBossAttack?)null;
         }
 
         private void Update()
@@ -53,6 +56,8 @@ namespace Debugging
                     ForceSecondBossAction(secondBoss.DebugForceSpellCircles, "Forced SpellCircles");
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                     ForceSecondBossAction(secondBoss.DebugTeleport, "Forced Teleport");
+                if (Input.GetKeyDown(KeyCode.Alpha3))
+                    ForceSecondBossAction(secondBoss.DebugForceDiagonalLines, "Forced DiagonalLines");
             }
 
             if (Input.GetKeyDown(KeyCode.F1))
@@ -127,6 +132,13 @@ namespace Debugging
         // The boss repeats the attack picked in the Inspector instead of its normal attack rotation
         public void ToggleOnlyUseAttack()
         {
+            if (GetBoss() is SecondBoss secondBoss)
+            {
+                secondBoss.DebugOnlyAttack = secondBoss.DebugOnlyAttack.HasValue ? (SecondBossAttack?)null : _secondBossAttackToUse;
+                Show("Only use attack: " + (secondBoss.DebugOnlyAttack.HasValue ? secondBoss.DebugOnlyAttack.Value.ToString() : "OFF"));
+                return;
+            }
+
             FirstBoss boss = GetBoss() as FirstBoss;
             if (!boss)
             {
@@ -185,6 +197,8 @@ namespace Debugging
             string onlyAttack = "n/a";
             if (boss is FirstBoss firstBoss)
                 onlyAttack = firstBoss.DebugOnlyAttack.HasValue ? firstBoss.DebugOnlyAttack.Value.ToString() : "OFF";
+            else if (boss is SecondBoss secondBoss)
+                onlyAttack = secondBoss.DebugOnlyAttack.HasValue ? secondBoss.DebugOnlyAttack.Value.ToString() : "OFF";
 
             return "Boss: " + boss.name +
                    "\nAuto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
@@ -201,7 +215,7 @@ namespace Debugging
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
             else if (boss is SecondBoss)
-                text += "1  SpellCircles\n2  Teleport\n";
+                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n";
             else
                 text += "(no forced attacks for this boss yet)\n";
 

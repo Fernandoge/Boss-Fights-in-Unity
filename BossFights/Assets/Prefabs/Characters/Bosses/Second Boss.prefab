@@ -487,6 +487,16 @@ MonoBehaviour:
   _leadPlayerChance: 0.5
   _leadOffsetDistance: 0.8
   _randomOffsetDistanceRange: {x: 0.5, y: 2.5}
+  _lineBlastPrefab: {fileID: 945328694918007655, guid: fe663267f6ea78d43a9e6732eca01a17, type: 3}
+  _lineAttackChance: 0.45
+  _lineWindUpTime: 0.6
+  _lineSpacing: 2.6
+  _lineWidth: 0.7
+  _lineTelegraphTime: 1.8
+  _lineTeleportDelay: 0.4
+  _lineAfterBlastTime: 0.3
+  _lineDamage: 1
+  _arenaEdgePadding: 0.6
   _teleportMinPlayerDistance: 10
   _teleportMaxPlayerDistance: 22
   _teleportMinMoveDistance: 8

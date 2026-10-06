@@ -19,6 +19,15 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _leadOffsetDistance = 0.8f;
         [SerializeField] private Vector2 _randomOffsetDistanceRange = new Vector2(0.5f, 2.5f);
 
+        [Header("Diagonal Lines")]
+        [SerializeField] private DiagonalLineBlast _lineBlastPrefab;
+        [SerializeField, Range(0f, 1f)] private float _lineAttackChance = 0.45f;
+        [SerializeField] private float _lineWindUpTime = 0.6f;
+        [SerializeField] private float _lineTeleportDelay = 0.4f;
+        [SerializeField] private float _lineAfterBlastTime = 0.3f;
+        [SerializeField] private LineBlastSettings _lineBlast = new LineBlastSettings();
+        [SerializeField] private float _arenaEdgePadding = 0.6f;
+
         [Header("Teleport")]
         [SerializeField] private float _teleportMinPlayerDistance = 10f;
         [SerializeField] private float _teleportMaxPlayerDistance = 22f;
@@ -31,26 +40,39 @@ namespace Bosses.Second_Boss
         [SerializeField] private int _teleportAttempts = 30;
 
         private Vector3 _originalScale;
+        private Vector4 _arenaRect;
+        private SecondBossAttack _lastAttack;
 
         private static readonly int Cast = Animator.StringToHash("Cast");
+        private static readonly int Cast_Area = Animator.StringToHash("CastArea");
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int Empty = Animator.StringToHash("Empty");
 
         private const int CastHandLayer = 1;
 
+        public SecondBossAttack? DebugOnlyAttack { get; set; }
+
         protected override void Start()
         {
             base.Start();
             _originalScale = transform.localScale;
+            _arenaRect = GetArenaRect();
         }
 
         /// *** Debug *** ///
 
-        public void DebugForceSpellCircles()
+        public void DebugForceAttack(SecondBossAttack attack)
         {
-            if (!DebugIsBusy)
-                PerformAttack();
+            if (DebugIsBusy)
+                return;
+
+            base.PerformAttack();
+            StartAttack(attack);
         }
+
+        public void DebugForceSpellCircles() => DebugForceAttack(SecondBossAttack.SpellCircles);
+
+        public void DebugForceDiagonalLines() => DebugForceAttack(SecondBossAttack.DiagonalLines);
 
         public void DebugTeleport()
         {
@@ -74,13 +96,33 @@ namespace Bosses.Second_Boss
         protected override void PerformAttack()
         {
             base.PerformAttack();
-            StartCoroutine(SpellCirclesSequence());
+            StartAttack(ChooseAttack());
         }
 
         // No second phase yet; the base version would freeze the boss without a transition animation
         protected override IEnumerator EnterSecondPhase()
         {
             yield break;
+        }
+
+        /// *** Attack Selection *** ///
+
+        // Mostly spell circles, with diagonal lines mixed in (never twice in a row, since the lines are the heavier skill)
+        private SecondBossAttack ChooseAttack()
+        {
+            if (DebugOnlyAttack.HasValue)
+                return DebugOnlyAttack.Value;
+
+            if (_lastAttack != SecondBossAttack.DiagonalLines && Random.value < _lineAttackChance)
+                return SecondBossAttack.DiagonalLines;
+
+            return SecondBossAttack.SpellCircles;
+        }
+
+        private void StartAttack(SecondBossAttack attack)
+        {
+            _lastAttack = attack;
+            StartCoroutine(attack == SecondBossAttack.DiagonalLines ? DiagonalLinesSequence() : SpellCirclesSequence());
         }
 
         /// *** Spell Circles *** ///
@@ -130,9 +172,57 @@ namespace Bosses.Second_Boss
             return new Vector3(direction.x, 0f, direction.y) * distance;
         }
 
+        /// *** Diagonal Lines *** ///
+
+        // Casts the lines, then teleports while they charge; the next attack waits for the explosion
+        private IEnumerator DiagonalLinesSequence()
+        {
+            anim.SetTrigger(Cast_Area);
+            yield return WaitFacingPlayer(_lineWindUpTime);
+
+            float blastTime = Time.time + _lineBlast.telegraphTime;
+            SpawnLineBlast();
+
+            yield return WaitFacingPlayer(_lineTeleportDelay);
+            yield return TeleportRoutine();
+
+            yield return WaitFacingPlayer(Mathf.Max(0f, blastTime - Time.time) + _lineAfterBlastTime);
+            isPerformingAttack = false;
+        }
+
+        private void SpawnLineBlast()
+        {
+            DiagonalLineBlast blast = Instantiate(_lineBlastPrefab);
+            blast.Begin(_arenaRect, transform.position.y, _lineBlast);
+        }
+
+        // The walkable area, taken from the baked NavMesh and widened by the agent radius
+        private Vector4 GetArenaRect()
+        {
+            NavMeshTriangulation triangulation = NavMesh.CalculateTriangulation();
+            if (triangulation.vertices.Length == 0)
+                return new Vector4(-15f, -15f, 15f, 15f);
+
+            Vector3 min = triangulation.vertices[0];
+            Vector3 max = min;
+            foreach (Vector3 vertex in triangulation.vertices)
+            {
+                min = Vector3.Min(min, vertex);
+                max = Vector3.Max(max, vertex);
+            }
+
+            return new Vector4(min.x - _arenaEdgePadding, min.z - _arenaEdgePadding, max.x + _arenaEdgePadding, max.z + _arenaEdgePadding);
+        }
+
         /// *** Teleport *** ///
 
         private IEnumerator TeleportThenFinishAttack()
+        {
+            yield return TeleportRoutine();
+            isPerformingAttack = false;
+        }
+
+        private IEnumerator TeleportRoutine()
         {
             isImmuneToDamage = true;
             anim.CrossFade(Idle, 0.1f);
@@ -144,7 +234,6 @@ namespace Bosses.Second_Boss
 
             yield return ScaleOverTime(GetSkinnyScale(), _originalScale, _teleportAppearTime);
             isImmuneToDamage = false;
-            isPerformingAttack = false;
         }
 
         // Thin and tall, like the boss is pulled into a line of light
