@@ -23,7 +23,8 @@ namespace Bosses
         public BossController ActiveBoss { get; private set; }
 
         // Deactivating before the other scripts' Awake/Start keeps the unselected boss and its level parts from ever running
-        private void Awake() => Select(_startingBossIndex);
+        // A boss chosen on the start screen wins; pressing Play directly in the scene uses the Inspector index
+        private void Awake() => Select(BossSelection.TryConsume(out int chosenIndex) ? chosenIndex : _startingBossIndex);
 
         private void Start() => GameManager.Instance.ActiveBoss = ActiveBoss;
 
