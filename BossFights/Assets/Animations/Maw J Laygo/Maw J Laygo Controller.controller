@@ -115,7 +115,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.87722063
+  m_TransitionDuration: 0.3
   m_TransitionOffset: 0
   m_ExitTime: 0.9414062
   m_HasExitTime: 1
@@ -622,7 +622,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BackFlip
-  m_Speed: 1.5
+  m_Speed: 2.2
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 2139636388742912843}
@@ -1224,7 +1224,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Intermission Walking
-  m_Speed: 1.5
+  m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -4706593666366606512}
@@ -1237,7 +1237,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: ecbf8c1c447117a43915dc5ef8c4ff3e, type: 2}
+  m_Motion: {fileID: 7400000, guid: 2ccad6cfe1332f54f8d108ccb43c0365, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -1298,7 +1298,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MoveSlimesBackToSpawn
-  m_Speed: 1
+  m_Speed: 1.6
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 883392742899927201}
@@ -1372,7 +1372,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Warming Up
-  m_Speed: 1.5
+  m_Speed: 2.2
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 6761364642508147753}
@@ -1630,7 +1630,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RevealSlimeStones
-  m_Speed: 1
+  m_Speed: 1.6
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 294420145252309399}
@@ -1902,7 +1902,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: GrabSlimes
-  m_Speed: 1
+  m_Speed: 2
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -8481769606744530535}

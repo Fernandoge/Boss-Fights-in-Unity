@@ -2259,6 +2259,7 @@ MonoBehaviour:
   _health: 20
   _playerHealthUI: {fileID: 0}
   _damageImmuneCD: 2.2
+  _gameOverDelay: 1.8
   _basicAttackPrefabs:
   - {fileID: 8414005200382354775, guid: 7f29dbb0b8aec544086585418a9037ee, type: 3}
   - {fileID: 8414005200382354775, guid: b0872c5698d64d44b8e8b6a6447a7340, type: 3}
@@ -2276,9 +2277,10 @@ MonoBehaviour:
   _dashSmokePrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
   _qtePrompt: {fileID: 0}
   _QTEAlert: {fileID: 0}
+  _qteTimeLimit: 2
   _healingPrefab: {fileID: 2145175273900707483}
   _castInputsHeal: 3
-  _skillHealAmount: 2
+  _skillHealAmount: 1
   _healCD: 8
   _healSpellIcon: {fileID: 0}
   _clonePrefab: {fileID: 0}
@@ -2289,17 +2291,35 @@ MonoBehaviour:
   _huumaPrefab: {fileID: 8965027126141042946, guid: 66f07319bf3b1ee489aac7a47674dee4, type: 3}
   _huumaSwapEffectPrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
   _castInputsHuuma: 2
-  _huumaDamage: 5
+  _huumaDamage: 10
   _huumaRange: 26
   _huumaSpeed: 25
   _huumaTurnSpeed: 1080
-  _huumaLifetime: 5
-  _huumaCD: 6
+  _huumaLifetime: 2.5
+  _huumaCD: 10
   _huumaSpellIcon: {fileID: 0}
   _kickHitPosition: {fileID: 8008766010456891939}
   _kickHitArea: 2
   _flipKickDistance: 9.375
+  _kickCD: 8
   _kickSpellIcon: {fileID: 0}
+  _dodgeBubblePrefab: {fileID: 2077638996066839755, guid: 1625006c8344da646810714ac12bb91c, type: 3}
+  _castInputsDodge: 3
+  _dodgeDuration: 1
+  _dodgeDistance: 3.5
+  _dodgeCD: 12
+  _dodgeSpellIcon: {fileID: 0}
+  _whirlTrailPrefab: {fileID: 76947552572289274, guid: 438f7bb47f4554a40ad786bab1dda9f0, type: 3}
+  _whirlSlashPrefab: {fileID: 1171201465392465800, guid: 4aa9f30a28a77224ba84b2a2c334c71b, type: 3}
+  _whirlDuration: 2
+  _whirlHits: 6
+  _whirlDamage: 3
+  _whirlHitRadius: 4
+  _whirlOrbitRadius: 2.2
+  _whirlTargetRange: 7
+  _whirlSpinSpeed: 720
+  _whirlCD: 20
+  _whirlSpellIcon: {fileID: 0}
 --- !u!195 &814597986944425878
 NavMeshAgent:
   m_ObjectHideFlags: 0
