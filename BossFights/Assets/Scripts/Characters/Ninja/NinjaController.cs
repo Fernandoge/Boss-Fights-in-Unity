@@ -5,6 +5,7 @@ using Shared;
 using TMPro;
 using UI;
 using UnityEngine;
+using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace Characters.Ninja
@@ -21,60 +22,56 @@ namespace Characters.Ninja
         [SerializeField] private int _skillHealAmount;
         [SerializeField] private float _healCD;
         [SerializeField] private SpellIcon _healSpellIcon;
-        [Header("Skill Wall")] 
-        [SerializeField] private GameObject _wallPrefab;
-        [SerializeField] private int _castInputsWall;
-        [SerializeField] private SpellIcon _wallSpellIcon;
         [Header("Skill Clones")]
         [SerializeField] private GameObject _clonePrefab;
         [SerializeField] private int _castInputsClones;
         [SerializeField] private float _clonesDuration;
         [SerializeField] private float _clonesCD;
         [SerializeField] private SpellIcon _clonesSpellIcon;
-        [Header("Skill Kick")] 
+        [Header("Skill Huuma")]
+        [SerializeField] private HuumaShuriken _huumaPrefab;
+        [SerializeField] private GameObject _huumaSwapEffectPrefab;
+        [SerializeField] private int _castInputsHuuma = 2;
+        [SerializeField] private float _huumaRange = 20f;
+        [SerializeField] private float _huumaSpeed = 40f;
+        [SerializeField] private float _huumaLifetime = 5f;
+        [SerializeField] private float _huumaCD = 8f;
+        [SerializeField] private SpellIcon _huumaSpellIcon;
+        [Header("Skill Kick")]
         [SerializeField] private Transform _kickHitPosition;
         [SerializeField] private float _kickHitArea;
         [SerializeField] private float _flipKickDistance;
         [SerializeField] private SpellIcon _kickSpellIcon;
-        [Header("Skill Katon")]
-        [SerializeField] private GameObject _katonPrefab;
-        [SerializeField] private Transform _fireballSpawnPoint;
-        [SerializeField] private float _fireballSpeed;
-        [SerializeField] private int[] _castInputsKaton;
-        [SerializeField] private int[] _katonDamage;
-        [SerializeField] private SpellIcon _katonSpellIcon;
 
-        private GameObject _wallParticles;
         private bool _isKickWindowActive;
         private bool _isKickFlipping;
         private bool _isAbleToKickFlip;
         private float _originalHealCD;
         private float _originalClonesCD;
+        private float _originalHuumaCD;
+        private HuumaShuriken _activeHuuma;
         private List<NinjaClone> _activeClones;
         private Vector3 _storedShootTargetPoint;
         private bool _wasShootingLastFrame;
         private int _currentSkillBeingCast;
         
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
-        private static readonly int Skill_Wall = Animator.StringToHash("Skill_Wall");
         private static readonly int Skill_Clones = Animator.StringToHash("Skill_Clones");
+        private static readonly int Skill_Huuma = Animator.StringToHash("Skill_Huuma");
         private static readonly int Skill_Kick = Animator.StringToHash("Skill_Kick");
-        private static readonly int Skill_Katon = Animator.StringToHash("Skill_Katon");
         private static readonly int Skill_FlipKick = Animator.StringToHash("Skill_FlipKick");
         private static readonly int CastInput = Animator.StringToHash("CastInput");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private const KeyCode HealKey = KeyCode.Q;
         private const KeyCode ClonesKey = KeyCode.W;
-        private const KeyCode WallKey = KeyCode.D;
         private const KeyCode KickKey = KeyCode.E;
-        private const KeyCode KatonKey = KeyCode.A;
+        private const KeyCode HuumaKey = KeyCode.A;
 
         /// *** Unity Events *** ///
         
         protected override void Start()
         {
             base.Start();
-            _wallParticles = _wallPrefab.GetComponentInChildren<ParticleSystem>().gameObject;
             
             // Initialize heal cooldown
             _originalHealCD = _healCD;
@@ -85,11 +82,14 @@ namespace Characters.Ninja
             _clonesCD = 0;
             _activeClones = new List<NinjaClone>();
 
+            // Initialize huuma cooldown
+            _originalHuumaCD = _huumaCD;
+            _huumaCD = 0;
+
             _healSpellIcon.SetKeyLabel(HealKey);
             _clonesSpellIcon.SetKeyLabel(ClonesKey);
-            _wallSpellIcon.SetKeyLabel(WallKey);
             _kickSpellIcon.SetKeyLabel(KickKey);
-            _katonSpellIcon.SetKeyLabel(KatonKey);
+            _huumaSpellIcon.SetKeyLabel(HuumaKey);
         }
         
         /// *** Base Methods *** ///
@@ -102,6 +102,8 @@ namespace Characters.Ninja
                 _healCD -= Time.deltaTime;
             if (_clonesCD > 0)
                 _clonesCD -= Time.deltaTime;
+            if (_huumaCD > 0)
+                _huumaCD -= Time.deltaTime;
 
             // Capture mouse world point when shooting animation starts
             bool isShootingNow = anim.GetBool(Shooting);
@@ -120,11 +122,11 @@ namespace Characters.Ninja
             base.ResetPlayerState(includeCoroutines);
             
             anim.ResetTrigger(Skill_Heal);
-            anim.ResetTrigger(Skill_Wall);
             anim.ResetTrigger(Skill_Clones);
+            anim.ResetTrigger(Skill_Huuma);
             _isKickFlipping = false;
             _isKickWindowActive = false;
-            _isAbleToKickFlip = false;
+            SetKickFlipAvailable(false);
             _QTEAlert.gameObject.SetActive(false);
             _QTEText.transform.parent.gameObject.SetActive(false);
         }
@@ -161,6 +163,11 @@ namespace Characters.Ninja
                 _clonesCD = _originalClonesCD;
                 _clonesSpellIcon.StartCooldown(_originalClonesCD);
             }
+            else if (_currentSkillBeingCast == Skill_Huuma)
+            {
+                _huumaCD = _originalHuumaCD;
+                _huumaSpellIcon.StartCooldown(_originalHuumaCD);
+            }
             
             _currentSkillBeingCast = 0;
         }
@@ -181,19 +188,24 @@ namespace Characters.Ninja
                 StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, HealKey));
             else if (Input.GetKeyDown(ClonesKey) && _clonesCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, ClonesKey));
-            else if (Input.GetKeyDown(WallKey))
-                StartCoroutine(CastingSkill(Skill_Wall, _castInputsWall, true, WallKey));
             else if (Input.GetKeyDown(KickKey))
                 StartCoroutine(SkillKick());
-            else if (Input.GetKeyDown(KatonKey))
-                StartCoroutine(CastingSkill(Skill_Katon, _castInputsKaton[0], true, KatonKey,
-                    _castInputsKaton.Length));
+            else if (Input.GetKeyDown(HuumaKey))
+            {
+                // While the shuriken waits on the ground the key swaps places with it; otherwise it casts the throw
+                if (_activeHuuma != null)
+                {
+                    if (_activeHuuma.IsStuck)
+                        SwapWithHuuma();
+                }
+                else if (_huumaCD <= 0)
+                    StartCoroutine(CastingSkill(Skill_Huuma, _castInputsHuuma, false, HuumaKey));
+            }
         }
         
         /// *** Skill Casting *** ///
         
-        private IEnumerator CastingSkill(int skillToTrigger, int skillCastInputs, bool targetedSkill, 
-            KeyCode keycodeToRemove, int chargesRemaining = 0)
+        private IEnumerator CastingSkill(int skillToTrigger, int skillCastInputs, bool targetedSkill, KeyCode keycodeToRemove)
         {
             // May be overkill here, but it is needed to reset some animator booleans 
             ResetPlayerState(false);
@@ -238,14 +250,7 @@ namespace Characters.Ninja
                 yield return null;
             }
 
-            if (skillToTrigger == Skill_Katon && chargesRemaining > 1)
-            {
-                var katonQTE= StartCoroutine(CastingSkill(skillToTrigger, _castInputsKaton[_castInputsKaton.Length - chargesRemaining + 1], 
-                    targetedSkill, keycodeToRemove, chargesRemaining - 1));
-                StartCoroutine(ChargedKatonQTE(_castInputsKaton.Length - chargesRemaining + 1, katonQTE));
-            }
-            else
-                StartCoroutine(CompletedQTE(targetedSkill));
+            StartCoroutine(CompletedQTE(targetedSkill));
         }
 
         private List<KeyCode> GenerateKeycodesToCast(KeyCode[] totalKeyCodes, KeyCode keycodeToRemove, int skillCastInputs)
@@ -309,21 +314,6 @@ namespace Characters.Ninja
             _currentSkillBeingCast = 0;
         }
 
-        /// *** Wall *** ///
-        
-        // Used in Skill_Wall animation
-        private void SkillWall() 
-        {
-            _wallPrefab.transform.parent = transform;
-            _wallPrefab.transform.localPosition = new Vector3();
-            _wallPrefab.transform.localRotation = Quaternion.identity;
-            _wallPrefab.SetActive(false);
-            
-            _wallPrefab.transform.parent = transform.parent;
-            _wallPrefab.SetActive(true);
-            _wallParticles.SetActive(true);
-        }
-
         /// *** Clones *** ///
 
         // Used in Skill_Clones animation
@@ -360,6 +350,50 @@ namespace Characters.Ninja
             _currentSkillBeingCast = 0;
         }
 
+        /// *** Huuma Shuriken *** ///
+
+        // Used in Skill_Huuma animation: throws the shuriken toward the mouse
+        private void SkillHuuma()
+        {
+            LookAtMouse();
+            Vector3 origin = transform.position + Vector3.up * 1.2f + transform.forward * 0.8f;
+            _activeHuuma = Instantiate(_huumaPrefab);
+            _activeHuuma.Begin(origin, transform.forward, _huumaRange, _huumaSpeed, _huumaLifetime, transform, OnHuumaStuck, OnHuumaEnded);
+            _currentSkillBeingCast = 0;
+        }
+
+        // The key lights up while the shuriken waits on the ground
+        private void OnHuumaStuck() => _huumaSpellIcon.SetHighlighted(true);
+
+        // The cooldown starts when the shuriken is gone, whether it ran out of time or was used
+        private void OnHuumaEnded()
+        {
+            _activeHuuma = null;
+            _huumaSpellIcon.SetHighlighted(false);
+            _huumaCD = _originalHuumaCD;
+            _huumaSpellIcon.StartCooldown(_originalHuumaCD);
+        }
+
+        // The player goes where the shuriken is and the shuriken is used up
+        private void SwapWithHuuma()
+        {
+            Vector3 from = transform.position;
+            Vector3 to = NavMesh.SamplePosition(_activeHuuma.transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas) ? navHit.position : from;
+
+            ResetPlayerState(false);
+            NavMeshAgent agent = GetComponent<NavMeshAgent>();
+            agent.Warp(to);
+            agent.ResetPath();
+
+            if (_huumaSwapEffectPrefab)
+            {
+                Destroy(Instantiate(_huumaSwapEffectPrefab, from + Vector3.up, Quaternion.identity), 2f);
+                Destroy(Instantiate(_huumaSwapEffectPrefab, to + Vector3.up, Quaternion.identity), 2f);
+            }
+
+            _activeHuuma.Consume();
+        }
+
         /// *** Kick *** ///
 
         private IEnumerator SkillKick()
@@ -367,7 +401,7 @@ namespace Characters.Ninja
             // May be overkill here, but it is needed to reset some animator booleans 
             ResetPlayerState(false);
             LookAtMouse();
-            _isAbleToKickFlip = true;
+            SetKickFlipAvailable(true);
             isAnimationLocked = true;
             anim.SetTrigger(Skill_Kick);
             yield return new WaitUntil(() => _isKickWindowActive);
@@ -403,6 +437,14 @@ namespace Characters.Ninja
             }
         }
 
+        // The kick icon is highlighted while the flying kick (pressing E again) is available, so players learn about it
+        private void SetKickFlipAvailable(bool available)
+        {
+            _isAbleToKickFlip = available;
+            if (_kickSpellIcon)
+                _kickSpellIcon.SetHighlighted(available);
+        }
+
         // Used in FlipKick animation
         private void StartFlip() => _isKickFlipping = true;
         
@@ -410,7 +452,7 @@ namespace Characters.Ninja
         private void StartKickHit()
         {
             _isKickFlipping = false;
-            _isAbleToKickFlip = false;
+            SetKickFlipAvailable(false);
             _isKickWindowActive = true;
         }
 
@@ -426,43 +468,6 @@ namespace Characters.Ninja
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(_kickHitPosition.position, _kickHitArea);
-        }
-
-        /// *** Katon *** ///
-        
-        private IEnumerator ChargedKatonQTE(int chargeCount, Coroutine QTEInProgress = null)
-        {
-            _QTEAlert.gameObject.SetActive(true);
-            _QTEAlert.text = chargeCount switch
-            {
-                1 => "Click! (1/3)",
-                2 => "Click! (2/3)",
-                _ => _QTEAlert.text
-            };
-            yield return new WaitUntil(() => Input.GetMouseButton(0));
-            
-            _QTEText.transform.parent.gameObject.SetActive(false);
-            LookAtMouse();
-            _QTEAlert.gameObject.SetActive(false);
-            anim.SetBool(Casting, false);
-            isAnimationLocked = false;
-            if (QTEInProgress != null)
-                StopCoroutine(QTEInProgress);
-            
-            //Debug
-            print("click completed Katon coroutine");
-        }
-        
-        // Used in Skill_Katon animation
-        // TODO: Make different sizes of fireball depending on the charge
-        // TODO: Add damage collision and different damage values depending on the charge
-        private void SkillKaton()
-        {
-            GameObject fireball = Instantiate(_katonPrefab, _fireballSpawnPoint.position, _fireballSpawnPoint.rotation);
-            Vector3 fireballPosition = fireball.transform.position;
-            Vector3 fireballDirection = _fireballSpawnPoint.forward;
-            var fireballScript = fireball.GetComponentInChildren<Projectile>();
-            fireballScript.Shoot(_fireballSpeed, fireballPosition, fireballDirection);
         }
     }
 }
