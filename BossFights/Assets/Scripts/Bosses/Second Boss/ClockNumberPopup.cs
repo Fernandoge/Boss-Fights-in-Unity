@@ -69,6 +69,12 @@ namespace Bosses.Second_Boss
             SetAlpha(0f);
         }
 
+        public void SetIconColor(Color color)
+        {
+            if (_icon)
+                _icon.color = color;
+        }
+
         public void Hide()
         {
             if (_hideTime < 0f)

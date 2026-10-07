@@ -51,7 +51,7 @@ namespace Bosses
         private Color meshMaterialOriginalColor;
         private string colliderOriginalTag;
         private int currentHealth;
-        private bool hasEnteredSecondPhase;
+        protected bool hasEnteredSecondPhase;
         private bool isCounterWindowActive;
         protected bool isImmuneToDamage; 
         
@@ -115,6 +115,14 @@ namespace Bosses
         /// *** Base Methods *** ///
 
         public void DebugSetSecondPhaseFlag(bool value) => hasEnteredSecondPhase = value;
+
+        // One point above the half-health line, so the next hit starts the second phase; the phase flag is cleared so it can be repeated
+        public void DebugSetHealthJustAboveHalf()
+        {
+            hasEnteredSecondPhase = false;
+            currentHealth = maxHealth / 2 + 1;
+            _healthText.text = currentHealth.ToString();
+        }
 
         private void PerformAction()
         {

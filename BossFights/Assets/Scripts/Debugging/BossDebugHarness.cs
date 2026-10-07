@@ -68,6 +68,8 @@ namespace Debugging
                     ForceSecondBossAction(secondBoss.DebugForceStarfall, "Forced Starfall");
                 if (Input.GetKeyDown(KeyCode.Alpha8))
                     ForceSecondBossAction(secondBoss.DebugForceTimedExplosions, "Forced TimedExplosions");
+                if (Input.GetKeyDown(KeyCode.Alpha9))
+                    ForceSecondBossAction(secondBoss.DebugForceColorIntermission, "Forced ColorIntermission");
             }
 
             if (Input.GetKeyDown(KeyCode.F1))
@@ -80,11 +82,19 @@ namespace Debugging
                 ToggleSlowMotion();
             if (Input.GetKeyDown(KeyCode.F5))
                 ToggleOnlyUseAttack();
+            if (Input.GetKeyDown(KeyCode.F6))
+                SetBossHealthJustAboveHalf();
             if (Input.GetKeyDown(KeyCode.Tab))
                 _isHelpVisible = !_isHelpVisible;
 
             if (_messageTimer > 0f)
                 _messageTimer -= Time.unscaledDeltaTime;
+        }
+
+        public void SetBossHealthJustAboveHalf()
+        {
+            GetBoss().DebugSetHealthJustAboveHalf();
+            Show("Boss health set just above half");
         }
 
         private void OnDisable() => Time.timeScale = 1f;
@@ -225,11 +235,11 @@ namespace Debugging
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
             else if (boss is SecondBoss)
-                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n8  TimedExplosions\n";
+                text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n8  TimedExplosions\n9  ColorIntermission\n";
             else
                 text += "(no forced attacks for this boss yet)\n";
 
-            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack";
+            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack\nF6  Boss health just above half (next hit starts phase 2)";
             return text;
         }
     }

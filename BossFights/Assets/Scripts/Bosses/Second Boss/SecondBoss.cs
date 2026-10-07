@@ -71,6 +71,23 @@ namespace Bosses.Second_Boss
         [SerializeField] private int _zoneDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _zoneVerticalChance = 0.5f;
 
+        [Header("Color Intermission")]
+        [SerializeField] private ColorSquareBoard _colorBoardPrefab;
+        [SerializeField] private ClockNumberPopup _colorIconPrefab;
+        [SerializeField] private Color[] _intermissionColors = { new Color(0.95f, 0.25f, 0.25f), new Color(0.3f, 0.55f, 1f), new Color(0.3f, 0.9f, 0.4f), new Color(1f, 0.85f, 0.2f) };
+        [SerializeField] private IntermissionCharge _colorChargePrefab;
+        [SerializeField] private float _colorPreludeTime = 5f;
+        [SerializeField] private int _colorRounds = 6;
+        [SerializeField] private int _colorResetAfterRound = 4;
+        [SerializeField] private float _colorShuffleTime = 1.5f;
+        [SerializeField] private float _colorShowTime = 5f;
+        [SerializeField] private float _colorFadeTime = 0.5f;
+        [SerializeField] private float _colorPauseTime = 1f;
+        [SerializeField] private float _colorRunTime = 3f;
+        [SerializeField] private float _colorAfterExplosionTime = 1.5f;
+        [SerializeField] private float _colorRevealTime = 1f;
+        [SerializeField] private int _colorDamage = 1;
+
         [Header("Clock Mechanic")]
         [SerializeField] private ClockNumberPopup _clockNumberPrefab;
         [SerializeField] private ClockNumberPopup _clockIconPrefab;
@@ -120,6 +137,7 @@ namespace Bosses.Second_Boss
         private static readonly int Cast = Animator.StringToHash("Cast");
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
         private static readonly int Cast_Area_State = Animator.StringToHash("Cast Area");
+        private static readonly int Block_Start_State = Animator.StringToHash("Block Start");
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int Empty = Animator.StringToHash("Empty");
         private static readonly int[] ClockPositions = { 3, 6, 9, 12 };
@@ -187,6 +205,15 @@ namespace Bosses.Second_Boss
 
         public void DebugForceOrbBarrage() => DebugForceAttack(SecondBossAttack.OrbBarrage);
 
+        public void DebugForceColorIntermission()
+        {
+            if (DebugIsBusy)
+                return;
+
+            base.PerformAttack();
+            StartCoroutine(ColorIntermissionSequence());
+        }
+
         public void DebugForceStarfall() => DebugForceAttack(SecondBossAttack.Starfall);
 
         public void DebugForceTimedExplosions() => DebugForceAttack(SecondBossAttack.TimedExplosions);
@@ -237,10 +264,16 @@ namespace Bosses.Second_Boss
             StartAttack(attack);
         }
 
-        // No second phase yet; the base version would freeze the boss without a transition animation
+        // At half health the boss goes to the middle for the color intermission; there is no second phase after it yet, so it simply goes back to attacking
         protected override IEnumerator EnterSecondPhase()
         {
-            yield break;
+            if (hasEnteredSecondPhase)
+                yield break;
+
+            hasEnteredSecondPhase = true;
+            yield return new WaitUntil(() => !isPerformingAttack && !isPerformingAction);
+            MarkBusy();
+            yield return ColorIntermissionSequence();
         }
 
         /// *** Attack Selection *** ///
@@ -496,6 +529,103 @@ namespace Bosses.Second_Boss
             return zones;
         }
 
+        /// *** Color Intermission *** ///
+
+        // The squares of the floor get colors that are shown for a few seconds and then hidden; then the boss asks for one color after another (every color at least once, some twice) and every square of another color explodes
+        private IEnumerator ColorIntermissionSequence()
+        {
+            ResetClockMechanic();
+
+            yield return TeleportRoutine(GetArenaCenter());
+            isImmuneToDamage = true;
+
+            // Warning that an intermission is coming: whatever is left of the earlier attacks vanishes and the boss guards itself in the middle (it stays in the guard pose for the whole intermission) while an orb above its head charges up before the colors appear
+            ClearLingeringHazards();
+            anim.CrossFadeInFixedTime(Block_Start_State, 0.15f);
+            Instantiate(_colorChargePrefab).Begin(transform, _clockNumberOffset, _intermissionColors, _colorPreludeTime);
+            yield return WaitFacingPlayer(_colorPreludeTime);
+
+            ColorSquareBoard board = Instantiate(_colorBoardPrefab);
+            board.Begin(_arenaRect, transform.position.y, _intermissionColors);
+
+            board.ShowColors(_colorFadeTime);
+            yield return WaitFacingPlayer(_colorShowTime);
+            board.HideColors(_colorFadeTime);
+            yield return WaitFacingPlayer(_colorPauseTime);
+
+            int round = 0;
+            foreach (int color in GetColorRounds())
+            {
+                // After a few rounds the colors are thrown away: the squares shuffle, the new colors are shown for as long as the first ones and hidden again
+                if (round == _colorResetAfterRound)
+                {
+                    PlayCastArea();
+                    board.Reshuffle(_colorShuffleTime);
+                    yield return WaitFacingPlayer(_colorShuffleTime + _colorFadeTime);
+                    yield return WaitFacingPlayer(_colorShowTime);
+                    board.HideColors(_colorFadeTime);
+                    anim.CrossFadeInFixedTime(Block_Start_State, 0.15f);
+                    yield return WaitFacingPlayer(_colorPauseTime);
+                }
+
+                round++;
+                ClockNumberPopup icon = Instantiate(_colorIconPrefab);
+                icon.Begin(string.Empty, transform, _clockNumberOffset, 1f);
+                icon.SetIconColor(_intermissionColors[color]);
+
+                yield return WaitFacingPlayer(_colorRunTime);
+                board.Explode(color, _colorDamage, _colorRevealTime);
+                icon.Hide();
+                yield return WaitFacingPlayer(_colorAfterExplosionTime);
+            }
+
+            board.Finish(_colorFadeTime);
+            yield return TeleportThenFinishAttack();
+        }
+
+        // Every color is asked at least once and the other rounds repeat random colors, all in a random order
+        private List<int> GetColorRounds()
+        {
+            List<int> rounds = new List<int>();
+            for (int i = 0; i < _colorRounds; i++)
+                rounds.Add(i < _intermissionColors.Length ? i : Random.Range(0, _intermissionColors.Length));
+
+            for (int i = rounds.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (rounds[i], rounds[j]) = (rounds[j], rounds[i]);
+            }
+
+            return rounds;
+        }
+
+        // The intermission is a memory test, so attacks still on the field (bouncing orbs, falling stars, lasers, explosion zones) are removed when it starts
+        private static void ClearLingeringHazards()
+        {
+            BouncingOrb.DespawnAll();
+
+            foreach (StarfallStar star in FindObjectsByType<StarfallStar>(FindObjectsSortMode.None))
+                Destroy(star.gameObject);
+
+            foreach (StarLaser laser in FindObjectsByType<StarLaser>(FindObjectsSortMode.None))
+                Destroy(laser.gameObject);
+
+            foreach (TimedExplosionZone zone in FindObjectsByType<TimedExplosionZone>(FindObjectsSortMode.None))
+                Destroy(zone.gameObject);
+        }
+
+        private void ResetClockMechanic()
+        {
+            _clockActive = false;
+            _clockNumbers.Clear();
+            _clockNumbersShown = 0;
+            _attacksSinceClock = 0;
+            HideClockNumber();
+        }
+
+        // base cannot be used inside an iterator, so the coroutines mark the boss as busy through here
+        private void MarkBusy() => base.PerformAttack();
+
         /// *** Diagonal Lines *** ///
 
         // Casts the lines, then teleports while they charge; the next attack waits for the explosion
@@ -621,6 +751,9 @@ namespace Bosses.Second_Boss
         {
             if (_clockNumbers.Count != ClockPositions.Length)
                 ShuffleClockNumbers();
+
+            // Attacks still on the field would turn the memory test into a dodge test and felt unfair
+            ClearLingeringHazards();
 
             Vector3 center = GetArenaCenter();
             yield return TeleportRoutine(center);

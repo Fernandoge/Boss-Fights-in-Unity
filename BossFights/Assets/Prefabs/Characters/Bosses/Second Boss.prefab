@@ -540,9 +540,27 @@ MonoBehaviour:
   _zonePauseTime: 1.2
   _zoneExplosionInterval: 1.3
   _zoneTeleportDelay: 0.3
-  _zoneAfterTime: 0.5
   _zoneDamage: 1
   _zoneVerticalChance: 0.5
+  _colorBoardPrefab: {fileID: 6073983499374623215, guid: e69fb8d329afbb4499ed8b1ec8843cde, type: 3}
+  _colorIconPrefab: {fileID: 5552830164561460024, guid: cc6c3eb5f867d184aa02e657a08a9049, type: 3}
+  _intermissionColors:
+  - {r: 0.95, g: 0.25, b: 0.25, a: 1}
+  - {r: 0.3, g: 0.55, b: 1, a: 1}
+  - {r: 0.3, g: 0.9, b: 0.4, a: 1}
+  - {r: 1, g: 0.85, b: 0.2, a: 1}
+  _colorChargePrefab: {fileID: 4461245202706719942, guid: 665140cf55499dc4d9b47d9bb7223e8c, type: 3}
+  _colorPreludeTime: 5
+  _colorRounds: 6
+  _colorResetAfterRound: 4
+  _colorShuffleTime: 1
+  _colorShowTime: 3
+  _colorFadeTime: 0.35
+  _colorPauseTime: 0.5
+  _colorRunTime: 1.6
+  _colorAfterExplosionTime: 0.7
+  _colorRevealTime: 0.6
+  _colorDamage: 1
   _clockNumberPrefab: {fileID: 3644197129757915024, guid: cd2f78a6a58d2664992695adf90fb873, type: 3}
   _clockIconPrefab: {fileID: 8136150661759407743, guid: f7bb2e12418384a41b17abda5e38b28b, type: 3}
   _clockStartChance: 0.35
