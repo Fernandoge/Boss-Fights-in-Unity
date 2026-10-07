@@ -14,7 +14,7 @@ namespace Characters.Ninja
     {
         [Header("")]
         [Header("Ninja")]
-        [SerializeField] private TextMeshProUGUI _QTEText;
+        [SerializeField] private QTEPrompt _qtePrompt;
         [SerializeField] private TextMeshProUGUI _QTEAlert;
         [Header("Skill Heal")]
         [SerializeField] private GameObject _healingPrefab;
@@ -32,10 +32,12 @@ namespace Characters.Ninja
         [SerializeField] private HuumaShuriken _huumaPrefab;
         [SerializeField] private GameObject _huumaSwapEffectPrefab;
         [SerializeField] private int _castInputsHuuma = 2;
-        [SerializeField] private float _huumaRange = 20f;
-        [SerializeField] private float _huumaSpeed = 40f;
+        [SerializeField] private int _huumaDamage = 8;
+        [SerializeField] private float _huumaRange = 26f;
+        [SerializeField] private float _huumaSpeed = 25f;
+        [SerializeField] private float _huumaTurnSpeed = 1080f;
         [SerializeField] private float _huumaLifetime = 5f;
-        [SerializeField] private float _huumaCD = 8f;
+        [SerializeField] private float _huumaCD = 6f;
         [SerializeField] private SpellIcon _huumaSpellIcon;
         [Header("Skill Kick")]
         [SerializeField] private Transform _kickHitPosition;
@@ -53,6 +55,8 @@ namespace Characters.Ninja
         private List<NinjaClone> _activeClones;
         private Vector3 _storedShootTargetPoint;
         private bool _wasShootingLastFrame;
+        private bool _isAimingHuuma;
+        private bool _hasSwappedWithHuuma;
         private int _currentSkillBeingCast;
         
         private static readonly int Skill_Heal = Animator.StringToHash("Skill_Heal");
@@ -115,6 +119,10 @@ namespace Characters.Ninja
                     _storedShootTargetPoint = transform.position + transform.forward * 10f;
             }
             _wasShootingLastFrame = isShootingNow;
+
+            // After the QTE the ninja turns toward the mouse while the throw animation plays
+            if (_isAimingHuuma)
+                TurnTowardsMouse(_huumaTurnSpeed);
         }
 
         protected override void ResetPlayerState(bool includeCoroutines)
@@ -124,11 +132,12 @@ namespace Characters.Ninja
             anim.ResetTrigger(Skill_Heal);
             anim.ResetTrigger(Skill_Clones);
             anim.ResetTrigger(Skill_Huuma);
+            _isAimingHuuma = false;
             _isKickFlipping = false;
             _isKickWindowActive = false;
             SetKickFlipAvailable(false);
             _QTEAlert.gameObject.SetActive(false);
-            _QTEText.transform.parent.gameObject.SetActive(false);
+            _qtePrompt.Hide();
         }
 
         public override void DamagePlayer(int damage)
@@ -181,26 +190,24 @@ namespace Characters.Ninja
             if (Input.GetKeyDown(KickKey) && anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
                 StartCoroutine(StartSkillFlipKick());
             
+            // The swap works as soon as the shuriken is thrown, even while it is still in the air or the throw animation is finishing
+            if (Input.GetKeyDown(HuumaKey) && _activeHuuma != null && !_hasSwappedWithHuuma)
+            {
+                SwapWithHuuma();
+                return;
+            }
+
             if (isAnimationLocked || anim.GetCurrentAnimatorStateInfo(0).IsTag("AnimationLock"))
                 return;
-            
+
             if (Input.GetKeyDown(HealKey) && _healCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Heal, _castInputsHeal, false, HealKey));
             else if (Input.GetKeyDown(ClonesKey) && _clonesCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Clones, _castInputsClones, false, ClonesKey));
             else if (Input.GetKeyDown(KickKey))
                 StartCoroutine(SkillKick());
-            else if (Input.GetKeyDown(HuumaKey))
-            {
-                // While the shuriken waits on the ground the key swaps places with it; otherwise it casts the throw
-                if (_activeHuuma != null)
-                {
-                    if (_activeHuuma.IsStuck)
-                        SwapWithHuuma();
-                }
-                else if (_huumaCD <= 0)
-                    StartCoroutine(CastingSkill(Skill_Huuma, _castInputsHuuma, false, HuumaKey));
-            }
+            else if (Input.GetKeyDown(HuumaKey) && _huumaCD <= 0 && _activeHuuma == null)
+                StartCoroutine(CastingSkill(Skill_Huuma, _castInputsHuuma, false, HuumaKey));
         }
         
         /// *** Skill Casting *** ///
@@ -215,15 +222,11 @@ namespace Characters.Ninja
             isAnimationLocked = true;
 
             // Prepare random KeyCodes to Cast for the QTE
-            // Prepare random KeyCodes to Cast for the QTE
             KeyCode[] totalKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
             var keycodesToCast = GenerateKeycodesToCast(totalKeyCodes, keycodeToRemove, skillCastInputs);
             
             // Show QTE Keycodes in Screen
-            _QTEText.text = string.Join(" ", keycodesToCast);
-            _QTEText.text += " ";
-            _QTEText.color = Color.black;
-            _QTEText.transform.parent.gameObject.SetActive(true);
+            _qtePrompt.Show(keycodesToCast);
             
             // This is so the KeyCode to trigger the Cast doesn't enter the loop
             yield return new WaitUntil(() => !Input.GetKeyDown(keycodeToRemove));
@@ -235,7 +238,7 @@ namespace Characters.Ninja
                 {
                     anim.SetTrigger(CastInput);
                     keycodesToCast.RemoveAt(0);
-                    _QTEText.text = _QTEText.text[2..];
+                    _qtePrompt.Advance();
                 }
                 else
                 {
@@ -275,13 +278,14 @@ namespace Characters.Ninja
             ResetPlayerState(true);
             anim.SetTrigger(Damaged);
             anim.SetBool(Casting, false);
-            _QTEText.transform.parent.gameObject.SetActive(false);
+            _qtePrompt.Fail();
             _QTEAlert.gameObject.SetActive(false);
         }
 
         private IEnumerator CompletedQTE(bool targetedSkill)
         {
-            _QTEText.transform.parent.gameObject.SetActive(false);
+            _qtePrompt.Complete();
+            _isAimingHuuma = _currentSkillBeingCast == Skill_Huuma;
             if (targetedSkill)
             {
                 _QTEAlert.gameObject.SetActive(true);
@@ -355,26 +359,48 @@ namespace Characters.Ninja
         // Used in Skill_Huuma animation: throws the shuriken toward the mouse
         private void SkillHuuma()
         {
+            _isAimingHuuma = false;
             LookAtMouse();
             Vector3 origin = transform.position + Vector3.up * 1.2f + transform.forward * 0.8f;
             _activeHuuma = Instantiate(_huumaPrefab);
-            _activeHuuma.Begin(origin, transform.forward, _huumaRange, _huumaSpeed, _huumaLifetime, transform, OnHuumaStuck, OnHuumaEnded);
+            _activeHuuma.Begin(origin, transform.forward, _huumaDamage, _huumaRange, _huumaSpeed, _huumaLifetime, transform, OnHuumaEnded);
+            _huumaSpellIcon.SetHighlighted(true);
             _currentSkillBeingCast = 0;
         }
 
-        // The key lights up while the shuriken waits on the ground
-        private void OnHuumaStuck() => _huumaSpellIcon.SetHighlighted(true);
+        private void TurnTowardsMouse(float degreesPerSecond)
+        {
+            if (!GetMouseWorldPoint(out Vector3 mousePoint))
+                return;
+
+            Vector3 direction = mousePoint - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.1f)
+                return;
+
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), degreesPerSecond * Time.deltaTime);
+        }
 
         // The cooldown starts when the shuriken is gone, whether it ran out of time or was used
         private void OnHuumaEnded()
         {
             _activeHuuma = null;
             _huumaSpellIcon.SetHighlighted(false);
+
+            // A swap already started the cooldown, so the shuriken fading away does not restart it
+            if (!_hasSwappedWithHuuma)
+                StartHuumaCooldown();
+
+            _hasSwappedWithHuuma = false;
+        }
+
+        private void StartHuumaCooldown()
+        {
             _huumaCD = _originalHuumaCD;
             _huumaSpellIcon.StartCooldown(_originalHuumaCD);
         }
 
-        // The player goes where the shuriken is and the shuriken is used up
+        // The player goes where the shuriken is and the shuriken takes the player's place, with a smoke puff at both spots (one swap per throw)
         private void SwapWithHuuma()
         {
             Vector3 from = transform.position;
@@ -391,7 +417,11 @@ namespace Characters.Ninja
                 Destroy(Instantiate(_huumaSwapEffectPrefab, to + Vector3.up, Quaternion.identity), 2f);
             }
 
-            _activeHuuma.Consume();
+            // The swap is used up: the cooldown starts now and the shuriken just waits where the player was until it fades
+            _hasSwappedWithHuuma = true;
+            _huumaSpellIcon.SetHighlighted(false);
+            StartHuumaCooldown();
+            _activeHuuma.RelocateTo(from);
         }
 
         /// *** Kick *** ///

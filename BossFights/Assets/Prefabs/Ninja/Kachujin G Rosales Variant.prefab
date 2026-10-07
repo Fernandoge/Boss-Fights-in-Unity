@@ -2273,7 +2273,8 @@ MonoBehaviour:
   _dashFreezeTime: 0.4
   _dashCD: 12
   _dashSpellIcon: {fileID: 0}
-  _QTEText: {fileID: 0}
+  _dashSmokePrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
+  _qtePrompt: {fileID: 0}
   _QTEAlert: {fileID: 0}
   _healingPrefab: {fileID: 2145175273900707483}
   _castInputsHeal: 3
@@ -2286,16 +2287,18 @@ MonoBehaviour:
   _clonesCD: 0
   _clonesSpellIcon: {fileID: 0}
   _huumaPrefab: {fileID: 8965027126141042946, guid: 66f07319bf3b1ee489aac7a47674dee4, type: 3}
-  _huumaSwapEffectPrefab: {fileID: 2965222256817593503, guid: e4c341b428752c647b587cf3113d426c, type: 3}
+  _huumaSwapEffectPrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
   _castInputsHuuma: 2
-  _huumaRange: 20
-  _huumaSpeed: 40
+  _huumaDamage: 8
+  _huumaRange: 26
+  _huumaSpeed: 25
+  _huumaTurnSpeed: 1080
   _huumaLifetime: 5
-  _huumaCD: 8
+  _huumaCD: 6
   _huumaSpellIcon: {fileID: 0}
   _kickHitPosition: {fileID: 8008766010456891939}
   _kickHitArea: 2
-  _flipKickDistance: 15.625
+  _flipKickDistance: 9.375
   _kickSpellIcon: {fileID: 0}
 --- !u!195 &814597986944425878
 NavMeshAgent:

@@ -22,6 +22,7 @@ namespace Characters
         [SerializeField] private float _dashFreezeTime;
         [SerializeField] private float _dashCD;
         [SerializeField] private SpellIcon _dashSpellIcon;
+        [SerializeField] private GameObject _dashSmokePrefab;
 
         protected Animator anim;
         protected bool isAnimationLocked;
@@ -235,6 +236,10 @@ namespace Characters
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hit))
             {
+                // A smoke puff where the player was, so the dash reads as a vanish and not just a teleport
+                if (_dashSmokePrefab)
+                    Instantiate(_dashSmokePrefab, transform.position + Vector3.up * 0.9f, Quaternion.identity);
+
                 _navMeshAgent.enabled = false;
                 Vector3 direction = (hit.point - transform.position).normalized;
                 transform.position += direction * _dashDistance;

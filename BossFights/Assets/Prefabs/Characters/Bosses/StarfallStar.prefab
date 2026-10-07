@@ -138,8 +138,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.StarfallStar
   _laserPrefab: {fileID: 8366886103501831384, guid: 93648a1883f44c845bf6cf450d18daa7, type: 3}
-  _impactEffectPrefab: {fileID: 6458295856078765224, guid: be707362ee4376e42beef70c3af74ca4, type: 3}
-  _impactEffectScale: 0.7
+  _impactEffectPrefab: {fileID: 2965222256817593503, guid: a164e676dbbd6e54587237e619372c98, type: 3}
+  _impactEffectScale: 2
   _visual: {fileID: 2580896743002134461}
   _indicatorBase: {fileID: 2840213597791649917}
   _indicatorFill: {fileID: 2462555049516808004}

@@ -1,10 +1,11 @@
 using System;
+using Interfaces;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace Characters.Ninja
 {
-    // The big shuriken of the ninja: it flies straight until it hits something or runs out of range, then it stays on the ground for a few seconds, where the player can swap places with it
+    // The big shuriken of the ninja: it flies straight until it hits something (damaging it if it can be hurt) or runs out of range, then it stays on the ground for a few seconds, where the player can swap places with it
     public class HuumaShuriken : MonoBehaviour
     {
         [SerializeField] private Transform _visual;
@@ -18,9 +19,10 @@ namespace Characters.Ninja
 
         private readonly RaycastHit[] _hits = new RaycastHit[16];
         private Transform _owner;
-        private Action _onStuck;
         private Action _onEnded;
         private Vector3 _direction;
+        private int _damage;
+        private float _flightHeight;
         private float _speed;
         private float _range;
         private float _traveled;
@@ -42,20 +44,38 @@ namespace Characters.Ninja
         }
 
         // owner is the player (and anything under it), which the shuriken flies through
-        public void Begin(Vector3 origin, Vector3 direction, float range, float speed, float lifetime, Transform owner, Action onStuck, Action onEnded)
+        public void Begin(Vector3 origin, Vector3 direction, int damage, float range, float speed, float lifetime, Transform owner, Action onEnded)
         {
             transform.position = origin;
+            _flightHeight = origin.y - owner.position.y;
             _direction = new Vector3(direction.x, 0f, direction.z).normalized;
+            _damage = damage;
             _range = range;
             _speed = speed;
             _lifetime = lifetime;
             _owner = owner;
-            _onStuck = onStuck;
             _onEnded = onEnded;
         }
 
-        // Used when the player swaps places with it
-        public void Consume() => End();
+        // Used when the player swaps places with it: it ends up where the player was, waiting on the floor (a flying one lands there with a fresh ground timer)
+        public void RelocateTo(Vector3 position)
+        {
+            if (!_isStuck)
+            {
+                _isStuck = true;
+                _stuckTimer = _lifetime;
+            }
+
+            PlaceOnFloor(position);
+            if (_stuckTimer > _blinkTime)
+                _visual.gameObject.SetActive(true);
+
+            if (_trail)
+            {
+                _trail.emitting = false;
+                _trail.Clear();
+            }
+        }
 
         private void Fly()
         {
@@ -63,6 +83,16 @@ namespace Characters.Ninja
             if (TryGetHit(step, out RaycastHit hit))
             {
                 transform.position += _direction * Mathf.Max(hit.distance, 0f);
+                hit.collider.GetComponentInParent<IDamageableByPlayer>()?.TakeDamage(_damage);
+                Stick();
+                return;
+            }
+
+            // The walls are low, so the edge of the walkable area is what stops it
+            Vector3 floorStart = transform.position - Vector3.up * _flightHeight;
+            if (NavMesh.Raycast(floorStart, floorStart + _direction * step, out NavMeshHit edge, NavMesh.AllAreas))
+            {
+                transform.position = edge.position + Vector3.up * _flightHeight;
                 Stick();
                 return;
             }
@@ -102,16 +132,17 @@ namespace Characters.Ninja
         {
             _isStuck = true;
             _stuckTimer = _lifetime;
-
-            Vector3 position = transform.position;
-            transform.position = NavMesh.SamplePosition(position, out NavMeshHit navHit, 6f, NavMesh.AllAreas)
-                ? navHit.position + Vector3.up * _stuckHeight
-                : position;
+            PlaceOnFloor(transform.position);
 
             if (_trail)
                 _trail.emitting = false;
+        }
 
-            _onStuck?.Invoke();
+        private void PlaceOnFloor(Vector3 position)
+        {
+            transform.position = NavMesh.SamplePosition(position, out NavMeshHit navHit, 6f, NavMesh.AllAreas)
+                ? navHit.position + Vector3.up * _stuckHeight
+                : position;
         }
 
         private void UpdateStuck()
