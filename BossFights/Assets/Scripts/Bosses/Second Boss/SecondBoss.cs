@@ -62,6 +62,7 @@ namespace Bosses.Second_Boss
 
         [Header("Timed Explosions")]
         [SerializeField] private TimedExplosionZone _zonePrefab;
+        [SerializeField] private int _zoneCount = 3;
         [SerializeField] private float _zoneCastDelay = 0.5f;
         [SerializeField] private float _zoneLightTime = 0.5f;
         [SerializeField] private float _zoneLightGap = 0.2f;
@@ -70,6 +71,16 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _zoneTeleportDelay = 0.3f;
         [SerializeField] private int _zoneDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _zoneVerticalChance = 0.5f;
+
+        [Header("Phase 2")]
+        [SerializeField] private int _phaseTwoOrbCount = 4;
+        [SerializeField] private int _phaseTwoZoneSteps = 6;
+        [SerializeField] private int _phaseTwoZoneCooldown = 2;
+        [SerializeField] private float _phaseTwoLineSpeed = 1.3f;
+        [SerializeField] private int _phaseTwoCircleSteps = 4;
+        [SerializeField] private int _phaseTwoCirclesPerStep = 2;
+        [SerializeField] private float _phaseTwoCircleDistance = 2.4f;
+        [SerializeField] private float _powerUpTime = 3.5f;
 
         [Header("Color Intermission")]
         [SerializeField] private ColorSquareBoard _colorBoardPrefab;
@@ -127,6 +138,7 @@ namespace Bosses.Second_Boss
         private Vector3 _lastPlayerPosition;
         private float _jumpReactionTimer;
         private SecondBossAttack? _lastAttack;
+        private int _attacksSinceZones = int.MaxValue / 2;
         private readonly List<int> _clockNumbers = new List<int>();
         private int _clockNumbersShown;
         private ClockNumberPopup _activeClockNumber;
@@ -138,6 +150,7 @@ namespace Bosses.Second_Boss
         private static readonly int Cast_Area = Animator.StringToHash("CastArea");
         private static readonly int Cast_Area_State = Animator.StringToHash("Cast Area");
         private static readonly int Block_Start_State = Animator.StringToHash("Block Start");
+        private static readonly int Power_Up_State = Animator.StringToHash("Power Up");
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int Empty = Animator.StringToHash("Empty");
         private static readonly int[] ClockPositions = { 3, 6, 9, 12 };
@@ -145,6 +158,10 @@ namespace Bosses.Second_Boss
         private const int CastHandLayer = 1;
 
         public SecondBossAttack? DebugOnlyAttack { get; set; }
+
+        private int OrbCount => hasEnteredSecondPhase ? _phaseTwoOrbCount : _orbCount;
+
+        private float LineSpeed => hasEnteredSecondPhase ? _phaseTwoLineSpeed : 1f;
 
         protected override void Start()
         {
@@ -242,7 +259,7 @@ namespace Bosses.Second_Boss
             base.PerformAttack();
 
             // The clock mechanic is not running all the time: sometimes the boss casts the clock, then the next four attacks show a number each, then the intermission comes (not while one attack is being tested on its own)
-            bool clockMechanicEnabled = !DebugOnlyAttack.HasValue;
+            bool clockMechanicEnabled = !DebugOnlyAttack.HasValue && !hasEnteredSecondPhase;
             if (clockMechanicEnabled && _clockActive && _clockNumbersShown >= ClockPositions.Length)
             {
                 StartCoroutine(ClockIntermissionSequence());
@@ -288,7 +305,7 @@ namespace Bosses.Second_Boss
             SecondBossAttack attack;
             do
                 attack = attacks[Random.Range(0, attacks.Length)];
-            while (attacks.Length > 1 && _lastAttack.HasValue && attack == _lastAttack.Value);
+            while (attacks.Length > 1 && ((_lastAttack.HasValue && attack == _lastAttack.Value) || (hasEnteredSecondPhase && attack == SecondBossAttack.TimedExplosions && _attacksSinceZones < _phaseTwoZoneCooldown)));
 
             return attack;
         }
@@ -296,6 +313,7 @@ namespace Bosses.Second_Boss
         private void StartAttack(SecondBossAttack attack)
         {
             _lastAttack = attack;
+            _attacksSinceZones = attack == SecondBossAttack.TimedExplosions ? 0 : _attacksSinceZones + 1;
             switch (attack)
             {
                 case SecondBossAttack.DiagonalLines:
@@ -321,7 +339,8 @@ namespace Bosses.Second_Boss
         private IEnumerator SpellCirclesSequence()
         {
             // Every circle restarts the cast animation, so the boss looks like it is spamming the spell
-            for (int i = 0; i < _circleCount; i++)
+            int steps = hasEnteredSecondPhase ? _phaseTwoCircleSteps : _circleCount;
+            for (int i = 0; i < steps; i++)
             {
                 anim.SetTrigger(Cast);
                 yield return WaitFacingPlayer(_castReleaseDelay);
@@ -336,8 +355,23 @@ namespace Bosses.Second_Boss
 
         private void SpawnSpellCircle()
         {
-            SpellCircle circle = Instantiate(_spellCirclePrefab);
-            circle.Begin(GetSpellCircleCenter(), _circleRadius, _circleTelegraphTime, _circleDamage);
+            Vector3 center = GetSpellCircleCenter();
+            if (!hasEnteredSecondPhase)
+            {
+                Instantiate(_spellCirclePrefab).Begin(center, _circleRadius, _circleTelegraphTime, _circleDamage);
+                return;
+            }
+
+            // Phase 2: two circles on opposite sides of the aimed spot, far enough apart to leave a safe place in the middle, so the player either stands in the middle or runs away
+            float startAngle = Random.value * 360f;
+            for (int i = 0; i < _phaseTwoCirclesPerStep; i++)
+            {
+                Vector3 direction = Quaternion.Euler(0f, startAngle + i * 360f / _phaseTwoCirclesPerStep, 0f) * Vector3.forward;
+                Vector3 circleCenter = center + direction * _phaseTwoCircleDistance;
+                circleCenter.x = Mathf.Clamp(circleCenter.x, _arenaRect.x + _circleRadius, _arenaRect.z - _circleRadius);
+                circleCenter.z = Mathf.Clamp(circleCenter.z, _arenaRect.y + _circleRadius, _arenaRect.w - _circleRadius);
+                Instantiate(_spellCirclePrefab).Begin(circleCenter, _circleRadius, _circleTelegraphTime, _circleDamage);
+            }
         }
 
         // Either aims where the player is heading or lands at a random offset from where they stand, so players cannot rely on one dodge habit
@@ -369,8 +403,9 @@ namespace Bosses.Second_Boss
         // Throws the orbs one after the other, each at a different angle around the player; they keep bouncing after the boss has teleported away
         private IEnumerator OrbBarrageSequence()
         {
-            List<float> angles = GetOrbAimAngles();
-            for (int i = 0; i < _orbCount; i++)
+            int count = OrbCount;
+            List<float> angles = GetOrbAimAngles(count);
+            for (int i = 0; i < count; i++)
             {
                 anim.SetTrigger(Cast);
                 yield return WaitFacingPlayer(_orbReleaseDelay);
@@ -383,11 +418,11 @@ namespace Bosses.Second_Boss
         }
 
         // The throw angles are spread evenly across the aim cone in a random order, so one dodge does not beat all of them
-        private List<float> GetOrbAimAngles()
+        private List<float> GetOrbAimAngles(int count)
         {
             List<float> angles = new List<float>();
-            for (int i = 0; i < _orbCount; i++)
-                angles.Add(_orbCount > 1 ? Mathf.Lerp(-_orbAimSpread, _orbAimSpread, i / (float)(_orbCount - 1)) : 0f);
+            for (int i = 0; i < count; i++)
+                angles.Add(count > 1 ? Mathf.Lerp(-_orbAimSpread, _orbAimSpread, i / (float)(count - 1)) : 0f);
 
             for (int i = angles.Count - 1; i > 0; i--)
             {
@@ -496,7 +531,8 @@ namespace Bosses.Second_Boss
             PlayCastArea();
             yield return WaitFacingPlayer(_zoneCastDelay);
 
-            List<Vector4> zones = GetExplosionZones(Random.value < _zoneVerticalChance);
+            List<Vector4> zones = hasEnteredSecondPhase ? GetPhaseTwoExplosionZones() : GetExplosionZones(Random.value < _zoneVerticalChance, _zoneCount);
+
             float lightPhase = zones.Count * _zoneLightTime + (zones.Count - 1) * _zoneLightGap;
             for (int i = 0; i < zones.Count; i++)
                 Instantiate(_zonePrefab).Begin(zones[i], transform.position.y, i * (_zoneLightTime + _zoneLightGap), _zoneLightTime, lightPhase + _zonePauseTime + i * _zoneExplosionInterval, _zoneDamage);
@@ -509,13 +545,35 @@ namespace Bosses.Second_Boss
             FinishAttack();
         }
 
-        // Either three vertical strips (left, center, right) or three horizontal bands (bottom, middle, top), in a random order
-        private List<Vector4> GetExplosionZones(bool vertical)
+        // Phase 2: a full set of thirds (all vertical or all horizontal, so no spot of the arena is ever safe) plus extra steps picked from the thirds of both directions, in a random order, so zones can come up twice
+        private List<Vector4> GetPhaseTwoExplosionZones()
+        {
+            bool fullSetIsVertical = Random.value < _zoneVerticalChance;
+            List<Vector4> sequence = GetExplosionZones(fullSetIsVertical, _zoneCount);
+
+            // The first extra step always comes from the other direction, so the sequence always mixes vertical and horizontal zones
+            List<Vector4> other = GetExplosionZones(!fullSetIsVertical, _zoneCount);
+            List<Vector4> pool = new List<Vector4>(sequence);
+            pool.AddRange(other);
+            for (int i = sequence.Count; i < _phaseTwoZoneSteps; i++)
+                sequence.Add(i == _zoneCount ? other[Random.Range(0, other.Count)] : pool[Random.Range(0, pool.Count)]);
+
+            for (int i = sequence.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (sequence[i], sequence[j]) = (sequence[j], sequence[i]);
+            }
+
+            return sequence;
+        }
+
+        // Either vertical strips (left to right) or horizontal bands (bottom to top), all the same size, in a random order
+        private List<Vector4> GetExplosionZones(bool vertical, int count)
         {
             List<Vector4> zones = new List<Vector4>();
-            float width = (_arenaRect.z - _arenaRect.x) / 3f;
-            float depth = (_arenaRect.w - _arenaRect.y) / 3f;
-            for (int i = 0; i < 3; i++)
+            float width = (_arenaRect.z - _arenaRect.x) / count;
+            float depth = (_arenaRect.w - _arenaRect.y) / count;
+            for (int i = 0; i < count; i++)
                 zones.Add(vertical
                     ? new Vector4(_arenaRect.x + i * width, _arenaRect.y, _arenaRect.x + (i + 1) * width, _arenaRect.w)
                     : new Vector4(_arenaRect.x, _arenaRect.y + i * depth, _arenaRect.z, _arenaRect.y + (i + 1) * depth));
@@ -539,19 +597,22 @@ namespace Bosses.Second_Boss
             yield return TeleportRoutine(GetArenaCenter());
             isImmuneToDamage = true;
 
+            // In the middle the boss looks straight ahead (toward the camera) for the whole intermission and does not follow the player
+            transform.rotation = Quaternion.LookRotation(Vector3.back);
+
             // Warning that an intermission is coming: whatever is left of the earlier attacks vanishes and the boss guards itself in the middle (it stays in the guard pose for the whole intermission) while an orb above its head charges up before the colors appear
             ClearLingeringHazards();
             anim.CrossFadeInFixedTime(Block_Start_State, 0.15f);
             Instantiate(_colorChargePrefab).Begin(transform, _clockNumberOffset, _intermissionColors, _colorPreludeTime);
-            yield return WaitFacingPlayer(_colorPreludeTime);
+            yield return new WaitForSeconds(_colorPreludeTime);
 
             ColorSquareBoard board = Instantiate(_colorBoardPrefab);
             board.Begin(_arenaRect, transform.position.y, _intermissionColors);
 
             board.ShowColors(_colorFadeTime);
-            yield return WaitFacingPlayer(_colorShowTime);
+            yield return new WaitForSeconds(_colorShowTime);
             board.HideColors(_colorFadeTime);
-            yield return WaitFacingPlayer(_colorPauseTime);
+            yield return new WaitForSeconds(_colorPauseTime);
 
             int round = 0;
             foreach (int color in GetColorRounds())
@@ -561,11 +622,11 @@ namespace Bosses.Second_Boss
                 {
                     PlayCastArea();
                     board.Reshuffle(_colorShuffleTime);
-                    yield return WaitFacingPlayer(_colorShuffleTime + _colorFadeTime);
-                    yield return WaitFacingPlayer(_colorShowTime);
+                    yield return new WaitForSeconds(_colorShuffleTime + _colorFadeTime);
+                    yield return new WaitForSeconds(_colorShowTime);
                     board.HideColors(_colorFadeTime);
                     anim.CrossFadeInFixedTime(Block_Start_State, 0.15f);
-                    yield return WaitFacingPlayer(_colorPauseTime);
+                    yield return new WaitForSeconds(_colorPauseTime);
                 }
 
                 round++;
@@ -573,13 +634,16 @@ namespace Bosses.Second_Boss
                 icon.Begin(string.Empty, transform, _clockNumberOffset, 1f);
                 icon.SetIconColor(_intermissionColors[color]);
 
-                yield return WaitFacingPlayer(_colorRunTime);
+                yield return new WaitForSeconds(_colorRunTime);
                 board.Explode(color, _colorDamage, _colorRevealTime);
                 icon.Hide();
-                yield return WaitFacingPlayer(_colorAfterExplosionTime);
+                yield return new WaitForSeconds(_colorAfterExplosionTime);
             }
 
+            // The boss crouches and bursts upward with its arms thrown open as the second phase starts
             board.Finish(_colorFadeTime);
+            anim.CrossFadeInFixedTime(Power_Up_State, 0.2f);
+            yield return new WaitForSeconds(_powerUpTime);
             yield return TeleportThenFinishAttack();
         }
 
@@ -631,23 +695,24 @@ namespace Bosses.Second_Boss
         // Casts the lines, then teleports while they charge; the next attack waits for the explosion
         private IEnumerator DiagonalLinesSequence()
         {
+            // Phase 2 plays the whole attack faster: wind-up, warning, teleport delay and the wait after the blast are all divided by the speed
             anim.SetTrigger(Cast_Area);
-            yield return WaitFacingPlayer(_lineWindUpTime);
+            yield return WaitFacingPlayer(_lineWindUpTime / LineSpeed);
 
-            float blastTime = Time.time + _lineBlast.telegraphTime;
+            float blastTime = Time.time + _lineBlast.telegraphTime / LineSpeed;
             SpawnLineBlast();
 
-            yield return WaitFacingPlayer(_lineTeleportDelay);
+            yield return WaitFacingPlayer(_lineTeleportDelay / LineSpeed);
             yield return TeleportRoutine();
 
-            yield return WaitFacingPlayer(Mathf.Max(0f, blastTime - Time.time) + _lineAfterBlastTime);
+            yield return WaitFacingPlayer(Mathf.Max(0f, blastTime - Time.time) + _lineAfterBlastTime / LineSpeed);
             FinishAttack();
         }
 
         private void SpawnLineBlast()
         {
             DiagonalLineBlast blast = Instantiate(_lineBlastPrefab);
-            blast.Begin(_arenaRect, transform.position.y, _lineBlast);
+            blast.Begin(_arenaRect, transform.position.y, _lineBlast.WithTelegraphTime(_lineBlast.telegraphTime / LineSpeed));
         }
 
         // The walkable area, taken from the baked NavMesh and widened by the agent radius

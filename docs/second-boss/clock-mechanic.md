@@ -1,5 +1,7 @@
 # Second boss: the clock mechanic
 
+**Phase 1 only:** the clock mechanic is switched off once the boss reaches half health (see `phase-two.md`).
+
 The wizard's core mechanic, the equivalent of the first boss's Cataclysm. It is a memory test.
 
 **0. Starting the clock.** The mechanic does not run all the time. Each time the boss picks its next turn and the clock is not running, and at least `Clock Min Attacks Between` (4) normal attacks have passed since the last intermission, there is a `Clock Start Chance` (0.35) that the turn becomes the clock cast instead of an attack: the boss raises its hand and a clock icon (`ClockIcon` prefab, a procedural sprite shown with `ClockNumberPopup`) appears above its head once the hands are raised (`Clock Icon Delay` 0.5 s) and stays until `Clock Start Cast Time` (1.6 s) after the cast began. Then, after `Clock Start Teleport Delay` (0.3 s), the boss teleports, so the first number appears at a new spot and not where the clock was cast. That turn deals no damage. It works out to about 4-10 plain attacks, then the clock cast, then four numbered attacks, then the intermission, then plain attacks again.

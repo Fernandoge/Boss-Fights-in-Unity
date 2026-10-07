@@ -20,6 +20,13 @@ namespace Bosses.Second_Boss
         [Range(0f, 45f)] public float minAngleFromVertical = 15f;
         public float telegraphTime = 1.4f;
         public int damage = 1;
+
+        public LineBlastSettings WithTelegraphTime(float time)
+        {
+            LineBlastSettings copy = (LineBlastSettings)MemberwiseClone();
+            copy.telegraphTime = time;
+            return copy;
+        }
     }
 
     // Several sets of parallel diagonal lines across the arena (sets cross and overlap): every line is telegraphed at once and they all explode together
