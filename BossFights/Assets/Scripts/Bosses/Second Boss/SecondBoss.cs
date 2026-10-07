@@ -305,10 +305,13 @@ namespace Bosses.Second_Boss
             SecondBossAttack attack;
             do
                 attack = attacks[Random.Range(0, attacks.Length)];
-            while (attacks.Length > 1 && ((_lastAttack.HasValue && attack == _lastAttack.Value) || (hasEnteredSecondPhase && attack == SecondBossAttack.TimedExplosions && _attacksSinceZones < _phaseTwoZoneCooldown)));
+            while (attacks.Length > 1 && ((_lastAttack.HasValue && attack == _lastAttack.Value) || (hasEnteredSecondPhase && attack == SecondBossAttack.TimedExplosions && IsExplosionZonesOnCooldown())));
 
             return attack;
         }
+
+        // Phase 2: the explosion zones can be cast again only after at least 2 other attacks and only when the zones of the last cast are gone, so two memory games never overlap
+        private bool IsExplosionZonesOnCooldown() => _attacksSinceZones < _phaseTwoZoneCooldown || FindFirstObjectByType<TimedExplosionZone>() != null;
 
         private void StartAttack(SecondBossAttack attack)
         {
