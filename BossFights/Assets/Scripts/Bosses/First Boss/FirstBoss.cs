@@ -104,6 +104,8 @@ namespace Bosses.First_Boss
 
         [Header("Intermission")]
         [SerializeField] private Transform _intermissionCenterPosition;
+        [SerializeField] private float _intermissionRunSpeed = 20f; // How fast the boss runs to the center
+        [SerializeField] private float _slimeLevitateDuration = 0.7f; // How long the slimes take to rise before the shell game
         [SerializeField] private Transform[] _slimePositions; // 4 positions in the scene
         [SerializeField] private SlimeController[] _slimes; // The slime controllers to move
         [SerializeField] private GameObject _rockShellPrefab; // Rock prefab for shell game
@@ -680,7 +682,9 @@ namespace Bosses.First_Boss
             if (directionToCenter != Vector3.zero)
                 transform.rotation = Quaternion.LookRotation(directionToCenter);
             
-            // Start walking to center (use normal speed)
+            // Run to the center, then go back to the normal speed
+            float speedBeforeRun = navMeshAgent.speed;
+            navMeshAgent.speed = _intermissionRunSpeed;
             navMeshAgent.isStopped = false;
             anim.SetBool(Walking, true);
             navMeshAgent.SetDestination(center);
@@ -692,6 +696,7 @@ namespace Bosses.First_Boss
             }
             
             navMeshAgent.isStopped = true;
+            navMeshAgent.speed = speedBeforeRun;
             anim.SetBool(Walking, false);
             anim.SetTrigger(Grab_Slimes);
 
@@ -744,7 +749,7 @@ namespace Bosses.First_Boss
             // After all slimes have moved and rotated, levitate them up
             List<Coroutine> levitationCoroutines = new List<Coroutine>();
             foreach (var slimeController in _slimes)
-                levitationCoroutines.Add(StartCoroutine(slimeController.LevitateUp(0.6f, 1.5f)));
+                levitationCoroutines.Add(StartCoroutine(slimeController.LevitateUp(0.6f, _slimeLevitateDuration)));
             
             // Wait for all slimes to finish levitating
             foreach (var coroutine in levitationCoroutines)

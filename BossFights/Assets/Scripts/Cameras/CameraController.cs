@@ -6,6 +6,8 @@ namespace Cameras
     {
         public Transform player;
         public float smoothSpeed = 0.125f;
+        // While true the camera stays where it is, e.g. while the player blinks around during a skill
+        public bool IsFrozen { get; set; }
         
         private Vector3 offset;
         
@@ -19,7 +21,7 @@ namespace Cameras
         
         void LateUpdate()
         {
-            if (player == null)
+            if (player == null || IsFrozen)
                 return;
             
             Vector3 desiredPosition = player.position + offset;

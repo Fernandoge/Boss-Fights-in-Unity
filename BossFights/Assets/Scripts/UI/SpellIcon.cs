@@ -12,12 +12,14 @@ namespace UI
         [SerializeField] private Image highlight;
         [SerializeField] private Sprite highlightedSprite;
         [SerializeField] private float highlightPulseSpeed = 14f;
+        [SerializeField] private Color activeTimerColor = new Color(0.3f, 0.8f, 1f, 0.6f);
 
         private float cooldownDuration;
         private float cooldownRemaining;
         private bool isHighlighted;
         private Image iconImage;
         private Sprite normalSprite;
+        private Color cooldownColor;
 
         private void Awake()
         {
@@ -25,6 +27,7 @@ namespace UI
             enabled = false;
             iconImage = GetComponent<Image>();
             normalSprite = iconImage.sprite;
+            cooldownColor = cooldownOverlay.color;
             cooldownText.gameObject.SetActive(false);
             if (highlight)
                 highlight.gameObject.SetActive(false);
@@ -47,11 +50,20 @@ namespace UI
 
         public void StartCooldown(float duration)
         {
+            cooldownOverlay.color = cooldownColor;
             cooldownDuration = duration;
             cooldownRemaining = cooldownDuration;
             cooldownOverlay.fillAmount = 1;
             cooldownText.gameObject.SetActive(true);
             enabled = true; // Enable Update() for cooldown tracker
+        }
+
+        // The same spinner in another color and without the number (numbers are only for cooldowns), for a skill that is active right now and runs out
+        public void StartActiveTimer(float duration)
+        {
+            StartCooldown(duration);
+            cooldownOverlay.color = activeTimerColor;
+            cooldownText.gameObject.SetActive(false);
         }
 
         private void Update()

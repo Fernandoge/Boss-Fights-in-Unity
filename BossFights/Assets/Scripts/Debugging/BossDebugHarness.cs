@@ -94,7 +94,7 @@ namespace Debugging
         public void SetBossHealthJustAboveHalf()
         {
             GetBoss().DebugSetHealthJustAboveHalf();
-            Show("Boss health set just above half");
+            Show("Boss health set just above the phase 2 line");
         }
 
         private void OnDisable() => Time.timeScale = 1f;
@@ -239,7 +239,7 @@ namespace Debugging
             else
                 text += "(no forced attacks for this boss yet)\n";
 
-            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack\nF6  Boss health just above half (next hit starts phase 2)";
+            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack\nF6  Boss health just above the phase 2 line (next hit starts phase 2)";
             return text;
         }
     }

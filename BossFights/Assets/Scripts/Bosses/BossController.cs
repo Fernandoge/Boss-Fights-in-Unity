@@ -29,11 +29,15 @@ namespace Bosses
         
         [Header("Health")]
         [SerializeField] protected int maxHealth = 100;
+        // The second phase starts when the health falls to this share of the maximum
+        [SerializeField, Range(0.1f, 0.9f)] protected float secondPhaseHealthShare = 0.5f;
         [SerializeField] private TextMeshProUGUI _healthText;
 
         public bool IsInSecondPhase => hasEnteredSecondPhase;
         public bool DebugAutoAttacksDisabled { get; set; }
         public bool DebugIsBusy => isPerformingAttack || isPerformingAction;
+
+        private int SecondPhaseHealth => Mathf.RoundToInt(maxHealth * secondPhaseHealthShare);
 
         protected Transform player;
         protected NavMeshAgent navMeshAgent;
@@ -117,11 +121,11 @@ namespace Bosses
 
         public void DebugSetSecondPhaseFlag(bool value) => hasEnteredSecondPhase = value;
 
-        // One point above the half-health line, so the next hit starts the second phase; the phase flag is cleared so it can be repeated
+        // One point above the second phase line, so the next hit starts the second phase; the phase flag is cleared so it can be repeated
         public void DebugSetHealthJustAboveHalf()
         {
             hasEnteredSecondPhase = false;
-            currentHealth = maxHealth / 2 + 1;
+            currentHealth = SecondPhaseHealth + 1;
             _healthText.text = currentHealth.ToString();
         }
 
@@ -232,7 +236,7 @@ namespace Bosses
             _healthText.text = currentHealth.ToString();
             
             // Check if boss should enter second phase
-            if (!hasEnteredSecondPhase && currentHealth <= maxHealth / 2 && !isPerformingAction)
+            if (!hasEnteredSecondPhase && currentHealth <= SecondPhaseHealth && !isPerformingAction)
                 StartCoroutine(EnterSecondPhase());
             
             // Don't flash red if counter window is active (already flashing green)

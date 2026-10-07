@@ -20,6 +20,7 @@ namespace Characters.Ninja
         private readonly RaycastHit[] _hits = new RaycastHit[16];
         private Transform _owner;
         private Action _onEnded;
+        private Action<float> _onLanded;
         private Vector3 _direction;
         private int _damage;
         private float _flightHeight;
@@ -44,7 +45,7 @@ namespace Characters.Ninja
         }
 
         // owner is the player (and anything under it), which the shuriken flies through
-        public void Begin(Vector3 origin, Vector3 direction, int damage, float range, float speed, float lifetime, Transform owner, Action onEnded)
+        public void Begin(Vector3 origin, Vector3 direction, int damage, float range, float speed, float lifetime, Transform owner, Action onEnded, Action<float> onLanded)
         {
             transform.position = origin;
             _flightHeight = origin.y - owner.position.y;
@@ -55,6 +56,7 @@ namespace Characters.Ninja
             _lifetime = lifetime;
             _owner = owner;
             _onEnded = onEnded;
+            _onLanded = onLanded;
         }
 
         // Used when the player swaps places with it: it ends up where the player was, waiting on the floor (a flying one lands there with a fresh ground timer)
@@ -139,6 +141,8 @@ namespace Characters.Ninja
 
             if (_trail)
                 _trail.emitting = false;
+
+            _onLanded?.Invoke(_lifetime);
         }
 
         private void PlaceOnFloor(Vector3 position)

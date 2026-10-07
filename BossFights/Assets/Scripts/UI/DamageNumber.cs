@@ -11,10 +11,10 @@ namespace UI
         private const float RiseSpeed = 2.2f;
         private const float RiseDrag = 2.5f;
         private const float SideSpread = 0.8f;
-        private const float NormalSize = 12f;
-        private const float CritSize = 18f;
+        private const float NormalSize = 9.6f;
+        private const float CritSize = 14.4f;
         private static readonly Color NormalColor = Color.white;
-        private static readonly Color CritColor = new Color(1f, 0.82f, 0.15f);
+        private static readonly Color CritColor = new Color(1f, 0.1f, 0.1f);
         private static readonly Color OutlineColor = new Color(0.1f, 0.05f, 0f);
 
         private TextMeshPro _text;
@@ -53,7 +53,7 @@ namespace UI
             number._color = isCrit ? CritColor : NormalColor;
 
             TextMeshPro text = numberObject.AddComponent<TextMeshPro>();
-            text.text = isCrit ? amount + "!" : amount.ToString();
+            text.text = amount.ToString();
             text.fontSize = isCrit ? CritSize : NormalSize;
             text.fontStyle = FontStyles.Bold;
             text.alignment = TextAlignmentOptions.Center;

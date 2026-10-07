@@ -13,6 +13,7 @@ namespace Characters
         [SerializeField] private int _health;
         [SerializeField] private PlayerHealthUI _playerHealthUI;
         [SerializeField] private float _damageImmuneCD;
+        [SerializeField] private float _gameOverDelay = 1.8f;
         [SerializeField] private GameObject[] _basicAttackPrefabs;
         [SerializeField] private Transform _basicAttackSpawnPoint;
         [SerializeField] private int _basicAttackDamage;
@@ -29,19 +30,24 @@ namespace Characters
         protected static readonly int Casting = Animator.StringToHash("Casting");
         protected static readonly int Damaged = Animator.StringToHash("Damaged");
         protected const KeyCode DashKey = KeyCode.Space;
+        private const KeyCode PauseKey = KeyCode.Escape;
 
         private NavMeshAgent _navMeshAgent;
         private Camera _mainCamera;
         private int _maxHealth;
         private float _originalDashCD;
         private float _originalDamagedImmuneCD;
+        private float _invulnerableTime;
         private Vector3 _lastDestination;
+        private GameMenuScreen _pauseScreen;
         private NavMeshPath _reusablePath; // Reuse path object to avoid allocations
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Skill_Dash = Animator.StringToHash("Skill_Dash");
+        private static readonly int Dead = Animator.StringToHash("Dead");
 
         public bool DebugInvulnerable { get; set; }
+        public bool IsDead { get; private set; }
 
         /// *** Unity Events *** ///
         
@@ -67,6 +73,16 @@ namespace Characters
         
         private void Update()
         {
+            if (IsDead)
+                return;
+
+            if (Input.GetKeyDown(PauseKey))
+                TogglePause();
+
+            // The game is frozen while the pause screen is open, but Update still runs, so the inputs are skipped here
+            if (_pauseScreen)
+                return;
+
             NavMeshAgentPathCheck();
             PlayerInputs();
             PlayerCooldowns();
@@ -121,6 +137,8 @@ namespace Characters
                 _dashCD -= Time.deltaTime;
             if (_damageImmuneCD > 0)
                 _damageImmuneCD -= Time.deltaTime;
+            if (_invulnerableTime > 0)
+                _invulnerableTime -= Time.deltaTime;
         }
         
         // Used in Shoot animation
@@ -202,16 +220,23 @@ namespace Characters
          
         public virtual void DamagePlayer(int damage)
         {
-            if (_damageImmuneCD > 0 || DebugInvulnerable)
+            if (IsDead || _damageImmuneCD > 0 || _invulnerableTime > 0 || DebugInvulnerable)
                 return;
 
             // Important to reset player state and coroutines since this method cancels player animations
             ResetPlayerState(true);
-            anim.SetTrigger(Damaged);
-            isAnimationLocked = true;
             _health -= damage;
             _playerHealthUI.UpdateHearts(_health);
             _damageImmuneCD = _originalDamagedImmuneCD;
+
+            if (_health <= 0)
+            {
+                Die();
+                return;
+            }
+
+            anim.SetTrigger(Damaged);
+            isAnimationLocked = true;
         }
 
         protected void SetHealth(int healthToAdd)
@@ -220,8 +245,26 @@ namespace Characters
             _playerHealthUI.UpdateHearts(_health);
         }
         
+        protected void SetInvulnerable(float duration) => _invulnerableTime = duration;
+
         // Used in Damaged animation
         public void DamageAnimStopped() => isAnimationLocked = false;
+
+        private void Die()
+        {
+            IsDead = true;
+            isAnimationLocked = true;
+            anim.SetTrigger(Dead);
+            GameMenuScreen.ShowGameOver(_gameOverDelay);
+        }
+
+        private void TogglePause()
+        {
+            if (_pauseScreen)
+                _pauseScreen.Close();
+            else
+                _pauseScreen = GameMenuScreen.ShowPaused();
+        }
 
         /// *** Dash *** ///
         

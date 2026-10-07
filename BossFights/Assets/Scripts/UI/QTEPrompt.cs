@@ -20,6 +20,11 @@ namespace UI
         [SerializeField] private Color _pendingColor = new Color(0.5f, 0.56f, 0.68f, 1f);
         [SerializeField] private Color _doneColor = new Color(0.35f, 0.9f, 0.5f, 1f);
         [SerializeField] private Color _failColor = new Color(0.95f, 0.25f, 0.25f, 1f);
+        [Header("Timer Bar")]
+        [SerializeField] private float _barHeight = 16f;
+        [SerializeField] private float _barGap = 22f;
+        [SerializeField] private float _barBorder = 3f;
+        [SerializeField] private Color _timerLowColor = new Color(0.95f, 0.25f, 0.25f, 1f);
         [Header("Animation")]
         [SerializeField] private float _pulseSpeed = 10f;
         [SerializeField] private float _pulseAmount = 0.08f;
@@ -35,6 +40,9 @@ namespace UI
         private int _currentIndex;
         private float _stateTimer;
         private RectTransform _rect;
+        private RectTransform _barRoot;
+        private RectTransform _barFill;
+        private Image _barFillImage;
         private Vector2 _restPosition;
         private static Sprite _roundedSprite;
 
@@ -89,7 +97,19 @@ namespace UI
                 UpdateTile(tile, i);
             }
 
+            ShowTimerBar();
             gameObject.SetActive(true);
+        }
+
+        // fraction is how much of the time limit is left, from 1 down to 0
+        public void SetTimeLeft(float fraction)
+        {
+            if (_barFill == null)
+                return;
+
+            fraction = Mathf.Clamp01(fraction);
+            _barFill.anchorMax = new Vector2(fraction, 1f);
+            _barFillImage.color = Color.Lerp(_timerLowColor, _doneColor, Mathf.InverseLerp(0.15f, 0.5f, fraction));
         }
 
         public void Advance()
@@ -109,6 +129,7 @@ namespace UI
             _currentIndex = _keyCount;
             _state = PromptState.Completed;
             _stateTimer = 0f;
+            _barRoot.gameObject.SetActive(false);
         }
 
         public void Fail()
@@ -116,6 +137,8 @@ namespace UI
             EnsureRect();
             _state = PromptState.Failed;
             _stateTimer = 0f;
+            if (_barFillImage != null)
+                _barFillImage.color = _failColor;
             gameObject.SetActive(true);
         }
 
@@ -135,6 +158,52 @@ namespace UI
             _rect = (RectTransform)transform;
             _restPosition = _rect.anchoredPosition;
             _rect.anchoredPosition3D = new Vector3(_restPosition.x, _restPosition.y, _depth);
+        }
+
+        private void ShowTimerBar()
+        {
+            if (_barRoot == null)
+                CreateTimerBar();
+
+            float width = _keyCount * _tileSize + (_keyCount - 1) * _tileSpacing;
+            _barRoot.sizeDelta = new Vector2(width, _barHeight);
+            _barRoot.anchoredPosition = new Vector2(0f, _tileSize * 0.5f + _barGap + _barHeight * 0.5f);
+            _barRoot.gameObject.SetActive(true);
+            SetTimeLeft(1f);
+        }
+
+        private void CreateTimerBar()
+        {
+            GameObject root = new GameObject("QTE Timer", typeof(RectTransform), typeof(Image));
+            root.layer = gameObject.layer;
+            _barRoot = (RectTransform)root.transform;
+            _barRoot.SetParent(transform, false);
+            Image frame = root.GetComponent<Image>();
+            frame.color = _pendingColor;
+            frame.raycastTarget = false;
+
+            GameObject back = new GameObject("Back", typeof(RectTransform), typeof(Image));
+            back.layer = gameObject.layer;
+            RectTransform backRect = (RectTransform)back.transform;
+            backRect.SetParent(_barRoot, false);
+            backRect.anchorMin = Vector2.zero;
+            backRect.anchorMax = Vector2.one;
+            backRect.offsetMin = Vector2.one * _barBorder;
+            backRect.offsetMax = Vector2.one * -_barBorder;
+            Image backImage = back.GetComponent<Image>();
+            backImage.color = _fillColor;
+            backImage.raycastTarget = false;
+
+            GameObject fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.layer = gameObject.layer;
+            _barFill = (RectTransform)fill.transform;
+            _barFill.SetParent(backRect, false);
+            _barFill.anchorMin = Vector2.zero;
+            _barFill.anchorMax = Vector2.one;
+            _barFill.offsetMin = Vector2.zero;
+            _barFill.offsetMax = Vector2.zero;
+            _barFillImage = fill.GetComponent<Image>();
+            _barFillImage.raycastTarget = false;
         }
 
         private void UpdateTile(Tile tile, int index)

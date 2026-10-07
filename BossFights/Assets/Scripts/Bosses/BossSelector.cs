@@ -34,6 +34,7 @@ namespace Bosses
                 return;
 
             index = Mathf.Clamp(index, 0, _bosses.Length - 1);
+            BossSelection.LastIndex = index;
             for (int i = 0; i < _bosses.Length; i++)
             {
                 bool isSelected = i == index;
