@@ -1,6 +1,7 @@
 using System.Collections;
 using Interfaces;
 using Manager.GameManager;
+using UI;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -324,12 +325,13 @@ namespace Bosses.First_Boss.Slime
         /// *** Health Logic *** ///
     
         // IDamageableByPlayer interface implementation
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damage, bool isCrit)
         {
             // Don't take damage if immune (during intermission) or already dead
             if (isImmuneToDamage || isDead) return;
             
             currentHealth -= damage;
+            DamageNumber.Show(GetComponentInChildren<Collider>(), damage, isCrit);
         
             if (currentHealth <= 0)
             {

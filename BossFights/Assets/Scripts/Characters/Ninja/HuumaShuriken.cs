@@ -83,7 +83,10 @@ namespace Characters.Ninja
             if (TryGetHit(step, out RaycastHit hit))
             {
                 transform.position += _direction * Mathf.Max(hit.distance, 0f);
-                hit.collider.GetComponentInParent<IDamageableByPlayer>()?.TakeDamage(_damage);
+                IDamageableByPlayer damageable = hit.collider.GetComponentInParent<IDamageableByPlayer>();
+                if (damageable != null)
+                    damageable.TakeDamage(DamageRoll.Roll(_damage, out bool isCrit), isCrit);
+
                 Stick();
                 return;
             }

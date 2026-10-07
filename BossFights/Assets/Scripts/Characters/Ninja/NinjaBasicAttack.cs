@@ -24,7 +24,7 @@ namespace Characters.Ninja
             var damageableByPlayer = col.GetComponentInParent<IDamageableByPlayer>();
             if (damageableByPlayer != null)
             {
-                damageableByPlayer.TakeDamage(_attackDamage);
+                damageableByPlayer.TakeDamage(DamageRoll.Roll(_attackDamage, out bool isCrit), isCrit);
                 Destroy(transform.parent.gameObject);
                 return;
             }

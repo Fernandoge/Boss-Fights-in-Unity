@@ -9,7 +9,8 @@
         /// <summary>
         /// Apply damage to this entity from a player attack
         /// </summary>
-        /// <param name="damage">Amount of damage to apply</param>
-        void TakeDamage(int damage);
+        /// <param name="damage">Amount of damage to apply (already doubled when it is a critical hit)</param>
+        /// <param name="isCrit">Whether the hit was critical, so the damage number can be shown differently</param>
+        void TakeDamage(int damage, bool isCrit);
     }
 }

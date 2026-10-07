@@ -3,6 +3,7 @@ using System.Collections;
 using Interfaces;
 using Manager.GameManager;
 using Shared;
+using UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
@@ -220,13 +221,14 @@ namespace Bosses
         /// *** Health Logic *** ///
         
         // IDamageableByPlayer interface implementation
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damage, bool isCrit)
         {
             // Don't take damage if immune (e.g., during phase transitions)
             if (isImmuneToDamage)
                 return;
             
             currentHealth -= damage;
+            DamageNumber.Show(colliderComponent, damage, isCrit);
             _healthText.text = currentHealth.ToString();
             
             // Check if boss should enter second phase

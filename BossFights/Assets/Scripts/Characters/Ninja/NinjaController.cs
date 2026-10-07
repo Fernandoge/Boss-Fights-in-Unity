@@ -32,7 +32,7 @@ namespace Characters.Ninja
         [SerializeField] private HuumaShuriken _huumaPrefab;
         [SerializeField] private GameObject _huumaSwapEffectPrefab;
         [SerializeField] private int _castInputsHuuma = 2;
-        [SerializeField] private int _huumaDamage = 8;
+        [SerializeField] private int _huumaDamage = 5;
         [SerializeField] private float _huumaRange = 26f;
         [SerializeField] private float _huumaSpeed = 25f;
         [SerializeField] private float _huumaTurnSpeed = 1080f;

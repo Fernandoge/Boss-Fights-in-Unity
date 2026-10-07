@@ -2267,7 +2267,7 @@ MonoBehaviour:
   - {fileID: 1240212451561387252, guid: 1d95cd3593454a84c89ac5502ea5ca1a, type: 3}
   - {fileID: 1240212451561387252, guid: a266f31e7eaf7f647bc3425e6c9a145a, type: 3}
   _basicAttackSpawnPoint: {fileID: 7334018175922234042}
-  _basicAttackDamage: 1
+  _basicAttackDamage: 2
   _basicAttackSpeed: 42
   _dashDistance: 10
   _dashFreezeTime: 0.4
@@ -2289,7 +2289,7 @@ MonoBehaviour:
   _huumaPrefab: {fileID: 8965027126141042946, guid: 66f07319bf3b1ee489aac7a47674dee4, type: 3}
   _huumaSwapEffectPrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
   _castInputsHuuma: 2
-  _huumaDamage: 8
+  _huumaDamage: 5
   _huumaRange: 26
   _huumaSpeed: 25
   _huumaTurnSpeed: 1080
