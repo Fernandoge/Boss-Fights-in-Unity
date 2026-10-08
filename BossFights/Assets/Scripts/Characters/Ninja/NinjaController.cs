@@ -8,6 +8,7 @@ using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Characters.Ninja
@@ -55,17 +56,52 @@ namespace Characters.Ninja
         [SerializeField] private float _dodgeDistance = 3.5f;
         [SerializeField] private float _dodgeCD = 12f;
         [SerializeField] private SpellIcon _dodgeSpellIcon;
-        [Header("Skill Whirlwind")]
-        [SerializeField] private GameObject _whirlTrailPrefab;
-        [SerializeField] private GameObject _whirlSlashPrefab;
-        [SerializeField] private float _whirlDuration = 2f;
-        [SerializeField] private int _whirlHits = 6;
-        [SerializeField] private int _whirlDamage = 3;
-        [SerializeField] private float _whirlHitRadius = 4f;
-        [SerializeField] private float _whirlBlinkMinDistance = 1.5f;
-        [SerializeField] private float _whirlBlinkMaxDistance = 2.5f;
-        [SerializeField] private float _whirlCD = 20f;
-        [SerializeField] private SpellIcon _whirlSpellIcon;
+        [Header("Skill Sonic Blow")]
+        [FormerlySerializedAs("_whirlSlashPrefab")] [SerializeField] private GameObject _sonicBlowSlashPrefab;
+        [FormerlySerializedAs("_whirlDuration")] [SerializeField] private float _sonicBlowDuration = 1.4f;
+        [FormerlySerializedAs("_whirlHits")] [SerializeField] private int _sonicBlowHits = 6;
+        [FormerlySerializedAs("_whirlDamage")] [SerializeField] private int _sonicBlowDamage = 2;
+        [SerializeField] private int _sonicBlowFinisherDamage = 5;
+        [SerializeField] private float _sonicBlowFinisherPause = 0.5f;
+        [SerializeField] private float _sonicBlowFinisherReachScale = 1.4f;
+        [SerializeField] private float _sonicBlowFinisherSlashScale = 2.2f;
+        [SerializeField] private float _sonicBlowFinisherZoom = 1.3f;
+        [SerializeField] private float _sonicBlowChargeZoom = 1.12f;
+        [SerializeField] private float _sonicBlowLength = 6f;
+        [SerializeField] private float _sonicBlowWidth = 3f;
+        [SerializeField] private float _sonicBlowTurnSpeed = 720f;
+        [SerializeField] private GameObject _sonicBlowKunaiPrefab;
+        [SerializeField] private Vector3 _sonicBlowKunaiPosition;
+        [SerializeField] private Vector3 _sonicBlowKunaiEuler;
+        [SerializeField] private Vector3 _sonicBlowHandEuler;
+        [SerializeField] private float _sonicBlowSwingReach = 1f;
+        [SerializeField] private float _sonicBlowSwingWidth = 0.5f;
+        [SerializeField] private float _sonicBlowSwingLow = 0.8f;
+        [SerializeField] private float _sonicBlowSwingHigh = 1.6f;
+        [FormerlySerializedAs("_whirlCD")] [SerializeField] private float _sonicBlowCD = 12f;
+        [FormerlySerializedAs("_whirlSpellIcon")] [SerializeField] private SpellIcon _sonicBlowSpellIcon;
+        [Header("Skill Leap")]
+        [SerializeField] private GroundShuriken _leapShurikenPrefab;
+        [SerializeField] private int _leapShurikenCount = 5;
+        [SerializeField] private int _leapShurikenDamage = 2;
+        [SerializeField] private float _leapShurikenRadius = 0.7f;
+        [SerializeField] private float _leapShurikenSpacing = 1.3f;
+        [SerializeField] private float _leapThrowRange = 30f;
+        [SerializeField] private float _leapDistance = 5f;
+        [SerializeField] private float _leapHeight = 0.9f;
+        [SerializeField] private float _leapRiseTime = 0.4f;
+        [SerializeField, Range(0.3f, 0.9f)] private float _leapFlipEnd = 0.64f;
+        [SerializeField] private float _leapHangPitch = 20f;
+        [SerializeField] private float _leapHangEndHeight = 0.8f;
+        [SerializeField] private float _leapTuckThigh = 20f;
+        [SerializeField] private float _leapTuckKnee = 20f;
+        [SerializeField] private float _leapFallTime = 0.3f;
+        [SerializeField] private float _leapQteTime = 1f;
+        [SerializeField] private int _leapKunaiCount = 3;
+        [SerializeField] private int _leapKunaiDamage = 2;
+        [SerializeField, Range(0.05f, 1f)] private float _leapSlowMotion = 0.25f;
+        [SerializeField] private float _leapCD = 14f;
+        [SerializeField] private SpellIcon _leapSpellIcon;
 
         private bool _isKickWindowActive;
         private bool _isKickFlipping;
@@ -76,16 +112,43 @@ namespace Characters.Ninja
         private float _originalKickCD;
         private float _originalDodgeCD;
         private float _dodgeTimeLeft;
-        private float _originalWhirlCD;
-        private float _whirlTimeLeft;
-        private float _whirlAngle;
-        private int _whirlHitsDone;
-        private Vector3 _whirlCenter;
-        private CameraController _cameraController;
-        private GameObject _whirlTrail;
-        private readonly Collider[] _whirlColliders = new Collider[48];
-        private readonly HashSet<IDamageableByPlayer> _whirlHitTargets = new HashSet<IDamageableByPlayer>();
+        private float _originalSonicBlowCD;
+        private float _sonicBlowTimeLeft;
+        private bool _isSonicBlowing;
+        private bool _isSonicBlowCharged;
+        private bool _hadRootMotion;
+        private float _sonicBlowElapsed;
+        private float _sonicBlowIkWeight;
+        private GameObject _sonicBlowKunai;
+        private int _sonicBlowHitsDone;
+        private readonly List<GameObject> _sonicBlowSlashes = new List<GameObject>();
+        private readonly Collider[] _sonicBlowColliders = new Collider[48];
+        private readonly HashSet<IDamageableByPlayer> _sonicBlowHitTargets = new HashSet<IDamageableByPlayer>();
         private NavMeshAgent _agent;
+        private LeapPhase _leapPhase;
+        private float _leapPhaseTime;
+        private float _leapQteTimeLeft;
+        private float _leapPreviousTimeScale;
+        private float _agentBaseOffset;
+        private float _leapYaw;
+        private float _leapPitch;
+        private float _leapFallStartHeight;
+        private Transform _hipsBone;
+        private Transform _leftUpperLeg;
+        private Transform _rightUpperLeg;
+        private Transform _leftLowerLeg;
+        private Transform _rightLowerLeg;
+        private float _leapTuck;
+        private readonly List<float> _leapPendingKunai = new List<float>();
+        private int _throwArmLayer;
+        private float _throwArmTimer;
+        private float _throwReachWeight;
+        private float _throwReachLength = 0.62f;
+        private float _originalLeapCD;
+        private bool _isLeapSlowed;
+        private bool _leapHadRootMotion;
+        private Vector3 _leapDirection;
+        private List<KeyCode> _leapKeys;
         private HuumaShuriken _activeHuuma;
         private List<NinjaClone> _activeClones;
         private Vector3 _storedShootTargetPoint;
@@ -102,6 +165,11 @@ namespace Characters.Ninja
         private static readonly int Skill_Dodge = Animator.StringToHash("Skill_Dodge");
         private static readonly int Skill_Whirlwind = Animator.StringToHash("Skill_Whirlwind");
         private static readonly int Whirlwind = Animator.StringToHash("Whirlwind");
+        private static readonly int Skill_Leap = Animator.StringToHash("Skill_Leap");
+        private static readonly int Leaping = Animator.StringToHash("Leaping");
+        private static readonly int Throw_Kunai = Animator.StringToHash("Throw_Kunai");
+        private static readonly int Leap_Speed = Animator.StringToHash("LeapSpeed");
+        private static readonly int Leap_Hang = Animator.StringToHash("Leap_Hang");
         private static readonly int CastInput = Animator.StringToHash("CastInput");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private const KeyCode HealKey = KeyCode.Q;
@@ -109,8 +177,32 @@ namespace Characters.Ninja
         private const KeyCode KickKey = KeyCode.E;
         private const KeyCode HuumaKey = KeyCode.A;
         private const KeyCode DodgeKey = KeyCode.S;
-        private const KeyCode WhirlKey = KeyCode.F;
-        private const float WhirlEdgePause = 0.15f;
+        private const KeyCode SonicBlowKey = KeyCode.F;
+        private const KeyCode LeapKey = KeyCode.R;
+        private const float LeapHangDrift = 0.4f;
+        private const float LeapClipLength = 2.15f;
+        private const float LeapPitchSpeed = 180f;
+        private const float LeapTuckSpeed = 5f;
+        private const float LeapKunaiReleaseDelay = 0.17f;
+        private const float ThrowArmDuration = 0.36f;
+        private const float LeapKunaiMaxPitch = 20f;
+        private const float ThrowReachRise = 0.12f;
+        private const float ThrowReachFall = 0.14f;
+        private const float ThrowArmFade = 0.1f;
+        private static readonly KeyCode[] QteKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
+        private const float SonicBlowWindUp = 0.1f;
+        private const float SonicBlowStrikeStart = 0.2f;
+        private const float SonicBlowStrikeFade = 0.05f;
+        private const float SonicBlowEffectDistance = 2.2f;
+        private const float SonicBlowEffectLifetime = 0.4f;
+        private const float SonicBlowSlashTilt = 35f;
+        private const float SonicBlowIkBlendSpeed = 12f;
+        private const float SonicBlowHalfHeight = 1.5f;
+        private const float FinisherChargeTurns = 1.375f;
+        private const float FinisherChargeRadiusStart = 0.45f;
+        private const float FinisherChargeRadiusEnd = 0.7f;
+        private const float FinisherChargeShake = 0.035f;
+        private const float FinisherThrustTime = 0.1f;
 
         /// *** Unity Events *** ///
         
@@ -139,20 +231,113 @@ namespace Characters.Ninja
             _originalDodgeCD = _dodgeCD;
             _dodgeCD = 0;
             _agent = GetComponent<NavMeshAgent>();
-            _cameraController = FindFirstObjectByType<CameraController>();
+            _agentBaseOffset = _agent.baseOffset;
+            _hipsBone = anim.GetBoneTransform(HumanBodyBones.Hips);
+            _throwArmLayer = anim.GetLayerIndex("Throw Upper Body");
 
-            // Initialize whirlwind cooldown
-            _originalWhirlCD = _whirlCD;
-            _whirlCD = 0;
+            // The reach is the length of the arm, measured on the rig
+            Transform upperArm = anim.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            Transform lowerArm = anim.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            Transform handBone = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            _throwReachLength = (Vector3.Distance(upperArm.position, lowerArm.position) + Vector3.Distance(lowerArm.position, handBone.position)) * 0.95f;
+            _leftUpperLeg = anim.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
+            _rightUpperLeg = anim.GetBoneTransform(HumanBodyBones.RightUpperLeg);
+            _leftLowerLeg = anim.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+            _rightLowerLeg = anim.GetBoneTransform(HumanBodyBones.RightLowerLeg);
+
+            // Initialize leap cooldown
+            _originalLeapCD = _leapCD;
+            _leapCD = 0;
+
+            // Initialize sonic blow cooldown
+            _originalSonicBlowCD = _sonicBlowCD;
+            _sonicBlowCD = 0;
 
             _healSpellIcon.SetKeyLabel(HealKey);
             _clonesSpellIcon.SetKeyLabel(ClonesKey);
             _kickSpellIcon.SetKeyLabel(KickKey);
             _dodgeSpellIcon.SetKeyLabel(DodgeKey);
-            _whirlSpellIcon.SetKeyLabel(WhirlKey);
+            _sonicBlowSpellIcon.SetKeyLabel(SonicBlowKey);
+            _leapSpellIcon.SetKeyLabel(LeapKey);
             _huumaSpellIcon.SetKeyLabel(HuumaKey);
         }
         
+        // The hand swings between a low-left and a high-right point, one strike at each end, so the strikes read as a zigzag of slashes
+        private void OnAnimatorIK(int layerIndex)
+        {
+            ApplyThrowReachIk();
+
+            _sonicBlowIkWeight = Mathf.MoveTowards(_sonicBlowIkWeight, _isSonicBlowing ? 1f : 0f, SonicBlowIkBlendSpeed * Time.deltaTime);
+            if (_sonicBlowIkWeight <= 0f)
+                return;
+
+            float interval = GetSonicBlowInterval();
+            float swing = Mathf.SmoothStep(0f, 1f, Mathf.PingPong(Mathf.Max(0f, _sonicBlowElapsed - SonicBlowWindUp) / interval, 1f));
+            Vector3 low = transform.position + transform.forward * _sonicBlowSwingReach - transform.right * _sonicBlowSwingWidth + Vector3.up * _sonicBlowSwingLow;
+            Vector3 high = transform.position + transform.forward * _sonicBlowSwingReach + transform.right * _sonicBlowSwingWidth + Vector3.up * _sonicBlowSwingHigh;
+            Vector3 handTarget = Vector3.Lerp(low, high, swing);
+
+            // Before the finisher the arm charges: it winds up in a growing, accelerating circle overhead and behind, trembling more and more, and then thrusts far forward
+            float finisherTime = GetSonicBlowStrikeTime(_sonicBlowHits - 1);
+            float chargeStart = GetSonicBlowChargeStart();
+            if (_sonicBlowHits > 1 && _sonicBlowElapsed >= chargeStart)
+            {
+                float charge = Mathf.InverseLerp(chargeStart, finisherTime, _sonicBlowElapsed);
+                float angle = Mathf.Pow(charge, 1.6f) * FinisherChargeTurns * 2f * Mathf.PI + 0.75f * Mathf.PI * charge;
+                float radius = Mathf.Lerp(FinisherChargeRadiusStart, FinisherChargeRadiusEnd, charge);
+                Vector3 center = transform.position + transform.right * 0.6f + Vector3.up * 1.3f;
+                Vector3 ring = center + transform.forward * (Mathf.Cos(angle) * radius) + Vector3.up * (Mathf.Sin(angle) * radius);
+                ring += new Vector3(Mathf.Sin(Time.time * 70f), Mathf.Sin(Time.time * 83f), Mathf.Sin(Time.time * 61f)) * (FinisherChargeShake * charge);
+                handTarget = Vector3.Lerp(handTarget, ring, Mathf.Clamp01(charge * 8f));
+
+                Vector3 thrust = transform.position + transform.forward * (_sonicBlowSwingReach * _sonicBlowFinisherReachScale + 0.5f) + Vector3.up * 1.4f;
+                float thrustProgress = Mathf.InverseLerp(finisherTime - 0.02f, finisherTime + FinisherThrustTime, _sonicBlowElapsed);
+                handTarget = Vector3.Lerp(handTarget, thrust, Mathf.SmoothStep(0f, 1f, thrustProgress));
+            }
+
+            anim.SetIKPositionWeight(AvatarIKGoal.RightHand, _sonicBlowIkWeight);
+            anim.SetIKPosition(AvatarIKGoal.RightHand, handTarget);
+            anim.SetIKRotationWeight(AvatarIKGoal.RightHand, _sonicBlowIkWeight);
+            anim.SetIKRotation(AvatarIKGoal.RightHand, transform.rotation * Quaternion.Euler(_sonicBlowHandEuler));
+        }
+
+        // The lean and the knee tuck are applied to the bones after the animation, never to the root: a tilted root makes the NavMeshAgent shift the ninja sideways on every frame
+        private void LateUpdate()
+        {
+            if (_leapPitch != 0f && _hipsBone)
+                _hipsBone.rotation = Quaternion.AngleAxis(_leapPitch, transform.right) * _hipsBone.rotation;
+
+            if (_leapTuck > 0f && _leftUpperLeg)
+            {
+                Vector3 axis = transform.right;
+                _leftUpperLeg.rotation = Quaternion.AngleAxis(-_leapTuckThigh * _leapTuck, axis) * _leftUpperLeg.rotation;
+                _rightUpperLeg.rotation = Quaternion.AngleAxis(-_leapTuckThigh * _leapTuck, axis) * _rightUpperLeg.rotation;
+                _leftLowerLeg.rotation = Quaternion.AngleAxis(_leapTuckKnee * _leapTuck, axis) * _leftLowerLeg.rotation;
+                _rightLowerLeg.rotation = Quaternion.AngleAxis(_leapTuckKnee * _leapTuck, axis) * _rightLowerLeg.rotation;
+            }
+        }
+
+        // The throw clip only moves the arm back (its forward reach comes from the pelvis, which the upper body mask leaves out), so the hand is pushed out toward the aim point with IK around the moment the kunai leaves
+        private void ApplyThrowReachIk()
+        {
+            if (_leapPhase == LeapPhase.None || _throwArmTimer <= 0f)
+            {
+                if (_leapPhase != LeapPhase.None || _throwReachWeight > 0f)
+                {
+                    _throwReachWeight = 0f;
+                    anim.SetIKPositionWeight(AvatarIKGoal.RightHand, 0f);
+                }
+                return;
+            }
+
+            float elapsed = ThrowArmDuration - _throwArmTimer;
+            _throwReachWeight = Mathf.Clamp01(elapsed / ThrowReachRise) * Mathf.Clamp01((ThrowArmDuration - elapsed) / ThrowReachFall);
+            Transform shoulder = anim.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            Vector3 direction = transform.forward;
+            anim.SetIKPositionWeight(AvatarIKGoal.RightHand, _throwReachWeight);
+            anim.SetIKPosition(AvatarIKGoal.RightHand, shoulder.position + direction * _throwReachLength);
+        }
+
         /// *** Base Methods *** ///
 
         protected override void PlayerCooldowns()
@@ -169,12 +354,18 @@ namespace Characters.Ninja
                 _kickCD -= Time.deltaTime;
             if (_dodgeCD > 0)
                 _dodgeCD -= Time.deltaTime;
-            if (_whirlCD > 0)
-                _whirlCD -= Time.deltaTime;
+            if (_sonicBlowCD > 0)
+                _sonicBlowCD -= Time.deltaTime;
+            if (_leapCD > 0)
+                _leapCD -= Time.deltaTime;
+            if (_leapPhase != LeapPhase.None)
+                UpdateLeap();
+            if (_throwArmTimer > 0f)
+                UpdateThrowArm();
             if (_dodgeTimeLeft > 0)
                 DodgeMove();
-            if (_whirlTimeLeft > 0)
-                UpdateWhirlwind();
+            if (_sonicBlowTimeLeft > 0)
+                UpdateSonicBlow();
 
             // Capture mouse world point when shooting animation starts
             bool isShootingNow = anim.GetBool(Shooting);
@@ -201,7 +392,11 @@ namespace Characters.Ninja
             anim.ResetTrigger(Skill_Huuma);
             anim.ResetTrigger(Skill_Dodge);
             anim.ResetTrigger(Skill_Whirlwind);
-            StopWhirlwind();
+            StopSonicBlow();
+            StopLeap();
+            anim.ResetTrigger(Skill_Leap);
+            anim.ResetTrigger(Throw_Kunai);
+            anim.ResetTrigger(Leap_Hang);
             _isAimingHuuma = false;
             _dodgeTimeLeft = 0f;
             _isKickFlipping = false;
@@ -286,8 +481,10 @@ namespace Characters.Ninja
                 StartCoroutine(CastingSkill(Skill_Huuma, _castInputsHuuma, false, HuumaKey));
             else if (Input.GetKeyDown(DodgeKey) && _dodgeCD <= 0)
                 StartCoroutine(CastingSkill(Skill_Dodge, _castInputsDodge, false, DodgeKey));
-            else if (Input.GetKeyDown(WhirlKey) && _whirlCD <= 0)
-                StartWhirlwind();
+            else if (Input.GetKeyDown(SonicBlowKey) && _sonicBlowCD <= 0)
+                StartSonicBlow();
+            else if (Input.GetKeyDown(LeapKey) && _leapCD <= 0)
+                StartLeap();
         }
         
         /// *** Skill Casting *** ///
@@ -302,7 +499,7 @@ namespace Characters.Ninja
             isAnimationLocked = true;
 
             // Prepare random KeyCodes to Cast for the QTE
-            KeyCode[] totalKeyCodes = { KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
+            KeyCode[] totalKeyCodes = QteKeyCodes;
             var keycodesToCast = GenerateKeycodesToCast(totalKeyCodes, keycodeToRemove, skillCastInputs);
             
             // Show QTE Keycodes in Screen
@@ -542,119 +739,422 @@ namespace Characters.Ninja
             _agent.Move(-transform.forward * (speed * Time.deltaTime));
         }
 
-        /// *** Whirlwind *** ///
+        /// *** Sonic Blow *** ///
 
-        // The ninja stays where it cast, blinking around that spot and striking at the center: _whirlHits strikes of _whirlDamage over _whirlDuration. It gives no immunity, and getting hit interrupts it
-        private void StartWhirlwind()
+        // The ninja turns to the mouse and unleashes _sonicBlowHits fast strikes in a box in front of it over _sonicBlowDuration, standing in place. It gives no immunity, and getting hit interrupts it
+        private void StartSonicBlow()
         {
             ResetPlayerState(false);
+            LookAtMouse();
             isAnimationLocked = true;
-            _whirlCenter = transform.position;
-            _whirlAngle = Random.Range(0f, 360f);
-            _whirlTimeLeft = _whirlDuration;
-            _whirlHitsDone = 0;
+            _isSonicBlowing = true;
+            // The punch clip turns its root, which would spin the ninja away from the mouse direction
+            _hadRootMotion = anim.applyRootMotion;
+            anim.applyRootMotion = false;
+            _sonicBlowTimeLeft = _sonicBlowDuration;
+            _sonicBlowElapsed = 0f;
+            _sonicBlowHitsDone = 0;
+            _isSonicBlowCharged = false;
+            AttachSonicBlowKunai();
             anim.SetBool(Whirlwind, true);
             anim.SetTrigger(Skill_Whirlwind);
-            if (_cameraController)
-                _cameraController.IsFrozen = true;
-            if (_whirlTrailPrefab)
-                _whirlTrail = Instantiate(_whirlTrailPrefab, transform);
 
-            _whirlCD = _originalWhirlCD;
-            _whirlSpellIcon.StartCooldown(_originalWhirlCD);
+            _sonicBlowCD = _originalSonicBlowCD;
+            _sonicBlowSpellIcon.StartCooldown(_originalSonicBlowCD);
         }
 
-        private void UpdateWhirlwind()
-        {
-            _whirlTimeLeft -= Time.deltaTime;
-            float elapsed = _whirlDuration - _whirlTimeLeft;
+        private float GetSonicBlowInterval() => (_sonicBlowDuration - SonicBlowWindUp - _sonicBlowFinisherPause) / Mathf.Max(1, _sonicBlowHits);
 
-            // The strikes are spread evenly, with a short pause at the start and at the end
-            float interval = (_whirlDuration - 2f * WhirlEdgePause) / Mathf.Max(1, _whirlHits - 1);
-            while (_whirlHitsDone < _whirlHits && elapsed >= WhirlEdgePause + _whirlHitsDone * interval)
+        // The charge starts half an interval after the last normal strike and lasts until the finisher
+        private float GetSonicBlowChargeStart() => GetSonicBlowStrikeTime(Mathf.Max(0, _sonicBlowHits - 2)) + GetSonicBlowInterval() * 0.5f;
+
+        // The strikes are evenly spaced after the wind-up, and the last one (the finisher) comes after an extra pause
+        private float GetSonicBlowStrikeTime(int index) => SonicBlowWindUp + index * GetSonicBlowInterval() + (index == _sonicBlowHits - 1 ? _sonicBlowFinisherPause : 0f);
+
+        private void UpdateSonicBlow()
+        {
+            _sonicBlowTimeLeft -= Time.deltaTime;
+            float elapsed = _sonicBlowDuration - _sonicBlowTimeLeft;
+            _sonicBlowElapsed = elapsed;
+
+            // The ninja keeps following the mouse while it strikes
+            TurnTowardsMouse(_sonicBlowTurnSpeed);
+
+            // The camera starts to close in slowly while the arm charges, so the finisher is the end of a build-up
+            if (!_isSonicBlowCharged && _sonicBlowHits > 1 && elapsed >= GetSonicBlowChargeStart())
             {
-                WhirlBlinkAndStrike();
-                _whirlHitsDone++;
+                _isSonicBlowCharged = true;
+                ZoomCamera(_sonicBlowChargeZoom, GetSonicBlowStrikeTime(_sonicBlowHits - 1) - elapsed, 0.4f, 0.35f);
             }
 
-            if (_whirlTimeLeft <= 0f)
+            while (_sonicBlowHitsDone < _sonicBlowHits && elapsed >= GetSonicBlowStrikeTime(_sonicBlowHitsDone))
             {
-                BlinkBackFromWhirlwind();
-                StopWhirlwind();
+                SonicBlowStrike();
+                _sonicBlowHitsDone++;
+            }
+
+            if (_sonicBlowTimeLeft <= 0f)
+            {
+                StopSonicBlow();
                 isAnimationLocked = false;
             }
         }
 
-        // The ninja ends where it started, so the skill really is in place and the camera has nowhere to go
-        private void BlinkBackFromWhirlwind()
+        private void SonicBlowStrike()
         {
-            Vector3 from = transform.position;
-            _agent.Warp(_whirlCenter);
-            if (_huumaSwapEffectPrefab)
-            {
-                Destroy(Instantiate(_huumaSwapEffectPrefab, from + Vector3.up, Quaternion.identity), 2f);
-                Destroy(Instantiate(_huumaSwapEffectPrefab, _whirlCenter + Vector3.up, Quaternion.identity), 2f);
-            }
-        }
+            // Every strike blends into a fresh punch past its wind-up, so the jabs pile up into a flurry without popping
+            anim.CrossFadeInFixedTime(Skill_Whirlwind, SonicBlowStrikeFade, 0, SonicBlowStrikeStart);
 
-        // Teleports to another spot around the cast point (always a good part of the circle away from the last one) and strikes toward the center
-        private void WhirlBlinkAndStrike()
-        {
-            Vector3 from = transform.position;
-            _whirlAngle += Random.Range(110f, 250f);
-            float radians = _whirlAngle * Mathf.Deg2Rad;
-            float distance = Random.Range(_whirlBlinkMinDistance, _whirlBlinkMaxDistance);
-            Vector3 desired = _whirlCenter + new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)) * distance;
-            Vector3 to = NavMesh.SamplePosition(desired, out NavMeshHit navHit, 2f, NavMesh.AllAreas) ? navHit.position : from;
-            _agent.Warp(to);
+            // The last strike is the finisher: a longer, wider reach, a bigger slash and a camera zoom-in
+            bool isFinisher = _sonicBlowHitsDone == _sonicBlowHits - 1;
+            float reach = isFinisher ? _sonicBlowFinisherReachScale : 1f;
+            int damage = isFinisher ? _sonicBlowFinisherDamage : _sonicBlowDamage;
 
-            Vector3 toCenter = _whirlCenter - to;
-            toCenter.y = 0f;
-            if (toCenter.sqrMagnitude > 0.01f)
-                transform.rotation = Quaternion.LookRotation(toCenter);
+            Vector3 forward = transform.forward;
+            Vector3 center = transform.position + forward * (_sonicBlowLength * reach * 0.5f);
+            Vector3 effectPosition = transform.position + forward * SonicBlowEffectDistance * reach + Vector3.up;
+            Vector3 halfExtents = new Vector3(_sonicBlowWidth * reach * 0.5f, SonicBlowHalfHeight, _sonicBlowLength * reach * 0.5f);
 
-            // Every blink restarts the strike animation, and leaves a puff where the ninja was and where it landed
-            anim.Play(Skill_Whirlwind, 0, 0f);
-            if (_huumaSwapEffectPrefab)
-            {
-                Destroy(Instantiate(_huumaSwapEffectPrefab, from + Vector3.up, Quaternion.identity), 2f);
-                Destroy(Instantiate(_huumaSwapEffectPrefab, to + Vector3.up, Quaternion.identity), 2f);
-            }
-
-            WhirlHit();
-        }
-
-        private void WhirlHit()
-        {
-            _whirlHitTargets.Clear();
-            int count = Physics.OverlapSphereNonAlloc(_whirlCenter, _whirlHitRadius, _whirlColliders);
+            _sonicBlowHitTargets.Clear();
+            int count = Physics.OverlapBoxNonAlloc(center + Vector3.up, halfExtents, _sonicBlowColliders, transform.rotation);
             for (int i = 0; i < count; i++)
             {
-                IDamageableByPlayer damageable = _whirlColliders[i].GetComponentInParent<IDamageableByPlayer>();
-                if (damageable != null && _whirlHitTargets.Add(damageable))
-                    damageable.TakeDamage(DamageRoll.Roll(_whirlDamage, out bool isCrit), isCrit);
+                IDamageableByPlayer damageable = _sonicBlowColliders[i].GetComponentInParent<IDamageableByPlayer>();
+                if (damageable != null && _sonicBlowHitTargets.Add(damageable))
+                    damageable.TakeDamage(DamageRoll.Roll(damage, out bool isCrit), isCrit);
             }
 
-            if (_whirlSlashPrefab)
-                Destroy(Instantiate(_whirlSlashPrefab, _whirlCenter + Vector3.up, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f)), 1.5f);
+            if (_sonicBlowSlashPrefab)
+            {
+                // The slashes alternate their tilt with the swing, so they cross each other; the finisher is a big straight one
+                float tilt = isFinisher ? 0f : _sonicBlowHitsDone % 2 == 0 ? SonicBlowSlashTilt : -SonicBlowSlashTilt;
+                Quaternion rotation = Quaternion.LookRotation(forward) * Quaternion.Euler(0f, 0f, tilt);
+                GameObject slash = Instantiate(_sonicBlowSlashPrefab, effectPosition, rotation);
+                if (isFinisher)
+                    slash.transform.localScale *= _sonicBlowFinisherSlashScale;
+                Destroy(slash, SonicBlowEffectLifetime);
+                _sonicBlowSlashes.Add(slash);
+            }
+
+            if (isFinisher)
+                ZoomCamera(_sonicBlowFinisherZoom, 0.07f, 0.15f, 0.35f);
         }
 
-        private void StopWhirlwind()
+        private void ZoomCamera(float factor, float inTime, float holdTime, float outTime)
         {
-            if (_whirlTimeLeft <= 0f && _whirlTrail == null)
+            Camera mainCamera = Camera.main;
+            if (!mainCamera)
                 return;
 
-            _whirlTimeLeft = 0f;
-            anim.SetBool(Whirlwind, false);
-            if (_cameraController)
-                _cameraController.IsFrozen = false;
-            if (_whirlTrail)
+            CameraZoomPunch zoom = mainCamera.GetComponent<CameraZoomPunch>();
+            if (!zoom)
+                zoom = mainCamera.gameObject.AddComponent<CameraZoomPunch>();
+
+            zoom.Punch(factor, inTime, holdTime, outTime);
+        }
+
+        private void AttachSonicBlowKunai()
+        {
+            if (!_sonicBlowKunaiPrefab || _sonicBlowKunai)
+                return;
+
+            Transform hand = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            _sonicBlowKunai = Instantiate(_sonicBlowKunaiPrefab, hand);
+            _sonicBlowKunai.transform.SetLocalPositionAndRotation(_sonicBlowKunaiPosition, Quaternion.Euler(_sonicBlowKunaiEuler));
+        }
+
+        private void StopSonicBlow()
+        {
+            if (!_isSonicBlowing)
+                return;
+
+            _isSonicBlowing = false;
+            anim.applyRootMotion = _hadRootMotion;
+
+            // The effects end with the skill instead of fading out on their own
+            foreach (GameObject slash in _sonicBlowSlashes)
             {
-                // The trail is left behind to fade out on its own
-                _whirlTrail.transform.SetParent(null);
-                Destroy(_whirlTrail, 0.6f);
-                _whirlTrail = null;
+                if (slash)
+                    Destroy(slash);
             }
+            _sonicBlowSlashes.Clear();
+            if (_sonicBlowKunai)
+                Destroy(_sonicBlowKunai);
+
+            _sonicBlowTimeLeft = 0f;
+            anim.SetBool(Whirlwind, false);
+        }
+
+        /// *** Leap *** ///
+
+        // Throws shurikens at the mouse point and jumps away from it: a quick rise, a slow-motion hang with a short QTE that throws a kunai at the mouse per key, then the fall. Missing a key or running out of time only ends the shooting
+        private void StartLeap()
+        {
+            ResetPlayerState(false);
+            LookAtMouse();
+            isAnimationLocked = true;
+            _leapHadRootMotion = anim.applyRootMotion;
+            anim.applyRootMotion = false;
+            anim.SetBool(Leaping, true);
+
+            // The backflip is played fast during the rise, so it is over when the slow motion starts; the speed comes from the animator parameter
+            anim.SetFloat(Leap_Speed, _leapFlipEnd * LeapClipLength / _leapRiseTime);
+            anim.SetTrigger(Skill_Leap);
+
+            _leapYaw = transform.eulerAngles.y;
+            _leapPitch = 0f;
+            _leapPhase = LeapPhase.Rise;
+            _leapPhaseTime = 0f;
+            _leapDirection = -transform.forward;
+            ThrowLeapShurikens();
+
+            _leapCD = _originalLeapCD;
+            _leapSpellIcon.StartCooldown(_originalLeapCD);
+        }
+
+        private void ThrowLeapShurikens()
+        {
+            if (!_leapShurikenPrefab)
+                return;
+
+            Vector3 aim = transform.forward;
+            float distance = _leapThrowRange;
+            if (GetMouseAimPoint(out Vector3 mousePoint))
+            {
+                Vector3 toMouse = mousePoint - transform.position;
+                toMouse.y = 0f;
+                if (toMouse.sqrMagnitude > 0.01f)
+                {
+                    aim = toMouse.normalized;
+                    distance = Mathf.Min(toMouse.magnitude, _leapThrowRange);
+                }
+            }
+
+            Vector3 origin = transform.position + Vector3.up;
+            Vector3 center = transform.position + aim * distance;
+            Vector3 side = Vector3.Cross(Vector3.up, aim);
+            for (int i = 0; i < _leapShurikenCount; i++)
+            {
+                // A shallow arc around the mouse point, curving back toward the ninja
+                float lateral = (i - (_leapShurikenCount - 1) * 0.5f) * _leapShurikenSpacing;
+                Vector3 spot = center + side * lateral - aim * (Mathf.Abs(lateral) * 0.3f);
+                spot = NavMesh.SamplePosition(spot, out NavMeshHit navHit, 3f, NavMesh.AllAreas) ? navHit.position : new Vector3(spot.x, transform.position.y, spot.z);
+                Instantiate(_leapShurikenPrefab).Begin(origin, spot, _leapShurikenDamage, _leapShurikenRadius);
+            }
+        }
+
+        private void UpdateLeap()
+        {
+            _leapTuck = Mathf.MoveTowards(_leapTuck, _leapPhase == LeapPhase.Hang ? 1f : 0f, LeapTuckSpeed * Time.unscaledDeltaTime);
+            UpdatePendingKunai();
+
+            switch (_leapPhase)
+            {
+                case LeapPhase.Rise:
+                    _leapPhaseTime += Time.deltaTime;
+                    float rise = Mathf.Clamp01(_leapPhaseTime / _leapRiseTime);
+                    MoveLeap(_leapDirection * (_leapDistance / _leapRiseTime * Time.deltaTime), _leapHeight * Mathf.Sin(rise * Mathf.PI * 0.5f));
+                    if (rise >= 1f)
+                        StartLeapQte();
+                    break;
+                case LeapPhase.Hang:
+                    TurnLeap(-_leapHangPitch);
+
+                    // The ninja sinks slowly while the QTE runs, so the hang looks like a slow fall and not a frozen pose
+                    float sink = 1f - Mathf.Clamp01(_leapQteTimeLeft / _leapQteTime);
+                    MoveLeap(_leapDirection * (LeapHangDrift * Time.deltaTime), Mathf.Lerp(_leapHeight, _leapHangEndHeight, sink));
+                    UpdateLeapQte();
+                    break;
+                case LeapPhase.Fall:
+                    _leapPhaseTime += Time.deltaTime;
+                    float fall = Mathf.Clamp01(_leapPhaseTime / _leapFallTime);
+                    TurnLeap(0f);
+                    MoveLeap(Vector3.zero, _leapFallStartHeight * (1f - fall * fall));
+                    if (fall >= 1f)
+                    {
+                        StopLeap();
+                        isAnimationLocked = false;
+                    }
+                    break;
+            }
+        }
+
+        // The ninja holds its direction and leans back while it hangs, as if the throws pushed it away; it only turns when a kunai is thrown
+        private void TurnLeap(float targetPitch)
+        {
+            _leapPitch = Mathf.MoveTowards(_leapPitch, targetPitch, LeapPitchSpeed * Time.unscaledDeltaTime);
+            transform.rotation = Quaternion.Euler(0f, _leapYaw, 0f);
+        }
+
+        // The agent keeps the ninja on the NavMesh while the base offset lifts it into the air
+        private void MoveLeap(Vector3 delta, float height)
+        {
+            _agent.Move(delta);
+            _agent.baseOffset = _agentBaseOffset + height;
+        }
+
+        private void StartLeapQte()
+        {
+            _leapPhase = LeapPhase.Hang;
+            anim.SetTrigger(Leap_Hang);
+            _leapKeys = GenerateKeycodesToCast(QteKeyCodes, LeapKey, _leapKunaiCount);
+            _leapQteTimeLeft = _leapQteTime;
+            _qtePrompt.Show(_leapKeys);
+
+            _leapPreviousTimeScale = Time.timeScale;
+            Time.timeScale = _leapSlowMotion;
+            _isLeapSlowed = true;
+
+            // The ninja moves at normal speed inside the slow motion, so her skill feels fast
+            anim.updateMode = AnimatorUpdateMode.UnscaledTime;
+        }
+
+        // The QTE timer runs on real time, so the slow motion does not stretch it
+        private void UpdateLeapQte()
+        {
+            _leapQteTimeLeft -= Time.unscaledDeltaTime;
+            _qtePrompt.SetTimeLeft(_leapQteTimeLeft / _leapQteTime);
+            if (_leapQteTimeLeft <= 0f)
+            {
+                EndLeapQte(false);
+                return;
+            }
+
+            if (Input.GetKeyDown(_leapKeys[0]))
+            {
+                ThrowLeapKunai();
+                _leapKeys.RemoveAt(0);
+                _qtePrompt.Advance();
+                if (_leapKeys.Count == 0)
+                    EndLeapQte(true);
+                return;
+            }
+
+            foreach (KeyCode key in QteKeyCodes)
+            {
+                if (key != LeapKey && Input.GetKeyDown(key))
+                {
+                    EndLeapQte(false);
+                    return;
+                }
+            }
+        }
+
+        private void EndLeapQte(bool completed)
+        {
+            if (completed)
+                _qtePrompt.Complete();
+            else
+                _qtePrompt.Fail();
+
+            RestoreLeapTime();
+            _leapFallStartHeight = _agent.baseOffset - _agentBaseOffset;
+            _leapPhase = LeapPhase.Fall;
+            _leapPhaseTime = 0f;
+        }
+
+        // The throw animation starts at the key press and the kunai leaves when the arm is stretched, like the basic attack; the animation runs on real time in the hang, so it stays fast in the slow motion
+        private void ThrowLeapKunai()
+        {
+            FaceMouseForLeapThrow();
+            anim.SetTrigger(Throw_Kunai);
+            anim.SetLayerWeight(_throwArmLayer, 1f);
+            _throwArmTimer = ThrowArmDuration;
+            _leapPendingKunai.Add(LeapKunaiReleaseDelay);
+        }
+
+        // The throw plays on a layer that only has the upper body, so the legs keep the tucked fall pose; the layer only has weight while a throw plays (an idle layer left at full weight holds the last throw pose)
+        private void UpdateThrowArm()
+        {
+            if (_throwArmTimer <= 0f)
+                return;
+
+            _throwArmTimer -= Time.unscaledDeltaTime;
+            anim.SetLayerWeight(_throwArmLayer, Mathf.Clamp01(_throwArmTimer / ThrowArmFade));
+        }
+
+        private void ResetThrowArm()
+        {
+            _throwArmTimer = 0f;
+            if (_throwArmLayer > 0)
+                anim.SetLayerWeight(_throwArmLayer, 0f);
+        }
+
+        private void UpdatePendingKunai()
+        {
+            for (int i = _leapPendingKunai.Count - 1; i >= 0; i--)
+            {
+                _leapPendingKunai[i] -= Time.unscaledDeltaTime;
+                if (_leapPendingKunai[i] > 0f)
+                    continue;
+
+                _leapPendingKunai.RemoveAt(i);
+                ReleaseLeapKunai();
+            }
+        }
+
+        // Like the basic attack, the ninja turns to the mouse only when it shoots (a flat turn, instant)
+        private void FaceMouseForLeapThrow()
+        {
+            if (!GetMouseAimPoint(out Vector3 mousePoint))
+                return;
+
+            Vector3 direction = mousePoint - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.1f)
+                return;
+
+            _leapYaw = Quaternion.LookRotation(direction).eulerAngles.y;
+            transform.rotation = Quaternion.Euler(0f, _leapYaw, 0f);
+        }
+
+        // The kunai fly straight ahead, level. The hand is higher than a boss' body, so when the mouse is over something that can be hurt the kunai tilts down just enough to reach that point (never more than LeapKunaiMaxPitch); aimed at the ground it stays level and never dives into the floor
+        private Vector3 GetLeapKunaiDirection(Vector3 origin)
+        {
+            Vector3 forward = transform.forward;
+            if (!GetMouseAimHit(out RaycastHit hit) || hit.collider.GetComponentInParent<IDamageableByPlayer>() == null)
+                return forward;
+
+            Vector3 toHit = hit.point - origin;
+            toHit.y = 0f;
+            float flatDistance = Mathf.Max(toHit.magnitude, 0.5f);
+            float pitch = Mathf.Clamp(Mathf.Atan2(hit.point.y - origin.y, flatDistance) * Mathf.Rad2Deg, -LeapKunaiMaxPitch, 0f);
+            return Quaternion.AngleAxis(-pitch, transform.right) * forward;
+        }
+
+        private void ReleaseLeapKunai()
+        {
+            // It leaves from the hand that throws it, like the basic attack leaves from the shooting hand
+            Vector3 origin = anim.GetBoneTransform(HumanBodyBones.RightHand).position;
+            ShootBasicAttack(origin, GetLeapKunaiDirection(origin), _leapKunaiDamage);
+        }
+
+        private void RestoreLeapTime()
+        {
+            if (!_isLeapSlowed)
+                return;
+
+            _isLeapSlowed = false;
+            Time.timeScale = _leapPreviousTimeScale;
+            anim.updateMode = AnimatorUpdateMode.Normal;
+        }
+
+        // Also the way out when something interrupts the leap in the air: it puts the ninja back on the ground and the time back to normal
+        private void StopLeap()
+        {
+            if (_leapPhase == LeapPhase.None)
+                return;
+
+            _leapPhase = LeapPhase.None;
+            RestoreLeapTime();
+            _agent.baseOffset = _agentBaseOffset;
+            anim.SetBool(Leaping, false);
+            anim.applyRootMotion = _leapHadRootMotion;
+            _leapPitch = 0f;
+            _leapTuck = 0f;
+            _leapPendingKunai.Clear();
+            ResetThrowArm();
+            transform.rotation = Quaternion.Euler(0f, _leapYaw, 0f);
         }
 
         /// *** Kick *** ///
@@ -733,6 +1233,14 @@ namespace Characters.Ninja
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(_kickHitPosition.position, _kickHitArea);
+        }
+
+        private enum LeapPhase
+        {
+            None,
+            Rise,
+            Hang,
+            Fall
         }
     }
 }

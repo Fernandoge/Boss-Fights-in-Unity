@@ -58,6 +58,8 @@ The game is player-vs-boss encounters driven by Unity's NavMesh, Animator state 
 
 - **Bosses**: `BossController` (abstract, `Bosses/`) implements the shared loop — chase/idle movement, attack timer (`timeBetweenAttacks` counts down in `Update`, triggers `PerformAttack()`), health + two-phase transition at half health (`EnterSecondPhase`), skill indicators, and the counter-window system (boss flashes green, collider tag becomes `"Counterable"`, player can `TriggerCounter()`). Concrete bosses (`FirstBoss` in `Bosses/First Boss/`) override `PerformAttack()`/`EnterSecondPhase()` and add their skill roster.
 
+- **Boss aiming rule:** the player has many movement skills (dash, leap, Huuma swap, flip kick), so a boss skill must never aim at `player.position` directly. Use `BossController.PerceivedPlayerPosition` and `PerceivedPlayerVelocity`: they freeze for `Fast Move Reaction Delay` after a move faster than the player can run, so bosses cannot track a dash instantly ("aim botting"). Details in `docs/second-boss/spell-circles.md`.
+
 - **Interfaces** (`Interfaces/`): `IDamageableByPlayer` (`TakeDamage(int)`) and `ICounterable` (`TriggerCounter()`) are how the player's attacks talk to bosses/minions.
 
 - **Animation is load-bearing**: most skill sequencing runs through Animator triggers + animation events calling public methods on the scripts (e.g. `BasicAttack`, `ActivateSkillIndicator`, `StopPerformingAttack`). When adding a skill, the C# side is only half the work — Animator parameters, states and transitions can be added through the Unity CLI (see above), but animation-event hookups on clips and anything visual still need to be checked in a playtest (screenshot via the CLI, or ask the user). Always call out what was and wasn't verified.

@@ -113,6 +113,20 @@ namespace Characters
             return false;
         }
 
+        // The bosses sit on the Ignore Raycast layer, so the normal mouse ray goes through them and lands on the ground behind; this one also hits them (and ignores triggers)
+        protected bool GetMouseAimPoint(out Vector3 aimPoint)
+        {
+            if (GetMouseAimHit(out RaycastHit hit))
+            {
+                aimPoint = hit.point;
+                return true;
+            }
+            aimPoint = Vector3.zero;
+            return false;
+        }
+
+        protected bool GetMouseAimHit(out RaycastHit hit) => Physics.Raycast(_mainCamera.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore);
+
         protected void LookAtMouse()
         {
             var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -154,6 +168,17 @@ namespace Characters
             bulletScript.Shoot(_basicAttackSpeed, bulletPosition, bulletDirection);
         }
         
+        // Shoots a basic attack projectile from any point in any direction (skills that throw kunai on their own)
+        protected void ShootBasicAttack(Vector3 position, Vector3 direction, int damage)
+        {
+            int basicAttackNumber = Random.Range(0, _basicAttackPrefabs.Length);
+            Quaternion rotation = Quaternion.FromToRotation(_basicAttackSpawnPoint.forward, direction) * _basicAttackSpawnPoint.rotation;
+            GameObject bullet = Instantiate(_basicAttackPrefabs[basicAttackNumber], position, rotation);
+            NinjaBasicAttack bulletScript = bullet.GetComponentInChildren<NinjaBasicAttack>();
+            bulletScript.SetAttackDamage(damage);
+            bulletScript.Shoot(_basicAttackSpeed, bullet.transform.position, direction);
+        }
+
         private void NavMeshAgentPathCheck()
         {
             if (!anim.GetBool(Running) || _navMeshAgent.pathPending) 

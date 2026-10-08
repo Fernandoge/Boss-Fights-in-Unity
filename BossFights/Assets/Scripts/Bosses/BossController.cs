@@ -33,11 +33,32 @@ namespace Bosses
         [SerializeField, Range(0.1f, 0.9f)] protected float secondPhaseHealthShare = 0.5f;
         [SerializeField] private TextMeshProUGUI _healthText;
 
+        [Header("Player Perception")]
+        // Skills that aim at the player use PerceivedPlayerPosition, never player.position, so movement skills (dashes, leaps, swaps) cannot be answered instantly: a move faster than the player can run freezes the aim for a moment
+        [SerializeField] private float _fastMoveSpeedFactor = 1.3f;
+        [SerializeField] private float _fastMoveReactionDelay = 0.8f;
+
         public bool IsInSecondPhase => hasEnteredSecondPhase;
         public bool DebugAutoAttacksDisabled { get; set; }
         public bool DebugIsBusy => isPerformingAttack || isPerformingAction;
 
         private int SecondPhaseHealth => Mathf.RoundToInt(maxHealth * secondPhaseHealthShare);
+
+        protected Vector3 PerceivedPlayerPosition { get; private set; }
+
+        // Where the player is heading, or nothing while the boss is still reacting to a fast move
+        protected Vector3 PerceivedPlayerVelocity
+        {
+            get
+            {
+                if (_perceptionHoldTimer > 0f)
+                    return Vector3.zero;
+
+                Vector3 velocity = playerNavMeshAgent.velocity;
+                velocity.y = 0f;
+                return velocity;
+            }
+        }
 
         protected Transform player;
         protected NavMeshAgent navMeshAgent;
@@ -56,6 +77,8 @@ namespace Bosses
         private Color meshMaterialOriginalColor;
         private string colliderOriginalTag;
         private int currentHealth;
+        private Vector3 _lastPlayerPosition;
+        private float _perceptionHoldTimer;
         protected bool hasEnteredSecondPhase;
         private bool isCounterWindowActive;
         protected bool isImmuneToDamage; 
@@ -70,6 +93,8 @@ namespace Bosses
             player = GameManager.Instance.player.transform;
             navMeshAgent = GetComponent<NavMeshAgent>();
             playerNavMeshAgent = player.GetComponent<NavMeshAgent>();
+            PerceivedPlayerPosition = player.position;
+            _lastPlayerPosition = player.position;
             anim = GetComponent<Animator>();
             meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
             colliderComponent = GetComponentInChildren<Collider>();
@@ -95,6 +120,8 @@ namespace Bosses
             timeBetweenAttacks -= Time.deltaTime;
         }
         
+        private void LateUpdate() => UpdatePlayerPerception();
+
         protected virtual void IdleMovement()
         {
             navMeshAgent.SetDestination(player.position);
@@ -269,6 +296,23 @@ namespace Bosses
             
             // Return to original color
             meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
+        }
+
+        // The perceived position follows the player, except for a moment after a move much faster than running
+        private void UpdatePlayerPerception()
+        {
+            Vector3 moved = player.position - _lastPlayerPosition;
+            moved.y = 0f;
+            _lastPlayerPosition = player.position;
+
+            float deltaTime = Time.deltaTime;
+            if (deltaTime > 0f && moved.magnitude / deltaTime > playerNavMeshAgent.speed * _fastMoveSpeedFactor)
+                _perceptionHoldTimer = _fastMoveReactionDelay;
+
+            if (_perceptionHoldTimer > 0f)
+                _perceptionHoldTimer -= deltaTime;
+            else
+                PerceivedPlayerPosition = player.position;
         }
     }
 }

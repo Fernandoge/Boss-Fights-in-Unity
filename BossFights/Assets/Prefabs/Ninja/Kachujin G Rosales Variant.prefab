@@ -2256,7 +2256,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9d989002df8ead4d9432ce585293e89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _health: 20
+  _health: 3
   _playerHealthUI: {fileID: 0}
   _damageImmuneCD: 2.2
   _gameOverDelay: 1.8
@@ -2283,10 +2283,10 @@ MonoBehaviour:
   _skillHealAmount: 1
   _healCD: 8
   _healSpellIcon: {fileID: 0}
-  _clonePrefab: {fileID: 0}
-  _castInputsClones: 0
-  _clonesDuration: 0
-  _clonesCD: 0
+  _clonePrefab: {fileID: 7583592245019451428, guid: b0f978d6860c2de48a470450a6fb9295, type: 3}
+  _castInputsClones: 4
+  _clonesDuration: 10
+  _clonesCD: 10
   _clonesSpellIcon: {fileID: 0}
   _huumaPrefab: {fileID: 8965027126141042946, guid: 66f07319bf3b1ee489aac7a47674dee4, type: 3}
   _huumaSwapEffectPrefab: {fileID: 3032984059324420281, guid: 1aaf7f75da5677447ad5c1abc1964f8a, type: 3}
@@ -2309,17 +2309,49 @@ MonoBehaviour:
   _dodgeDistance: 3.5
   _dodgeCD: 12
   _dodgeSpellIcon: {fileID: 0}
-  _whirlTrailPrefab: {fileID: 76947552572289274, guid: 438f7bb47f4554a40ad786bab1dda9f0, type: 3}
-  _whirlSlashPrefab: {fileID: 1171201465392465800, guid: 4aa9f30a28a77224ba84b2a2c334c71b, type: 3}
-  _whirlDuration: 2
-  _whirlHits: 6
-  _whirlDamage: 3
-  _whirlHitRadius: 4
-  _whirlOrbitRadius: 2.2
-  _whirlTargetRange: 7
-  _whirlSpinSpeed: 720
-  _whirlCD: 20
-  _whirlSpellIcon: {fileID: 0}
+  _sonicBlowSlashPrefab: {fileID: 1171201465392465800, guid: 4aa9f30a28a77224ba84b2a2c334c71b, type: 3}
+  _sonicBlowDuration: 1.4
+  _sonicBlowHits: 6
+  _sonicBlowDamage: 2
+  _sonicBlowFinisherDamage: 5
+  _sonicBlowFinisherPause: 0.5
+  _sonicBlowFinisherReachScale: 1.4
+  _sonicBlowFinisherSlashScale: 2.2
+  _sonicBlowFinisherZoom: 1.3
+  _sonicBlowLength: 6
+  _sonicBlowWidth: 3
+  _sonicBlowTurnSpeed: 720
+  _sonicBlowKunaiPrefab: {fileID: 8214174412900877168, guid: cc1f3fb12c5f09f4895e6f14884dbb1a, type: 3}
+  _sonicBlowKunaiPosition: {x: 0, y: 0.08, z: 0}
+  _sonicBlowKunaiEuler: {x: 90, y: 0, z: 0}
+  _sonicBlowHandEuler: {x: 0, y: 0, z: 0}
+  _sonicBlowSwingReach: 0.9
+  _sonicBlowSwingWidth: 0.9
+  _sonicBlowSwingLow: 0.5
+  _sonicBlowSwingHigh: 1.9
+  _sonicBlowCD: 12
+  _sonicBlowSpellIcon: {fileID: 0}
+  _leapShurikenPrefab: {fileID: 4128636846820668421, guid: e3cfc2d4800bc3e44befd81b71f79f0a, type: 3}
+  _leapShurikenCount: 5
+  _leapShurikenDamage: 2
+  _leapShurikenRadius: 0.7
+  _leapShurikenSpacing: 1.3
+  _leapThrowRange: 30
+  _leapDistance: 5
+  _leapHeight: 0.9
+  _leapRiseTime: 0.4
+  _leapFlipEnd: 0.64
+  _leapHangPitch: 20
+  _leapHangEndHeight: 0.8
+  _leapTuckThigh: 20
+  _leapTuckKnee: 20
+  _leapFallTime: 0.3
+  _leapQteTime: 1
+  _leapKunaiCount: 3
+  _leapKunaiDamage: 2
+  _leapSlowMotion: 0.25
+  _leapCD: 14
+  _leapSpellIcon: {fileID: 0}
 --- !u!195 &814597986944425878
 NavMeshAgent:
   m_ObjectHideFlags: 0
