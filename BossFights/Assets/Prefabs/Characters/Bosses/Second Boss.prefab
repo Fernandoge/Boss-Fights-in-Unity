@@ -474,21 +474,22 @@ MonoBehaviour:
   rotationSpeed: 3
   stopBetweenPlayer: 4.5
   timeBetweenAttacks: 0.35
-  maxHealth: 100
+  maxHealth: 200
+  secondPhaseHealthShare: 0.5
   _healthText: {fileID: 0}
+  _fastMoveSpeedFactor: 1.3
+  _fastMoveReactionDelay: 0.8
   _spellCirclePrefab: {fileID: 2045114574471164713, guid: 428bf483f520a694791248faafb20295, type: 3}
   _circleCount: 7
   _circleRadius: 1.2
   _castReleaseDelay: 0.28
   _circleInterval: 0.42
-  _circleTelegraphTime: 0.5
+  _circleTelegraphTime: 0.575
   _afterCastTime: 0.2
   _circleDamage: 1
   _leadPlayerChance: 0.5
   _leadOffsetDistance: 0.8
   _randomOffsetDistanceRange: {x: 0.5, y: 2.5}
-  _jumpReactionDelay: 1
-  _jumpDetectDistance: 2.5
   _lineBlastPrefab: {fileID: 945328694918007655, guid: fe663267f6ea78d43a9e6732eca01a17, type: 3}
   _lineWindUpTime: 0.375
   _lineTeleportDelay: 0.25
@@ -534,6 +535,7 @@ MonoBehaviour:
     laserLength: 5
     laserDamage: 1
   _zonePrefab: {fileID: 15793102629447127, guid: 7549c2bee8f8bb649898a091b2d53113, type: 3}
+  _zoneCount: 3
   _zoneCastDelay: 0.5
   _zoneLightTime: 0.5
   _zoneLightGap: 0.2
@@ -542,6 +544,14 @@ MonoBehaviour:
   _zoneTeleportDelay: 0.3
   _zoneDamage: 1
   _zoneVerticalChance: 0.5
+  _phaseTwoOrbCount: 4
+  _phaseTwoZoneSteps: 6
+  _phaseTwoZoneCooldown: 2
+  _phaseTwoLineSpeed: 1.3
+  _phaseTwoCircleSteps: 4
+  _phaseTwoCirclesPerStep: 2
+  _phaseTwoCircleDistance: 2.4
+  _powerUpTime: 3.5
   _colorBoardPrefab: {fileID: 6073983499374623215, guid: e69fb8d329afbb4499ed8b1ec8843cde, type: 3}
   _colorIconPrefab: {fileID: 5552830164561460024, guid: cc6c3eb5f867d184aa02e657a08a9049, type: 3}
   _intermissionColors:

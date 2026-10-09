@@ -15,7 +15,7 @@ namespace Bosses.Second_Boss
         [SerializeField] private float _circleRadius = 1.2f;
         [SerializeField] private float _castReleaseDelay = 0.28f;
         [SerializeField] private float _circleInterval = 0.42f;
-        [SerializeField] private float _circleTelegraphTime = 0.5f;
+        [SerializeField] private float _circleTelegraphTime = 0.575f;
         [SerializeField] private float _afterCastTime = 0.4f;
         [SerializeField] private int _circleDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _leadPlayerChance = 0.5f;

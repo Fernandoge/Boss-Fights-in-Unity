@@ -406,10 +406,10 @@ namespace Characters.Ninja
             _qtePrompt.Hide();
         }
 
-        public override void DamagePlayer(int damage)
+        public override void DamagePlayer(int damage, bool isUnavoidable = false)
         {
             StartCooldownForCurrentSkill();
-            base.DamagePlayer(damage);
+            base.DamagePlayer(damage, isUnavoidable);
         }
         
         public override void BasicAttack()

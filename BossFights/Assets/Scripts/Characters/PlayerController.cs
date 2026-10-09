@@ -243,9 +243,10 @@ namespace Characters
         
         /// *** Health Logic *** ///
          
-        public virtual void DamagePlayer(int damage)
+        // An unavoidable hit ignores the hit cooldown and skill immunity (a dodge), for attacks the fight cannot continue without
+        public virtual void DamagePlayer(int damage, bool isUnavoidable = false)
         {
-            if (IsDead || _damageImmuneCD > 0 || _invulnerableTime > 0 || DebugInvulnerable)
+            if (IsDead || DebugInvulnerable || (!isUnavoidable && (_damageImmuneCD > 0 || _invulnerableTime > 0)))
                 return;
 
             // Important to reset player state and coroutines since this method cancels player animations
@@ -309,8 +310,16 @@ namespace Characters
                     Instantiate(_dashSmokePrefab, transform.position + Vector3.up * 0.9f, Quaternion.identity);
 
                 _navMeshAgent.enabled = false;
-                Vector3 direction = (hit.point - transform.position).normalized;
-                transform.position += direction * _dashDistance;
+                Vector3 direction = hit.point - transform.position;
+                direction.y = 0f;
+                direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
+
+                // Stop at the first wall or edge of the walkable floor instead of landing inside it
+                Vector3 destination = transform.position + direction * _dashDistance;
+                if (NavMesh.Raycast(transform.position, destination, out NavMeshHit edge, NavMesh.AllAreas))
+                    destination = edge.position;
+
+                transform.position = destination;
                 Quaternion lookRotation = Quaternion.LookRotation(direction);
                 transform.rotation = lookRotation;
                 _navMeshAgent.enabled = true;

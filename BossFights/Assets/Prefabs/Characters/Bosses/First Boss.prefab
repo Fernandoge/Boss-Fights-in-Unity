@@ -34593,7 +34593,10 @@ MonoBehaviour:
   stopBetweenPlayer: 4.5
   timeBetweenAttacks: 1.5
   maxHealth: 10
+  secondPhaseHealthShare: 0.5
   _healthText: {fileID: 0}
+  _fastMoveSpeedFactor: 1.3
+  _fastMoveReactionDelay: 0.8
   earthShatterDamage: 2
   _jumpingAttackParticlesPrefab: {fileID: 2782405842634646459}
   _jumpAttackDistance:
@@ -34619,7 +34622,7 @@ MonoBehaviour:
   _rockSpeed: 80
   _rocksToThrow: 5
   _rockAimVariance: 6
-  _rockShowerSpeed: 45
+  _rockShowerSpeed: 36
   _rockShowerPatterns:
   - indicator: {fileID: 0}
     rocksPositionUp:
@@ -34753,6 +34756,8 @@ MonoBehaviour:
   _boulderLaunchInterval: 0.9
   _boulderMinLaneGap: 4
   _intermissionCenterPosition: {fileID: 0}
+  _intermissionRunSpeed: 20
+  _slimeLevitateDuration: 0.7
   _slimePositions: []
   _slimes: []
   _rockShellPrefab: {fileID: 0}

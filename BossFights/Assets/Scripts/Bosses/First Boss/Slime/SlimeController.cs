@@ -167,7 +167,7 @@ namespace Bosses.First_Boss.Slime
             meshRenderer.enabled = false; // Hide the slime mesh
             Vector3 explosionPosition = transform.position + Vector3.up * 1.5f;
             Instantiate(explosionEffectPrefab, explosionPosition, Quaternion.identity);
-            GameManager.Instance.player.DamagePlayer(1000);
+            GameManager.Instance.player.DamagePlayer(1000, true);
         }
         
         // Move slime back to its spawn position after intermission
