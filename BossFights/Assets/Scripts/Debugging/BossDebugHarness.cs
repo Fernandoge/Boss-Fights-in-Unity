@@ -84,6 +84,8 @@ namespace Debugging
                 ToggleOnlyUseAttack();
             if (Input.GetKeyDown(KeyCode.F6))
                 SetBossHealthJustAboveHalf();
+            if (Input.GetKeyDown(KeyCode.F7))
+                SetBossHealthToOne();
             if (Input.GetKeyDown(KeyCode.Tab))
                 _isHelpVisible = !_isHelpVisible;
 
@@ -95,6 +97,12 @@ namespace Debugging
         {
             GetBoss().DebugSetHealthJustAboveHalf();
             Show("Boss health set just above the phase 2 line");
+        }
+
+        public void SetBossHealthToOne()
+        {
+            GetBoss().DebugSetHealthToOne();
+            Show("Boss health set to 1 (next hit kills)");
         }
 
         private void OnDisable() => Time.timeScale = 1f;
@@ -239,7 +247,7 @@ namespace Debugging
             else
                 text += "(no forced attacks for this boss yet)\n";
 
-            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack\nF6  Boss health just above the phase 2 line (next hit starts phase 2)";
+            text += "F1  Toggle boss auto attacks\nF2  Toggle player invulnerable\nF3  Toggle phase 2 skill variants\nF4  Toggle slow motion\nF5  Toggle only use one attack\nF6  Boss health just above the phase 2 line (next hit starts phase 2)\nF7  Boss health to 1 (next hit kills)";
             return text;
         }
     }

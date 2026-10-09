@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using Interfaces;
+using UI;
 using UnityEngine;
 
 namespace Bosses.First_Boss
@@ -25,6 +26,7 @@ namespace Bosses.First_Boss
         private MaterialPropertyBlock propertyBlock;
         private Color originalColor;
         private Collider stoneCollider;
+        private CounterPrompt _counterPrompt;
         private string originalTag;
         private FirstBoss bossReference; // Reference to the boss
         private int stoneIndex; // This stone's index in the boss's array
@@ -101,7 +103,10 @@ namespace Bosses.First_Boss
                 
                 if (stoneCollider != null)
                     stoneCollider.tag = "Counterable";
-                
+
+                if (!_counterPrompt)
+                    _counterPrompt = CounterPrompt.Show(stoneCollider);
+
                 if (stoneRenderer != null && propertyBlock != null)
                 {
                     stoneRenderer.GetPropertyBlock(propertyBlock);
@@ -130,7 +135,13 @@ namespace Bosses.First_Boss
         public void RemoveCounterable()
         {
             isCounterable = false;
-            
+
+            if (_counterPrompt)
+            {
+                _counterPrompt.Hide();
+                _counterPrompt = null;
+            }
+
             if (stoneCollider != null)
                 stoneCollider.tag = originalTag;
             

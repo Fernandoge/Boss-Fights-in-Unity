@@ -1,5 +1,7 @@
 using System.Collections;
+using Bosses;
 using Characters.Ninja;
+using Manager.GameManager;
 using Shared;
 using UI;
 using UnityEngine;
@@ -74,6 +76,10 @@ namespace Characters
         private void Update()
         {
             if (IsDead)
+                return;
+
+            // The victory screen freezes the game like the pause screen, and Escape must not open a pause screen on top of it
+            if (GameMenuScreen.IsOpen && !_pauseScreen)
                 return;
 
             if (Input.GetKeyDown(PauseKey))
@@ -247,6 +253,11 @@ namespace Characters
         public virtual void DamagePlayer(int damage, bool isUnavoidable = false)
         {
             if (IsDead || DebugInvulnerable || (!isUnavoidable && (_damageImmuneCD > 0 || _invulnerableTime > 0)))
+                return;
+
+            // Once the boss is beaten, what it left on the field can no longer hurt the player
+            BossController activeBoss = GameManager.Instance.ActiveBoss;
+            if (activeBoss && activeBoss.IsDead)
                 return;
 
             // Important to reset player state and coroutines since this method cancels player animations

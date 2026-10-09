@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    // The game over and pause screens: a dimmed screen with a title and the Restart and Boss Selection buttons; it is built in code, so nothing needs to be wired in a scene
+    // The game over, victory and pause screens: a dimmed screen with a title and the Restart and Boss Selection buttons; it is built in code, so nothing needs to be wired in a scene
     public class GameMenuScreen : MonoBehaviour
     {
         private const string BossSelectionScene = "StartScene";
@@ -16,16 +16,23 @@ namespace UI
         private const float PauseFadeTime = 0.15f;
         private static readonly Color BackgroundColor = new Color(0f, 0f, 0f, 0.75f);
         private static readonly Color GameOverColor = new Color(0.86f, 0.08f, 0.15f);
+        private static readonly Color VictoryColor = new Color(1f, 0.82f, 0.2f);
         private static readonly Color ButtonColor = new Color(0.18f, 0.18f, 0.2f, 0.95f);
+
+        private static int _openScreens;
 
         private CanvasGroup _canvasGroup;
         private string _title;
+        private string _restartLabel;
         private Color _titleColor;
         private float _delay;
         private float _fadeTime;
         private float _elapsed;
         private float _previousTimeScale;
         private bool _isShown;
+
+        // True while any of the screens is on display, so the player does not stack a pause screen on top of one
+        public static bool IsOpen => _openScreens > 0;
 
         private void Update()
         {
@@ -44,10 +51,18 @@ namespace UI
             _canvasGroup.interactable = alpha >= 1f;
         }
 
-        // delay is how long the death animation gets before the screen appears
-        public static GameMenuScreen ShowGameOver(float delay) => Create("GAME OVER", GameOverColor, delay, GameOverFadeTime);
+        private void OnDestroy()
+        {
+            if (_isShown)
+                _openScreens--;
+        }
 
-        public static GameMenuScreen ShowPaused() => Create("PAUSED", Color.white, 0f, PauseFadeTime);
+        // delay is how long the death animation gets before the screen appears
+        public static GameMenuScreen ShowGameOver(float delay) => Create("GAME OVER", GameOverColor, "Restart", delay, GameOverFadeTime);
+
+        public static GameMenuScreen ShowVictory(float delay) => Create("YOU WIN!", VictoryColor, "Kill the boss again!", delay, GameOverFadeTime);
+
+        public static GameMenuScreen ShowPaused() => Create("PAUSED", Color.white, "Restart", 0f, PauseFadeTime);
 
         public void Close()
         {
@@ -55,12 +70,13 @@ namespace UI
             Destroy(gameObject);
         }
 
-        private static GameMenuScreen Create(string title, Color titleColor, float delay, float fadeTime)
+        private static GameMenuScreen Create(string title, Color titleColor, string restartLabel, float delay, float fadeTime)
         {
             GameObject screenObject = new GameObject(title + " Screen");
             GameMenuScreen screen = screenObject.AddComponent<GameMenuScreen>();
             screen._title = title;
             screen._titleColor = titleColor;
+            screen._restartLabel = restartLabel;
             screen._delay = delay;
             screen._fadeTime = fadeTime;
             if (delay <= 0f)
@@ -71,6 +87,7 @@ namespace UI
         private void Build()
         {
             _isShown = true;
+            _openScreens++;
             _elapsed = 0f;
             _previousTimeScale = Time.timeScale;
             Time.timeScale = 0f;
@@ -102,13 +119,13 @@ namespace UI
             backgroundRect.offsetMax = Vector2.zero;
 
             CreateText("Title", canvasObject.transform, _title, 150f, _titleColor, new Vector2(0f, 150f));
-            CreateButton("Restart Button", canvasObject.transform, "Restart", new Vector2(0f, -30f), Restart);
+            CreateButton("Restart Button", canvasObject.transform, _restartLabel, new Vector2(0f, -30f), Restart);
             CreateButton("Boss Selection Button", canvasObject.transform, "Boss Selection", new Vector2(0f, -160f), OpenBossSelection);
         }
 
         private static void CreateButton(string objectName, Transform parent, string label, Vector2 position, UnityAction onClick)
         {
-            Image image = CreateImage(objectName, parent, ButtonColor, position, new Vector2(480f, 100f));
+            Image image = CreateImage(objectName, parent, ButtonColor, position, new Vector2(720f, 100f));
             Button button = image.gameObject.AddComponent<Button>();
             button.onClick.AddListener(onClick);
             CreateText("Label", image.transform, label, 46f, Color.white, Vector2.zero);

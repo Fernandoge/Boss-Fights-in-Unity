@@ -259,6 +259,34 @@ namespace Bosses.Second_Boss
         }
 
         // At half health the boss goes to the middle for the color intermission; there is no second phase after it yet, so it simply goes back to attacking
+        protected override void OnDefeated()
+        {
+            ClearLingeringHazards();
+            ResetClockMechanic();
+
+            foreach (SpellCircle circle in FindObjectsByType<SpellCircle>(FindObjectsSortMode.None))
+                Destroy(circle.gameObject);
+
+            foreach (DiagonalLineBlast blast in FindObjectsByType<DiagonalLineBlast>(FindObjectsSortMode.None))
+                Destroy(blast.gameObject);
+
+            foreach (ClockWaveBlast wave in FindObjectsByType<ClockWaveBlast>(FindObjectsSortMode.None))
+                Destroy(wave.gameObject);
+
+            foreach (ColorSquareBoard board in FindObjectsByType<ColorSquareBoard>(FindObjectsSortMode.None))
+                Destroy(board.gameObject);
+
+            foreach (ClockNumberPopup popup in FindObjectsByType<ClockNumberPopup>(FindObjectsSortMode.None))
+                Destroy(popup.gameObject);
+
+            foreach (IntermissionCharge charge in FindObjectsByType<IntermissionCharge>(FindObjectsSortMode.None))
+                Destroy(charge.gameObject);
+
+            // The hands layer would keep casting over the death animation
+            anim.ResetTrigger(Cast);
+            anim.SetLayerWeight(CastHandLayer, 0f);
+        }
+
         protected override IEnumerator EnterSecondPhase()
         {
             if (hasEnteredSecondPhase)

@@ -33,12 +33,17 @@ namespace Bosses
         [SerializeField, Range(0.1f, 0.9f)] protected float secondPhaseHealthShare = 0.5f;
         [SerializeField] private TextMeshProUGUI _healthText;
 
+        [Header("Death")]
+        // How long the death animation plays before the victory screen freezes the game
+        [SerializeField] private float _victoryScreenDelay = 4f;
+
         [Header("Player Perception")]
         // Skills that aim at the player use PerceivedPlayerPosition, never player.position, so movement skills (dashes, leaps, swaps) cannot be answered instantly: a move faster than the player can run freezes the aim for a moment
         [SerializeField] private float _fastMoveSpeedFactor = 1.3f;
         [SerializeField] private float _fastMoveReactionDelay = 0.8f;
 
         public bool IsInSecondPhase => hasEnteredSecondPhase;
+        public bool IsDead { get; private set; }
         public bool DebugAutoAttacksDisabled { get; set; }
         public bool DebugIsBusy => isPerformingAttack || isPerformingAction;
 
@@ -71,6 +76,7 @@ namespace Bosses
         
         private Material meshMaterial;
         private Collider colliderComponent;
+        private CounterPrompt _counterPrompt;
         private GameObject currentSkillIndicator;
         private GameObject currentSkillParticles;
         private Coroutine skillToCastCoroutine;
@@ -86,6 +92,7 @@ namespace Bosses
         protected static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Enter_Second_Phase = Animator.StringToHash("EnterSecondPhase");
         private static readonly int Countered = Animator.StringToHash("Countered");
+        private static readonly int Die = Animator.StringToHash("Die");
         private static readonly int PerformingAction = Animator.StringToHash("PerformingAction");
 
         protected virtual void Start()
@@ -110,6 +117,9 @@ namespace Bosses
         
         private void Update()
         {
+            if (IsDead)
+                return;
+
             if (timeBetweenAttacks <= 0 && !DebugAutoAttacksDisabled)
                 PerformAttack();
 
@@ -153,6 +163,13 @@ namespace Bosses
         {
             hasEnteredSecondPhase = false;
             currentHealth = SecondPhaseHealth + 1;
+            _healthText.text = currentHealth.ToString();
+        }
+
+        // One point of health left, so the next hit kills
+        public void DebugSetHealthToOne()
+        {
+            currentHealth = 1;
             _healthText.text = currentHealth.ToString();
         }
 
@@ -229,9 +246,15 @@ namespace Bosses
         
         protected void ActivateCounterWindow()
         {
+            // An animation event of the attack the boss was playing can still arrive during the cross fade into the death animation
+            if (IsDead)
+                return;
+
             isCounterWindowActive = true;
             colliderComponent.transform.tag = "Counterable";
             meshMaterial.SetColor("_Color", Color.green);
+            if (!_counterPrompt)
+                _counterPrompt = CounterPrompt.Show(colliderComponent);
         }
         
         protected void StopCounterWindow() 
@@ -239,8 +262,13 @@ namespace Bosses
             isCounterWindowActive = false;
             colliderComponent.transform.tag = colliderOriginalTag;
             meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
+            if (_counterPrompt)
+            {
+                _counterPrompt.Hide();
+                _counterPrompt = null;
+            }
         }
-        
+
         public void TriggerCounter()
         {
             StopCounterWindow();
@@ -255,13 +283,19 @@ namespace Bosses
         public void TakeDamage(int damage, bool isCrit)
         {
             // Don't take damage if immune (e.g., during phase transitions)
-            if (isImmuneToDamage)
+            if (isImmuneToDamage || IsDead)
                 return;
-            
+
             currentHealth -= damage;
             DamageNumber.Show(colliderComponent, damage, isCrit);
-            _healthText.text = currentHealth.ToString();
-            
+            _healthText.text = Mathf.Max(currentHealth, 0).ToString();
+
+            if (currentHealth <= 0)
+            {
+                Defeat();
+                return;
+            }
+
             // Check if boss should enter second phase
             if (!hasEnteredSecondPhase && currentHealth <= SecondPhaseHealth && !isPerformingAction)
                 StartCoroutine(EnterSecondPhase());
@@ -271,6 +305,32 @@ namespace Bosses
                 StartCoroutine(FlashOnHit());
         }
         
+        // Override to remove what the boss left on the field when it dies
+        protected virtual void OnDefeated()
+        {
+        }
+
+        private void Defeat()
+        {
+            IsDead = true;
+            StopAllCoroutines();
+            StopCounterWindow();
+            if (currentSkillIndicator)
+                currentSkillIndicator.SetActive(false);
+            if (currentSkillParticles)
+                currentSkillParticles.SetActive(false);
+
+            navMeshAgent.isStopped = true;
+            anim.SetBool(Walking, false);
+            anim.SetBool(PerformingAction, false);
+            anim.SetTrigger(Die);
+            OnDefeated();
+
+            // If the player died on the same hit, the game over screen is already on its way
+            if (!GameManager.Instance.player.IsDead)
+                GameMenuScreen.ShowVictory(_victoryScreenDelay);
+        }
+
         // Override this method in specific boss implementations to define second phase behavior
         protected virtual IEnumerator EnterSecondPhase()
         {

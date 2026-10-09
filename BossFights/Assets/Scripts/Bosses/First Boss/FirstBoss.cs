@@ -197,6 +197,30 @@ namespace Bosses.First_Boss
             }
         }
 
+        protected override void OnDefeated()
+        {
+            foreach (StoneProjectile rock in FindObjectsByType<StoneProjectile>(FindObjectsSortMode.None))
+                Destroy(rock.transform.parent.gameObject);
+
+            foreach (FissureLine line in FindObjectsByType<FissureLine>(FindObjectsSortMode.None))
+                Destroy(line.gameObject);
+
+            foreach (BoulderProjectile boulder in FindObjectsByType<BoulderProjectile>(FindObjectsSortMode.None))
+                Destroy(boulder.gameObject);
+
+            foreach (Meteors meteor in FindObjectsByType<Meteors>(FindObjectsSortMode.None))
+                Destroy(meteor.gameObject);
+
+            foreach (BoulderRollSequence sequence in FindObjectsByType<BoulderRollSequence>(FindObjectsSortMode.None))
+                Destroy(sequence.gameObject);
+
+            foreach (Orbs orb in FindObjectsByType<Orbs>(FindObjectsSortMode.None))
+                orb.gameObject.SetActive(false);
+
+            foreach (SlimeController slime in _slimes)
+                slime.gameObject.SetActive(false);
+        }
+
         protected override void PerformAttack()
         {
             base.PerformAttack();

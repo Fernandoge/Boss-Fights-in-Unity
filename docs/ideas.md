@@ -6,8 +6,6 @@ Format: `- #N Idea name [size]: what it is and why. (needs: assets, decisions or
 
 ## Features
 
-- #2 "E" prompt on counterable enemies and objects [S-M]: besides the green flash, show an E key icon above anything with the `Counterable` tag so new players know they can kick or counter it. World-space billboard, shown only during the counter window.
-- #9 Boss death and victory menu [M]: death animation (first boss and second boss), then a "You win!" screen with two buttons: go to the character screen, and "Kill the boss again!". Needs a decision on what the "character screen" is (today `StartScene` only has boss cards).
 - #8 New melee character, combo based [L]: the ninja is built on QTE casting, this one is a combat fighter in the style of Riven (chained attacks, animation cancels, short dashes, a shield, an empowered finisher). Needs a character select screen (see #9) and sword clips from the animation library.
 - #1 Beastmaster boss with low poly animal companions [L]: every animal has exactly one skill. Needs a low poly animal pack with animations and a model for the beastmaster. Per `CLAUDE.md`, split `FirstBoss.cs` skills into reusable components before a third boss.
 
@@ -21,10 +19,9 @@ Format: `- #N Idea name [size]: what it is and why. (needs: assets, decisions or
 
 ## Suggested order
 
-1. #2 E prompt: small, and #6 and #9 build on it.
-2. #7 renames: before more content piles up under the old names.
-3. #9 death and victory menu, then #6 second boss redesign.
-4. #8 melee character, then #1 beastmaster (the melee character is the test for #6, and it needs the character screen from #9).
+1. #7 renames: before more content piles up under the old names.
+2. #6 second boss redesign (it can use the E prompt from #2).
+3. #8 melee character (it needs a character select screen), then #1 beastmaster. The melee character is the test for #6.
 
 ## In progress
 
@@ -32,6 +29,8 @@ Format: `- #N Idea name [size]: what it is and why. (needs: assets, decisions or
 
 Tested in Play mode through the CLI on 2026-10-09. Still to playtest by hand: the feel of the Rock Shower speed, the first boss at 500 health, the dash against a wall, and a real `S` press during the intermission.
 
+- #2 "E" prompt on counterable enemies and objects: `UI/CounterPrompt` is a key cap (white cap, green rim, bobbing and pulsing) built in code like `DamageNumber`, so nothing is wired in a scene. `BossController.ActivateCounterWindow` / `StopCounterWindow` and `IntermissionStone.MakeCounterable` / `RemoveCounterable` show and hide it, and it follows the collider's top. Checked in Play mode on both bosses and on the four intermission stones (all four show it, all vanish when one is kicked). The letter is a constant (`KeyLabel = "E"`), so a character with another counter key needs it changed. To playtest: the real counter window comes from the "Standing Melee Combo Attack" clip's animation event, which I opened through reflection instead.
+- #9 Boss death and victory menu: `BossController` has a real death now (`Defeat`, `IsDead`, virtual `OnDefeated`), both bosses have a death animation (second boss: its own Standing React Death Backward set to Humanoid; first boss: the library's Death Backward baked onto the Maw with the new `Assets/Editor/HumanoidClipBaker.cs`), and `GameMenuScreen.ShowVictory` shows "YOU WIN!" with "Kill the boss again!" and "Boss Selection". The character screen does not exist yet, so the second button goes to `StartScene` until #8 adds one. F7 in the debug harness sets the boss to 1 health. Design note and how to give a new boss a death: `docs/boss-death.md`. Still to playtest by hand: the feel of the fall and the 4 s delay, and Escape on the victory screen.
 - #3 Spell Circles explosion 15% slower: `_circleTelegraphTime` 0.5 to 0.575 (prefab and script default). Fire rate unchanged. Second boss.
 - #4 Rock Shower 20% slower: `_rockShowerSpeed` 45 to 36 on the first boss prefab (speed x 0.8). Measured 36.0 on every rock.
 - #5 Tankier first boss: the real value was the `TestScene` override (250, not the prefab's 10 or the script's 100), now 500. Phase 2 still starts at half health.

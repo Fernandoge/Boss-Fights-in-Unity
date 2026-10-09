@@ -232,7 +232,7 @@ Magic casts, crouches, jumps, blocks, hit reactions and deaths, used by the seco
 | `Second Boss/Animations/Standing Jump Running.fbx` | mixamo.com | 1.07 s | once | Generic |
 | `Second Boss/Animations/Standing Jump.fbx` | mixamo.com | 2.33 s | once | Generic |
 | `Second Boss/Animations/Standing Land To Standing Idle.fbx` | mixamo.com | 1.07 s | once | Generic |
-| `Second Boss/Animations/Standing React Death Backward.fbx` | mixamo.com | 3.60 s | once | Generic |
+| `Second Boss/Animations/Standing React Death Backward.fbx` | mixamo.com | 3.60 s | once | Human (used for the second boss death) |
 | `Second Boss/Animations/Standing React Death Forward.fbx` | mixamo.com | 3.47 s | once | Generic |
 | `Second Boss/Animations/Standing React Death Left.fbx` | mixamo.com | 3.43 s | once | Generic |
 | `Second Boss/Animations/Standing React Death Right.fbx` | mixamo.com | 3.50 s | once | Generic |
