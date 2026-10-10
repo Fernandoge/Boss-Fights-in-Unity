@@ -7,7 +7,7 @@ namespace UI
     {
         private const float SignSize = 2.4f;
         private const float FillShare = 0.72f;
-        private const float LetterFontSize = 13.5f;
+        private const float MarkShare = 0.33f;
         private const float HeightAboveTarget = 1.3f;
         private const float BobHeight = 0.12f;
         private const float BobSpeed = 6f;
@@ -18,9 +18,17 @@ namespace UI
         private const float CornerRounding = 0.12f;
         private static readonly Color RimColor = new Color(0.9f, 0.08f, 0.08f);
         private static readonly Color FillColor = new Color(1f, 0.85f, 0.12f);
-        private static readonly Color LetterColor = new Color(0.1f, 0.02f, 0.02f);
+        private static readonly Color MarkColor = new Color(0.1f, 0.02f, 0.02f);
+
+        // The exclamation mark is a bar and a dot drawn into a sprite (not a font letter), so it is centred by construction; the whole mark is centred on the middle of the sprite
+        private static readonly Vector2 BarTop = new Vector2(0f, 0.47f);
+        private static readonly Vector2 BarBottom = new Vector2(0f, -0.13f);
+        private static readonly Vector2 DotCenter = new Vector2(0f, -0.45f);
+        private const float BarRadius = 0.1f;
+        private const float DotRadius = 0.12f;
 
         private static Sprite _triangleSprite;
+        private static Sprite _markSprite;
 
         public static TargetMarker Show(Collider target)
         {
@@ -29,9 +37,32 @@ namespace UI
 
             TargetMarker marker = TargetMarker.Create("Danger Icon", target, HeightAboveTarget, BobHeight, BobSpeed, PulseAmount, PulseSpeedFactor);
             marker.AddShape("Rim", GetTriangleSprite(), RimColor, SignSize, 98);
-            marker.AddShape("Fill", GetTriangleSprite(), FillColor, SignSize * FillShare, 99, new Vector3(0f, -0.02f, 0f));
-            marker.AddLetter("!", LetterFontSize, LetterColor, 100, new Vector3(0f, -0.08f, 0f));
+            marker.AddShape("Fill", GetTriangleSprite(), FillColor, SignSize * FillShare, 99);
+            marker.AddShape("Mark", GetMarkSprite(), MarkColor, SignSize * MarkShare, 100);
             return marker;
+        }
+
+        // A white exclamation mark, centred, that the renderer tints
+        private static Sprite GetMarkSprite()
+        {
+            if (_markSprite)
+                return _markSprite;
+
+            Texture2D texture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            for (int y = 0; y < TextureSize; y++)
+            {
+                for (int x = 0; x < TextureSize; x++)
+                {
+                    Vector2 point = new Vector2((x + 0.5f) / TextureSize * 2f - 1f, (y + 0.5f) / TextureSize * 2f - 1f);
+                    float distance = Mathf.Min(DistanceToSegment(point, BarTop, BarBottom) - BarRadius, (point - DotCenter).magnitude - DotRadius);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(0.5f - distance * TextureSize / 2f)));
+                }
+            }
+
+            texture.Apply();
+            _markSprite = Sprite.Create(texture, new Rect(0f, 0f, TextureSize, TextureSize), new Vector2(0.5f, 0.5f), TextureSize);
+            return _markSprite;
         }
 
         // A white triangle with rounded corners, apex up, one world unit wide and tall; the renderers tint it

@@ -6,10 +6,10 @@ namespace UI
     public static class CounterPrompt
     {
         private const string KeyLabel = "E";
-        private const float KeySize = 1.7f;
+        private const float KeySize = 1.36f;
         private const float CapShare = 0.82f;
-        private const float LetterFontSize = 10f;
-        private const float HeightAboveTarget = 1.1f;
+        private const float LetterFontSize = 8f;
+        private const float HeightAboveTarget = 0.95f;
         private const float BobHeight = 0.2f;
         private const float BobSpeed = 4f;
         private const float PulseAmount = 0.07f;

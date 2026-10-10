@@ -8794,7 +8794,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _fullHeartColor: {r: 0.86, g: 0.08, b: 0.15, a: 1}
-  _emptyHeartColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.75}
+  _emptyHeartColor: {r: 0.55, g: 0.55, b: 0.6, a: 0.55}
 --- !u!4 &302144869 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 846943098112795308, guid: 21384f45e6993394e8d3b65ebb345a0d, type: 3}

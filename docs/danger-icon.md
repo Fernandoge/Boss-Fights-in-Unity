@@ -6,6 +6,7 @@ A yellow warning triangle with a red rim and an exclamation mark floats above a 
 
 - `UI/TargetMarker` is the shared sign: it follows a collider's top, faces the camera, bobs, pulses and pops in and out. `UI/DangerIcon` and `UI/CounterPrompt` are small builders that put their shapes on one. Everything is made in code, so nothing is wired in a scene.
 - `BossController.ShowDangerIcon(int skillDamage)` shows it only when the damage reaches `HeavyHitDamage`; the base `Update` hides it when `isPerformingAttack` ends. So the icon follows the live damage numbers: change a damage value and the icon follows.
+- The exclamation mark is a bar and a dot drawn into a sprite, not a font letter, so it is centred by construction (a bold glyph sat a few pixels off centre).
 - Gorath calls it from `StartAttack` through `GetAttackDamage`, which maps each attack to its damage field. Vexara calls it around the clock waves in `ClockIntermissionSequence`.
 
 ## What shows it today
