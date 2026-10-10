@@ -176,7 +176,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Second Boss
+  m_text: Vexara
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1022,7 +1022,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 155713eb01d50f54f99a441cc9cdd00a, type: 3}
       propertyPath: m_Name
-      value: Second Boss Preview Model
+      value: Vexara Preview Model
       objectReference: {fileID: 0}
     - target: {fileID: 1092408308860062549, guid: 155713eb01d50f54f99a441cc9cdd00a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2797,7 +2797,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 474b8cf4c03b25b4a9032de1d05cdef5, type: 3}
       propertyPath: m_Name
-      value: First Boss Preview Model
+      value: Gorath Preview Model
       objectReference: {fileID: 0}
     - target: {fileID: 1092408308860062549, guid: 474b8cf4c03b25b4a9032de1d05cdef5, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3634,7 +3634,7 @@ GameObject:
   - component: {fileID: 289929207}
   - component: {fileID: 289929209}
   m_Layer: 0
-  m_Name: First Boss Card
+  m_Name: Gorath Card
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3756,7 +3756,7 @@ GameObject:
   - component: {fileID: 525317110}
   - component: {fileID: 525317109}
   m_Layer: 0
-  m_Name: Second Boss Card
+  m_Name: Vexara Card
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3876,7 +3876,7 @@ GameObject:
   - component: {fileID: 578428883}
   - component: {fileID: 578428884}
   m_Layer: 0
-  m_Name: Second Boss Preview Camera
+  m_Name: Vexara Preview Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4343,13 +4343,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI.BossSelectMenu
   _cards:
-  - name: First Boss
+  - name: Gorath
     button: {fileID: 289929209}
     sceneName: TestScene
     bossIndex: 0
-  - name: Second Boss
+  - name: Vexara
     button: {fileID: 525317109}
-    sceneName: SecondBossScene
+    sceneName: VexaraScene
     bossIndex: 0
 --- !u!4 &1080550106
 Transform:
@@ -4449,7 +4449,7 @@ GameObject:
   - component: {fileID: 1515879237}
   - component: {fileID: 1515879238}
   m_Layer: 0
-  m_Name: First Boss Preview Camera
+  m_Name: Gorath Preview Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4615,7 +4615,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: First Boss
+  m_text: Gorath
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

@@ -193,7 +193,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f76ff10e5639531459a0c6985eb2a27e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.ClockNumberPopup
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.ClockNumberPopup
   _text: {fileID: 1323315303336820433}
   _fadeInTime: 0.15
   _fadeOutTime: 0.25

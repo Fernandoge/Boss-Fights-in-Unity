@@ -1,0 +1,20 @@
+# Gorath: Boulder Roll
+
+**Behaviour:** the boss stomps (copy of the Stomp clip, event at the impact). Big lanes of scrolling arrows appear one after another, 0.7 s apart; their order is the order the boulders spawn in. After the last arrow plus a short delay, the boulders spawn in that same order at the arena walls and roll slowly across the map. Five boulders roll in lanes that mix horizontal and vertical directions. A boulder is about 4x the old rock (6.4 m wide, lane as wide as the boulder). Boulders are on the Ignore Raycast layer, so the player's mouse rays (movement, aiming, dash) pass through them and hit the ground. It deals damage and breaks (rock chunks and dust) when it hits the player, any level wall or rock (NavMeshObstacle), or another boulder, and it also breaks when it leaves the far side of the arena.
+
+**Lane planning (`BoulderLanePlanner`):** lanes run along the screen axes only, horizontal or vertical as the player sees them (the camera is at 45 degrees, so these are diagonal in world space). Every cast mixes both: a balanced split such as 3 horizontal + 2 vertical, so the lanes cross. Rules, all checked by the planner: (1) lanes in the same direction are kept at least `_boulderMinLaneGap` (4 m) apart between their edges, so two arrows never share a row; (2) crossing lanes are simulated with the boulders' timing and the launch order is shuffled until no two boulders can ever get closer than touching, so they never break each other; (3) every lane is swept with a boulder-sized sphere plus 1 m of margin along its middle stretch, and a lane that would touch a wall or rock before its far end is rejected, so a boulder only breaks on a wall at the end of its road. The lanes do not aim at the player. Each lane gets a random travel direction and the order the arrows appear in (and the boulders spawn in) is shuffled. The walls are the real ones: the planner scans the NavMesh along each lane to find where walkable ground begins and ends, and the boulder spawns one radius inside the wall there and rolls to the far wall (ground-level terrain only, lanes at least 30 m long). If a mixed layout is not found it falls back to parallel lanes in one direction, which cannot collide. Tests (300 plans, 1,500 lanes): always 5 lanes, always a mix of horizontal and vertical, 0 mid-road wall hits, 0 boulder collisions, 0 same-row overlaps, same-direction gap at least 4.0 m, a plan takes at most about 12 ms.
+
+**Phase 2:** the same 5 boulders (`_boulderPhase2ExtraCount` is 0; raise it for more).
+
+**Pieces**
+- `Shared/SkillIndicator.cs` + `Shaders/SkillIndicator.shader`: `ShowArrowLane` draws scrolling chevrons along a lane and stays until `Hide()`.
+- `BoulderLanePlanner.cs`, `BoulderRollSequence.cs` (shows the arrows and launches the boulders on a timer, then removes itself), `BoulderProjectile.cs` (moves, rolls, damages, breaks).
+- `GorathBoss.cs`: `[Header("Boulder Roll")]` fields, `StartBoulderRoll()`, animation event `BoulderRollStart`. Attack `BoulderRoll` in `GorathAttack` (in the random pool; harness key 7).
+- Animator: trigger `BoulderRoll`, state `Boulder Roll` using `Boulder Stomp.anim` (copy of `Stomp.anim` with only the `BoulderRollStart` event at 0.72 s).
+- Prefabs in `Prefabs/Characters/Bosses/`: `Boulder`, `BoulderBreak` (uses `FissureDust`); the arrows reuse the `FissureIndicator` prefab. Values live on the `Gorath` prefab.
+
+**Starting values (tune in playtest):** damage 1, radius 3.2 (6.4 m wide), speed 9, arrows 0.7 s apart, launch delay 1.0 s after the last arrow, 0.9 s between launches, 5 boulders (+0 in phase 2), minimum lane gap 4 m.
+
+**Testing:** on the `DebugHarness` object in `TestScene`, tick `Only Use One Attack` and pick `BoulderRoll` (or press F5 in Play mode) to make the boss use only this skill; keep it off in commits.
+
+**Known limits:** boulders roll straight through the boss (it is not an obstacle), so a lane aimed at the player can pass over the boss. No sound. The break chunks are plain cubes and the boulder is a smooth sphere with the existing stone material. The boss can start its next attack while boulders are still rolling.

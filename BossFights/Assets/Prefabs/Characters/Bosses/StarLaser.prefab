@@ -44,7 +44,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5828ece8da63d224d985894664fa9bff, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.StarLaser
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.StarLaser
   _beam: {fileID: 7889355975078324286}
   _playerHitPadding: 0.15
   _fadeTime: 0.2

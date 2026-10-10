@@ -4,7 +4,7 @@ Check this file first when a skill or character needs an animation. Everything h
 
 ## How the clips work
 
-- **Humanoid clips play on any character whose model FBX is set to Humanoid.** The ninja (`Kachujin G Rosales.fbx`), the Maw (first boss) and the wizard (`Nightshade J Friedrich.fbx`) all are, so a library clip can drive any of them. Animals, slimes and other non-humanoid models cannot use them. A new Mixamo character becomes usable by setting its model's Rig tab to Humanoid.
+- **Humanoid clips play on any character whose model FBX is set to Humanoid.** The ninja (`Kachujin G Rosales.fbx`), the Maw (Gorath) and the wizard (`Nightshade J Friedrich.fbx`) all are, so a library clip can drive any of them. Animals, slimes and other non-humanoid models cannot use them. A new Mixamo character becomes usable by setting its model's Rig tab to Humanoid.
 - A clip's name is its file name. Names in the library are unique across the project, so an Animator state can be told apart by name alone.
 - **Looping:** the library sets idles, runs, walks, strafes and falls to loop and everything else to play once. The heuristic is in `Assets/Editor/MixamoAnimationImporter.cs`; fix a wrong guess by ticking or clearing *Loop Time* on the FBX's Animation tab.
 - Clips are read-only FBX sub-assets: animation events cannot be added to them. To use a clip with events, copy it (`AssetDatabase.CopyAsset` on a `.anim` extract) or time the skill in code, as the Dodge and Whirlwind do.
@@ -165,9 +165,9 @@ Used by the ninja's Animator through extracted `.anim` copies in `Assets/Animati
 | `Mixamo/Ninja Kachujin/standing 1H cast spell 01.fbx` | mixamo.com | 2.00 s | once | Human |
 | `Mixamo/Ninja Kachujin/standing idle.fbx` | mixamo.com | 1.80 s | once | Human |
 
-## Older clips: Maw (first boss) folder (24)
+## Older clips: Maw (Gorath) folder (24)
 
-The first boss's clips. Most are Generic on the Maw rig, so they work on the Maw as is; Humanoid ones (and any clip after setting it to Humanoid) work on other characters, for example the ninja's Dodge clip is a copy of the Maw Backflip.
+Gorath's clips. Most are Generic on the Maw rig, so they work on the Maw as is; Humanoid ones (and any clip after setting it to Humanoid) work on other characters, for example the ninja's Dodge clip is a copy of the Maw Backflip.
 
 | File | Clip | Length | Plays | Rig |
 |---|---|---|---|---|
@@ -196,66 +196,66 @@ The first boss's clips. Most are Generic on the Maw rig, so they work on the Maw
 | `Mixamo/Maw J Laygo/Mutant Flexing Muscles.fbx` | mixamo.com | 2.80 s | once | Generic |
 | `Mixamo/Maw J Laygo/Zombie Attack.fbx` | mixamo.com | 3.23 s | once | Generic |
 
-## Second boss pack (wizard) (56)
+## Vexara pack (wizard) (56)
 
-Magic casts, crouches, jumps, blocks, hit reactions and deaths, used by the second boss. Rows marked **Generic** were imported as Generic, so before using one on another character set the FBX to Humanoid with the avatar copied from `Kachujin G Rosales.fbx` (do not change clips the wizard's Animator already uses). Clips named `mixamo.com` are identified by file name.
+Magic casts, crouches, jumps, blocks, hit reactions and deaths, used by Vexara. Rows marked **Generic** were imported as Generic, so before using one on another character set the FBX to Humanoid with the avatar copied from `Kachujin G Rosales.fbx` (do not change clips the wizard's Animator already uses). Clips named `mixamo.com` are identified by file name.
 
 | File | Clip | Length | Plays | Rig |
 |---|---|---|---|---|
-| `Second Boss/Animations/Crouch Idle.fbx` | mixamo.com | 1.37 s | once | Generic |
-| `Second Boss/Animations/Crouch To Standing Idle.fbx` | mixamo.com | 1.00 s | once | Generic |
-| `Second Boss/Animations/Crouch Turn Left 90.fbx` | mixamo.com | 1.80 s | once | Generic |
-| `Second Boss/Animations/Crouch Turn Right 90.fbx` | mixamo.com | 1.60 s | once | Generic |
-| `Second Boss/Animations/Crouch Walk Back.fbx` | mixamo.com | 1.20 s | once | Generic |
-| `Second Boss/Animations/Crouch Walk Forward.fbx` | mixamo.com | 1.13 s | once | Generic |
-| `Second Boss/Animations/Crouch Walk Left.fbx` | mixamo.com | 1.13 s | once | Generic |
-| `Second Boss/Animations/Crouch Walk Right.fbx` | mixamo.com | 1.27 s | once | Generic |
-| `Second Boss/Animations/Standing 1H Magic Attack 01.fbx` | mixamo.com | 2.30 s | once | Human |
-| `Second Boss/Animations/Standing 1H Magic Attack 02.fbx` | mixamo.com | 2.20 s | once | Human |
-| `Second Boss/Animations/Standing 1H Magic Attack 03.fbx` | mixamo.com | 2.30 s | once | Human |
-| `Second Boss/Animations/Standing 2H Cast Spell 01.fbx` | mixamo.com | 2.17 s | once | Human |
-| `Second Boss/Animations/Standing 2H Magic Area Attack 01.fbx` | mixamo.com | 2.97 s | once | Human |
-| `Second Boss/Animations/Standing 2H Magic Area Attack 02.fbx` | mixamo.com | 3.03 s | once | Human |
-| `Second Boss/Animations/Standing 2H Magic Attack 01.fbx` | mixamo.com | 2.67 s | once | Generic |
-| `Second Boss/Animations/Standing 2H Magic Attack 02.fbx` | mixamo.com | 2.63 s | once | Generic |
-| `Second Boss/Animations/Standing 2H Magic Attack 03.fbx` | mixamo.com | 4.27 s | once | Generic |
-| `Second Boss/Animations/Standing 2H Magic Attack 04.fbx` | mixamo.com | 3.33 s | once | Generic |
-| `Second Boss/Animations/Standing 2H Magic Attack 05.fbx` | mixamo.com | 3.53 s | once | Human |
-| `Second Boss/Animations/Standing Block End.fbx` | mixamo.com | 1.20 s | once | Generic |
-| `Second Boss/Animations/Standing Block Idle.fbx` | mixamo.com | 2.77 s | loop | Human |
-| `Second Boss/Animations/Standing Block React Large.fbx` | mixamo.com | 1.23 s | once | Generic |
-| `Second Boss/Animations/Standing Block Start.fbx` | mixamo.com | 0.50 s | once | Human |
-| `Second Boss/Animations/Standing Idle 03.fbx` | mixamo.com | 11.40 s | once | Generic |
-| `Second Boss/Animations/Standing Idle 04.fbx` | mixamo.com | 7.47 s | once | Generic |
-| `Second Boss/Animations/Standing Idle To Crouch.fbx` | mixamo.com | 0.97 s | once | Generic |
-| `Second Boss/Animations/Standing Jump Running Landing.fbx` | mixamo.com | 1.37 s | once | Generic |
-| `Second Boss/Animations/Standing Jump Running.fbx` | mixamo.com | 1.07 s | once | Generic |
-| `Second Boss/Animations/Standing Jump.fbx` | mixamo.com | 2.33 s | once | Generic |
-| `Second Boss/Animations/Standing Land To Standing Idle.fbx` | mixamo.com | 1.07 s | once | Generic |
-| `Second Boss/Animations/Standing React Death Backward.fbx` | mixamo.com | 3.60 s | once | Human (used for the second boss death) |
-| `Second Boss/Animations/Standing React Death Forward.fbx` | mixamo.com | 3.47 s | once | Generic |
-| `Second Boss/Animations/Standing React Death Left.fbx` | mixamo.com | 3.43 s | once | Generic |
-| `Second Boss/Animations/Standing React Death Right.fbx` | mixamo.com | 3.50 s | once | Generic |
-| `Second Boss/Animations/Standing React Large From Back.fbx` | mixamo.com | 1.67 s | once | Generic |
-| `Second Boss/Animations/Standing React Large From Front.fbx` | mixamo.com | 1.37 s | once | Generic |
-| `Second Boss/Animations/Standing React Large From Left.fbx` | mixamo.com | 1.40 s | once | Generic |
-| `Second Boss/Animations/Standing React Large From Right.fbx` | mixamo.com | 1.63 s | once | Generic |
-| `Second Boss/Animations/Standing React Small From Back.fbx` | mixamo.com | 1.27 s | once | Generic |
-| `Second Boss/Animations/Standing React Small From Front.fbx` | mixamo.com | 0.80 s | once | Generic |
-| `Second Boss/Animations/Standing React Small From Left.fbx` | mixamo.com | 1.20 s | once | Generic |
-| `Second Boss/Animations/Standing React Small From Right.fbx` | mixamo.com | 0.97 s | once | Generic |
-| `Second Boss/Animations/Standing Run Back.fbx` | mixamo.com | 0.63 s | once | Generic |
-| `Second Boss/Animations/Standing Run Forward.fbx` | mixamo.com | 0.73 s | once | Generic |
-| `Second Boss/Animations/Standing Run Left.fbx` | mixamo.com | 0.77 s | once | Generic |
-| `Second Boss/Animations/Standing Run Right.fbx` | mixamo.com | 0.77 s | once | Generic |
-| `Second Boss/Animations/Standing Sprint Forward.fbx` | mixamo.com | 0.57 s | once | Generic |
-| `Second Boss/Animations/Standing Turn Left 90.fbx` | mixamo.com | 1.60 s | once | Generic |
-| `Second Boss/Animations/Standing Turn Right 90.fbx` | mixamo.com | 1.63 s | once | Generic |
-| `Second Boss/Animations/Standing Walk Back.fbx` | mixamo.com | 1.20 s | once | Generic |
-| `Second Boss/Animations/Standing Walk Forward.fbx` | mixamo.com | 1.13 s | once | Generic |
-| `Second Boss/Animations/Standing Walk Left.fbx` | mixamo.com | 1.17 s | once | Generic |
-| `Second Boss/Animations/Standing Walk Right.fbx` | mixamo.com | 1.20 s | once | Generic |
-| `Second Boss/Animations/standing 1H cast spell 01.fbx` | mixamo.com | 1.97 s | once | Human |
-| `Second Boss/Animations/standing idle 02.fbx` | mixamo.com | 5.20 s | once | Generic |
-| `Second Boss/Animations/standing idle.fbx` | mixamo.com | 1.80 s | loop | Human |
+| `Vexara/Animations/Crouch Idle.fbx` | mixamo.com | 1.37 s | once | Generic |
+| `Vexara/Animations/Crouch To Standing Idle.fbx` | mixamo.com | 1.00 s | once | Generic |
+| `Vexara/Animations/Crouch Turn Left 90.fbx` | mixamo.com | 1.80 s | once | Generic |
+| `Vexara/Animations/Crouch Turn Right 90.fbx` | mixamo.com | 1.60 s | once | Generic |
+| `Vexara/Animations/Crouch Walk Back.fbx` | mixamo.com | 1.20 s | once | Generic |
+| `Vexara/Animations/Crouch Walk Forward.fbx` | mixamo.com | 1.13 s | once | Generic |
+| `Vexara/Animations/Crouch Walk Left.fbx` | mixamo.com | 1.13 s | once | Generic |
+| `Vexara/Animations/Crouch Walk Right.fbx` | mixamo.com | 1.27 s | once | Generic |
+| `Vexara/Animations/Standing 1H Magic Attack 01.fbx` | mixamo.com | 2.30 s | once | Human |
+| `Vexara/Animations/Standing 1H Magic Attack 02.fbx` | mixamo.com | 2.20 s | once | Human |
+| `Vexara/Animations/Standing 1H Magic Attack 03.fbx` | mixamo.com | 2.30 s | once | Human |
+| `Vexara/Animations/Standing 2H Cast Spell 01.fbx` | mixamo.com | 2.17 s | once | Human |
+| `Vexara/Animations/Standing 2H Magic Area Attack 01.fbx` | mixamo.com | 2.97 s | once | Human |
+| `Vexara/Animations/Standing 2H Magic Area Attack 02.fbx` | mixamo.com | 3.03 s | once | Human |
+| `Vexara/Animations/Standing 2H Magic Attack 01.fbx` | mixamo.com | 2.67 s | once | Generic |
+| `Vexara/Animations/Standing 2H Magic Attack 02.fbx` | mixamo.com | 2.63 s | once | Generic |
+| `Vexara/Animations/Standing 2H Magic Attack 03.fbx` | mixamo.com | 4.27 s | once | Generic |
+| `Vexara/Animations/Standing 2H Magic Attack 04.fbx` | mixamo.com | 3.33 s | once | Generic |
+| `Vexara/Animations/Standing 2H Magic Attack 05.fbx` | mixamo.com | 3.53 s | once | Human |
+| `Vexara/Animations/Standing Block End.fbx` | mixamo.com | 1.20 s | once | Generic |
+| `Vexara/Animations/Standing Block Idle.fbx` | mixamo.com | 2.77 s | loop | Human |
+| `Vexara/Animations/Standing Block React Large.fbx` | mixamo.com | 1.23 s | once | Generic |
+| `Vexara/Animations/Standing Block Start.fbx` | mixamo.com | 0.50 s | once | Human |
+| `Vexara/Animations/Standing Idle 03.fbx` | mixamo.com | 11.40 s | once | Generic |
+| `Vexara/Animations/Standing Idle 04.fbx` | mixamo.com | 7.47 s | once | Generic |
+| `Vexara/Animations/Standing Idle To Crouch.fbx` | mixamo.com | 0.97 s | once | Generic |
+| `Vexara/Animations/Standing Jump Running Landing.fbx` | mixamo.com | 1.37 s | once | Generic |
+| `Vexara/Animations/Standing Jump Running.fbx` | mixamo.com | 1.07 s | once | Generic |
+| `Vexara/Animations/Standing Jump.fbx` | mixamo.com | 2.33 s | once | Generic |
+| `Vexara/Animations/Standing Land To Standing Idle.fbx` | mixamo.com | 1.07 s | once | Generic |
+| `Vexara/Animations/Standing React Death Backward.fbx` | mixamo.com | 3.60 s | once | Human (used for Vexara death) |
+| `Vexara/Animations/Standing React Death Forward.fbx` | mixamo.com | 3.47 s | once | Generic |
+| `Vexara/Animations/Standing React Death Left.fbx` | mixamo.com | 3.43 s | once | Generic |
+| `Vexara/Animations/Standing React Death Right.fbx` | mixamo.com | 3.50 s | once | Generic |
+| `Vexara/Animations/Standing React Large From Back.fbx` | mixamo.com | 1.67 s | once | Generic |
+| `Vexara/Animations/Standing React Large From Front.fbx` | mixamo.com | 1.37 s | once | Generic |
+| `Vexara/Animations/Standing React Large From Left.fbx` | mixamo.com | 1.40 s | once | Generic |
+| `Vexara/Animations/Standing React Large From Right.fbx` | mixamo.com | 1.63 s | once | Generic |
+| `Vexara/Animations/Standing React Small From Back.fbx` | mixamo.com | 1.27 s | once | Generic |
+| `Vexara/Animations/Standing React Small From Front.fbx` | mixamo.com | 0.80 s | once | Generic |
+| `Vexara/Animations/Standing React Small From Left.fbx` | mixamo.com | 1.20 s | once | Generic |
+| `Vexara/Animations/Standing React Small From Right.fbx` | mixamo.com | 0.97 s | once | Generic |
+| `Vexara/Animations/Standing Run Back.fbx` | mixamo.com | 0.63 s | once | Generic |
+| `Vexara/Animations/Standing Run Forward.fbx` | mixamo.com | 0.73 s | once | Generic |
+| `Vexara/Animations/Standing Run Left.fbx` | mixamo.com | 0.77 s | once | Generic |
+| `Vexara/Animations/Standing Run Right.fbx` | mixamo.com | 0.77 s | once | Generic |
+| `Vexara/Animations/Standing Sprint Forward.fbx` | mixamo.com | 0.57 s | once | Generic |
+| `Vexara/Animations/Standing Turn Left 90.fbx` | mixamo.com | 1.60 s | once | Generic |
+| `Vexara/Animations/Standing Turn Right 90.fbx` | mixamo.com | 1.63 s | once | Generic |
+| `Vexara/Animations/Standing Walk Back.fbx` | mixamo.com | 1.20 s | once | Generic |
+| `Vexara/Animations/Standing Walk Forward.fbx` | mixamo.com | 1.13 s | once | Generic |
+| `Vexara/Animations/Standing Walk Left.fbx` | mixamo.com | 1.17 s | once | Generic |
+| `Vexara/Animations/Standing Walk Right.fbx` | mixamo.com | 1.20 s | once | Generic |
+| `Vexara/Animations/standing 1H cast spell 01.fbx` | mixamo.com | 1.97 s | once | Human |
+| `Vexara/Animations/standing idle 02.fbx` | mixamo.com | 5.20 s | once | Generic |
+| `Vexara/Animations/standing idle.fbx` | mixamo.com | 1.80 s | loop | Human |
 

@@ -197,7 +197,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 16c0fb07c5e855d409ae9f617fdf0b1c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.BouncingOrb
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.BouncingOrb
   _visual: {fileID: 7119225379337717207}
   _markerPrefab: {fileID: 222205861945891569, guid: 288fe7eaddf4fb8429129ac9df49e797, type: 3}
   _bounceEffectPrefab: {fileID: 2965222256817593503, guid: e4c341b428752c647b587cf3113d426c, type: 3}

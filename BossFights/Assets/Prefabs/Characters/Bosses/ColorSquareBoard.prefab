@@ -43,7 +43,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1cfc7547726fd1344b90c884d69a8d39, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.ColorSquareBoard
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.ColorSquareBoard
   _cellPrefab: {fileID: 8631381253332624655, guid: 7b8510c912cbd9149ae85de8a0c4b293, type: 3}
   _gridCellSize: 4
   _cellGap: 0.3

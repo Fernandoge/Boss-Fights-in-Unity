@@ -1283,7 +1283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 445358079}
-  firstBoss: {fileID: 1606503488}
+  gorath: {fileID: 1606503488}
 --- !u!4 &86943362
 Transform:
   m_ObjectHideFlags: 0
@@ -20919,7 +20919,7 @@ MonoBehaviour:
   _messageDuration: 2
   _onlyUseAttack: 0
   _attackToUse: 7
-  _secondBossAttackToUse: 1
+  _vexaraAttackToUse: 1
 --- !u!4 &493136008
 Transform:
   m_ObjectHideFlags: 0
@@ -62993,13 +62993,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.BossSelector
   _bosses:
-  - name: First Boss
+  - name: Gorath
     boss: {fileID: 1606503488}
     levelObjects:
     - {fileID: 1512007500}
     - {fileID: 1426589800}
     - {fileID: 33145180}
-  - name: Second Boss
+  - name: Vexara
     boss: {fileID: 4851751825557789549}
     levelObjects: []
   _startingBossIndex: 0
@@ -68095,7 +68095,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8582843816717774989, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: m_Name
-      value: First Boss
+      value: Gorath
       objectReference: {fileID: 0}
     - target: {fileID: 8582843816717774989, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: m_IsActive
@@ -68525,7 +68525,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1546708215}
   m_Layer: 0
-  m_Name: First Boss Level
+  m_Name: Gorath Level
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84485,7 +84485,7 @@ PrefabInstance:
       objectReference: {fileID: 1675288132}
     - target: {fileID: 1444383505782028897, guid: ac60ca422483c89429cee913543a7820, type: 3}
       propertyPath: m_Name
-      value: Second Boss
+      value: Vexara
       objectReference: {fileID: 0}
     - target: {fileID: 1444383505782028897, guid: ac60ca422483c89429cee913543a7820, type: 3}
       propertyPath: m_IsActive
@@ -84546,7 +84546,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87b2cec22ab8e2f46871762c07957011, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.SecondBoss
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.VexaraBoss
 --- !u!1001 &4907939199097359659
 PrefabInstance:
   m_ObjectHideFlags: 0

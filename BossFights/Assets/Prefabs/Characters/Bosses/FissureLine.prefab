@@ -43,7 +43,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10762f1bb2215ae45804f1a8e7d6757d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.First_Boss.FissureLine
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Gorath.FissureLine
   _spikeMaterial: {fileID: 2100000, guid: 8d903a27c6f49e147bcf075452ed1736, type: 2}
   _spikeSpacing: 1.6
   _spikeHeightRange: {x: 1.4, y: 2.6}

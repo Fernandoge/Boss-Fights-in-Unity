@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace EditorTools
 {
-    // Bakes a Humanoid clip onto a Generic character (the first boss): the prefab is posed with the clip, frame by frame, through a Humanoid avatar of the same skeleton, and the local transform of every bone is written into a new path-based clip that a Generic Animator can play.
+    // Bakes a Humanoid clip onto a Generic character (Gorath): the prefab is posed with the clip, frame by frame, through a Humanoid avatar of the same skeleton, and the local transform of every bone is written into a new path-based clip that a Generic Animator can play.
     // Run it from the Unity CLI: eval `EditorTools.HumanoidClipBaker.Bake(clipFbxPath, prefabPath, humanAvatarFbxPath, outputPath);`
     public static class HumanoidClipBaker
     {

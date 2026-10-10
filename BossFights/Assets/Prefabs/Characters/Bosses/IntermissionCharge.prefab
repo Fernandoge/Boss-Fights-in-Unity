@@ -233,7 +233,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a13f4990112e9eb42870a7c6e5cba149, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.IntermissionCharge
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.IntermissionCharge
   _orb: {fileID: 1100432201580355711}
   _startSize: 0.3
   _maxSize: 2.4

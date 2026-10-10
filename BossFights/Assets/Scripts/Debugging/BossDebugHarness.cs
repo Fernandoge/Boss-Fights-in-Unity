@@ -1,8 +1,8 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using Bosses;
-using Bosses.First_Boss;
-using Bosses.Second_Boss;
+using Bosses.Gorath;
+using Bosses.Vexara;
 using Manager.GameManager;
 using UnityEngine;
 
@@ -15,15 +15,15 @@ namespace Debugging
 
         [Header("Only Use One Attack")]
         [SerializeField] private bool _onlyUseAttack;
-        [SerializeField] private FirstBossAttack _attackToUse = FirstBossAttack.BoulderRoll;
-        [SerializeField] private SecondBossAttack _secondBossAttackToUse = SecondBossAttack.DiagonalLines;
+        [SerializeField] private GorathAttack _attackToUse = GorathAttack.BoulderRoll;
+        [SerializeField] private VexaraAttack _vexaraAttackToUse = VexaraAttack.DiagonalLines;
 
         private static readonly KeyCode[] AttackKeys =
         {
             KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5,
             KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0
         };
-        private static readonly FirstBossAttack[] Attacks = (FirstBossAttack[])Enum.GetValues(typeof(FirstBossAttack));
+        private static readonly GorathAttack[] Attacks = (GorathAttack[])Enum.GetValues(typeof(GorathAttack));
 
         private GUIStyle _style;
         private string _helpText;
@@ -36,40 +36,40 @@ namespace Debugging
         private void Start()
         {
             BossController boss = GetBoss();
-            if (boss is FirstBoss firstBoss)
-                firstBoss.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (FirstBossAttack?)null;
-            else if (boss is SecondBoss secondBoss)
-                secondBoss.DebugOnlyAttack = _onlyUseAttack ? _secondBossAttackToUse : (SecondBossAttack?)null;
+            if (boss is GorathBoss gorath)
+                gorath.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (GorathAttack?)null;
+            else if (boss is VexaraBoss vexara)
+                vexara.DebugOnlyAttack = _onlyUseAttack ? _vexaraAttackToUse : (VexaraAttack?)null;
         }
 
         private void Update()
         {
             BossController activeBoss = GetBoss();
-            if (activeBoss is FirstBoss)
+            if (activeBoss is GorathBoss)
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     if (Input.GetKeyDown(AttackKeys[i]))
                         ForceAttack(Attacks[i]);
 
-            if (activeBoss is SecondBoss secondBoss)
+            if (activeBoss is VexaraBoss vexara)
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1))
-                    ForceSecondBossAction(secondBoss.DebugForceSpellCircles, "Forced SpellCircles");
+                    ForceVexaraAction(vexara.DebugForceSpellCircles, "Forced SpellCircles");
                 if (Input.GetKeyDown(KeyCode.Alpha2))
-                    ForceSecondBossAction(secondBoss.DebugTeleport, "Forced Teleport");
+                    ForceVexaraAction(vexara.DebugTeleport, "Forced Teleport");
                 if (Input.GetKeyDown(KeyCode.Alpha3))
-                    ForceSecondBossAction(secondBoss.DebugForceDiagonalLines, "Forced DiagonalLines");
+                    ForceVexaraAction(vexara.DebugForceDiagonalLines, "Forced DiagonalLines");
                 if (Input.GetKeyDown(KeyCode.Alpha4))
-                    ForceSecondBossAction(secondBoss.DebugForceIntermission, "Forced Intermission");
+                    ForceVexaraAction(vexara.DebugForceIntermission, "Forced Intermission");
                 if (Input.GetKeyDown(KeyCode.Alpha5))
-                    ForceSecondBossAction(secondBoss.DebugForceOrbBarrage, "Forced OrbBarrage");
+                    ForceVexaraAction(vexara.DebugForceOrbBarrage, "Forced OrbBarrage");
                 if (Input.GetKeyDown(KeyCode.Alpha6))
-                    ForceSecondBossAction(secondBoss.DebugForceClockStart, "Forced ClockStart");
+                    ForceVexaraAction(vexara.DebugForceClockStart, "Forced ClockStart");
                 if (Input.GetKeyDown(KeyCode.Alpha7))
-                    ForceSecondBossAction(secondBoss.DebugForceStarfall, "Forced Starfall");
+                    ForceVexaraAction(vexara.DebugForceStarfall, "Forced Starfall");
                 if (Input.GetKeyDown(KeyCode.Alpha8))
-                    ForceSecondBossAction(secondBoss.DebugForceTimedExplosions, "Forced TimedExplosions");
+                    ForceVexaraAction(vexara.DebugForceTimedExplosions, "Forced TimedExplosions");
                 if (Input.GetKeyDown(KeyCode.Alpha9))
-                    ForceSecondBossAction(secondBoss.DebugForceColorIntermission, "Forced ColorIntermission");
+                    ForceVexaraAction(vexara.DebugForceColorIntermission, "Forced ColorIntermission");
             }
 
             if (Input.GetKeyDown(KeyCode.F1))
@@ -131,12 +131,12 @@ namespace Debugging
                 GUI.Box(new Rect(Screen.width / 2f - 150f, 60f, 300f, 28f), _message, _style);
         }
 
-        public void ForceAttack(FirstBossAttack attack)
+        public void ForceAttack(GorathAttack attack)
         {
-            FirstBoss boss = GetBoss() as FirstBoss;
+            GorathBoss boss = GetBoss() as GorathBoss;
             if (!boss)
             {
-                Show("No first boss attacks for this boss");
+                Show("No Gorath attacks for this boss");
                 return;
             }
 
@@ -160,21 +160,21 @@ namespace Debugging
         // The boss repeats the attack picked in the Inspector instead of its normal attack rotation
         public void ToggleOnlyUseAttack()
         {
-            if (GetBoss() is SecondBoss secondBoss)
+            if (GetBoss() is VexaraBoss vexara)
             {
-                secondBoss.DebugOnlyAttack = secondBoss.DebugOnlyAttack.HasValue ? (SecondBossAttack?)null : _secondBossAttackToUse;
-                Show("Only use attack: " + (secondBoss.DebugOnlyAttack.HasValue ? secondBoss.DebugOnlyAttack.Value.ToString() : "OFF"));
+                vexara.DebugOnlyAttack = vexara.DebugOnlyAttack.HasValue ? (VexaraAttack?)null : _vexaraAttackToUse;
+                Show("Only use attack: " + (vexara.DebugOnlyAttack.HasValue ? vexara.DebugOnlyAttack.Value.ToString() : "OFF"));
                 return;
             }
 
-            FirstBoss boss = GetBoss() as FirstBoss;
+            GorathBoss boss = GetBoss() as GorathBoss;
             if (!boss)
             {
                 Show("Only use attack is not available for this boss");
                 return;
             }
 
-            boss.DebugOnlyAttack = boss.DebugOnlyAttack.HasValue ? (FirstBossAttack?)null : _attackToUse;
+            boss.DebugOnlyAttack = boss.DebugOnlyAttack.HasValue ? (GorathAttack?)null : _attackToUse;
             Show("Only use attack: " + (boss.DebugOnlyAttack.HasValue ? boss.DebugOnlyAttack.Value.ToString() : "OFF"));
         }
 
@@ -199,10 +199,10 @@ namespace Debugging
             Show("Slow motion " + (_isSlowMotion ? "ON" : "OFF"));
         }
 
-        // The boss of the current fight; falls back to the first boss in scenes without a BossSelector
-        private static BossController GetBoss() => GameManager.Instance.ActiveBoss ? GameManager.Instance.ActiveBoss : GameManager.Instance.firstBoss;
+        // The boss of the current fight; falls back to Gorath in scenes without a BossSelector
+        private static BossController GetBoss() => GameManager.Instance.ActiveBoss ? GameManager.Instance.ActiveBoss : GameManager.Instance.gorath;
 
-        private void ForceSecondBossAction(Action action, string message)
+        private void ForceVexaraAction(Action action, string message)
         {
             if (GetBoss().DebugIsBusy)
             {
@@ -223,10 +223,10 @@ namespace Debugging
         private string GetStatusText(BossController boss)
         {
             string onlyAttack = "n/a";
-            if (boss is FirstBoss firstBoss)
-                onlyAttack = firstBoss.DebugOnlyAttack.HasValue ? firstBoss.DebugOnlyAttack.Value.ToString() : "OFF";
-            else if (boss is SecondBoss secondBoss)
-                onlyAttack = secondBoss.DebugOnlyAttack.HasValue ? secondBoss.DebugOnlyAttack.Value.ToString() : "OFF";
+            if (boss is GorathBoss gorath)
+                onlyAttack = gorath.DebugOnlyAttack.HasValue ? gorath.DebugOnlyAttack.Value.ToString() : "OFF";
+            else if (boss is VexaraBoss vexara)
+                onlyAttack = vexara.DebugOnlyAttack.HasValue ? vexara.DebugOnlyAttack.Value.ToString() : "OFF";
 
             return "Boss: " + boss.name +
                    "\nAuto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
@@ -239,10 +239,10 @@ namespace Debugging
         private static string BuildHelpText(BossController boss)
         {
             string text = "<b>Debug harness</b> (Tab hides)\n";
-            if (boss is FirstBoss)
+            if (boss is GorathBoss)
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
-            else if (boss is SecondBoss)
+            else if (boss is VexaraBoss)
                 text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n8  TimedExplosions\n9  ColorIntermission\n";
             else
                 text += "(no forced attacks for this boss yet)\n";

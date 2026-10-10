@@ -43,7 +43,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c5122669bb1e2846b72346ff440901e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Second_Boss.ClockWaveBlast
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Vexara.ClockWaveBlast
   _telegraphPrefab: {fileID: 222205861945891569, guid: 814755968274484429148760b0cc09db, type: 3}
   _flashPrefab: {fileID: 222205861945891569, guid: e917bc3501f6832459ba3c4140c97050, type: 3}
   _safeLinePrefab: {fileID: 222205861945891569, guid: b5df57984362d084cb6d9f6529430d0b, type: 3}

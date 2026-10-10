@@ -1,5 +1,5 @@
 using Bosses;
-using Bosses.First_Boss;
+using Bosses.Gorath;
 using Characters;
 using UnityEngine;
 
@@ -10,7 +10,7 @@ namespace Manager.GameManager
         public static GameManager Instance;
 
         public PlayerController player;
-        public FirstBoss firstBoss;
+        public GorathBoss gorath;
 
         // The boss of the current fight; set by BossSelector
         public BossController ActiveBoss { get; set; }

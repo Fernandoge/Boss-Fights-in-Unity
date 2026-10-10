@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbfa5acd0cda8ac4ca4178690cd14233, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bosses.First_Boss.BoulderProjectile
+  m_EditorClassIdentifier: Assembly-CSharp::Bosses.Gorath.BoulderProjectile
   _model: {fileID: 6715843788115960423}
   _collider: {fileID: 3202110886254236863}
   _breakEffectPrefab: {fileID: 5418769024513678483, guid: 299f2d062264cc844983a816d8156a59, type: 3}
