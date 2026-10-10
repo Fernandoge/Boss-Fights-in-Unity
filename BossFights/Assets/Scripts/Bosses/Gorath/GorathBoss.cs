@@ -42,6 +42,7 @@ namespace Bosses.Gorath
         [Header("Cataclysm")] 
         [SerializeField] private int _cataclysmProjectileCount;
         [SerializeField] private float _cataclysmProjectileSpeed;
+        [SerializeField] private int _cataclysmRockDamage = 2;
         
         [Header("Fast Run Melees")] 
         public int meleesDamage;
@@ -62,6 +63,7 @@ namespace Bosses.Gorath
         [SerializeField] private float _rockAimVariance;
         
         [Header("Rock Shower")] 
+        [SerializeField] private int _rockShowerDamage = 1;
         [SerializeField] private float _rockShowerSpeed;
         [SerializeField] private RockShowerPattern[] _rockShowerPatterns;
 
@@ -261,8 +263,34 @@ namespace Bosses.Gorath
             }
         }
 
+        private int GetAttackDamage(GorathAttack attack)
+        {
+            switch (attack)
+            {
+                case GorathAttack.FastRun:
+                    return meleesDamage;
+                case GorathAttack.JumpAttack:
+                    return earthShatterDamage;
+                case GorathAttack.RockThrow:
+                    return rockDamage;
+                case GorathAttack.Cataclysm:
+                    return _cataclysmRockDamage;
+                case GorathAttack.Meteors:
+                    return meteorsDamage;
+                case GorathAttack.RockShower:
+                    return _rockShowerDamage;
+                case GorathAttack.FissureLines:
+                    return fissureDamage;
+                case GorathAttack.BoulderRoll:
+                    return boulderDamage;
+                default:
+                    return 0;
+            }
+        }
+
         private void StartAttack(GorathAttack attack)
         {
+            ShowDangerIcon(GetAttackDamage(attack));
             switch (attack)
             {
                 case GorathAttack.FastRun:
@@ -437,7 +465,7 @@ namespace Bosses.Gorath
                 // Shoot all rocks in circle pattern using pre-calculated directions
                 for (int i = 0; i < _cataclysmProjectileCount; i++)
                 {
-                    ShootRockFromPosition(spawnPosition, directions[i], _cataclysmProjectileSpeed);
+                    ShootRockFromPosition(spawnPosition, directions[i], _cataclysmProjectileSpeed, _cataclysmRockDamage);
                 }
                 
                 // Wait 0.5s before next wave (except after the last wave)
@@ -526,16 +554,17 @@ namespace Bosses.Gorath
         // Used in Standing Rock Throw animation
         private void ShootRock()
         {
-            ShootRockFromPosition(_rockShootPosition.position, _rockShootPosition.forward, _rockSpeed);
+            ShootRockFromPosition(_rockShootPosition.position, _rockShootPosition.forward, _rockSpeed, rockDamage);
             _rocksToThrow -= 1;
             StartThrowingRocks();
         }
 
-        private void ShootRockFromPosition(Vector3 position, Vector3 direction, float speed, float ignoreCollisionDuration = 0f)
+        private void ShootRockFromPosition(Vector3 position, Vector3 direction, float speed, int damage, float ignoreCollisionDuration = 0f)
         {
             GameObject rock = Instantiate(_rock, position, Quaternion.LookRotation(direction));
             var bulletScript = rock.GetComponentInChildren<StoneProjectile>();
             bulletScript.SetIgnoreCollisionDuration(ignoreCollisionDuration);
+            bulletScript.SetDamage(damage);
             bulletScript.Shoot(speed, rock.transform.position, direction);
         }
 
@@ -605,7 +634,7 @@ namespace Bosses.Gorath
                     spawnPosition = rockPosition.position + new Vector3(7f, 1f, 7f);
                 else
                     spawnPosition = rockPosition.position + new Vector3(-7f, 1f, 7f);
-                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, 0.15f);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, _rockShowerDamage, 0.15f);
             }
             foreach(var rockPosition in _selectedRockShowerPattern.rocksPositionDown)
             {
@@ -613,7 +642,7 @@ namespace Bosses.Gorath
                     spawnPosition = rockPosition.position + new Vector3(-7f, 1f, -7f);
                 else
                     spawnPosition = rockPosition.position + new Vector3(7f, 1f, -7f);
-                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, 0.15f);
+                ShootRockFromPosition(spawnPosition, rockPosition.up, _rockShowerSpeed, _rockShowerDamage, 0.15f);
             }
         }
         

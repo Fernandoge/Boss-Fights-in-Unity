@@ -76,7 +76,8 @@ namespace Bosses
         
         private Material meshMaterial;
         private Collider colliderComponent;
-        private CounterPrompt _counterPrompt;
+        private TargetMarker _counterPrompt;
+        private TargetMarker _dangerIcon;
         private GameObject currentSkillIndicator;
         private GameObject currentSkillParticles;
         private Coroutine skillToCastCoroutine;
@@ -89,6 +90,9 @@ namespace Bosses
         private bool isCounterWindowActive;
         protected bool isImmuneToDamage; 
         
+        // A skill that takes this many hearts or more shows the danger icon above the boss while it is cast
+        protected const int HeavyHitDamage = 2;
+
         protected static readonly int Walking = Animator.StringToHash("Walking");
         private static readonly int Enter_Second_Phase = Animator.StringToHash("EnterSecondPhase");
         private static readonly int Countered = Animator.StringToHash("Countered");
@@ -119,6 +123,9 @@ namespace Bosses
         {
             if (IsDead)
                 return;
+
+            if (_dangerIcon && !isPerformingAttack && !isPerformingAction)
+                HideDangerIcon();
 
             if (timeBetweenAttacks <= 0 && !DebugAutoAttacksDisabled)
                 PerformAttack();
@@ -225,6 +232,24 @@ namespace Bosses
                 anim.SetTrigger(trigger);
         }
         
+        // Called when a skill starts; it only shows the icon for a skill that takes HeavyHitDamage hearts or more, and the base Update hides it when the attack is over
+        protected void ShowDangerIcon(int skillDamage)
+        {
+            if (skillDamage < HeavyHitDamage || _dangerIcon || IsDead)
+                return;
+
+            _dangerIcon = DangerIcon.Show(colliderComponent);
+        }
+
+        protected void HideDangerIcon()
+        {
+            if (!_dangerIcon)
+                return;
+
+            _dangerIcon.Hide();
+            _dangerIcon = null;
+        }
+
         protected void ActivateSkillIndicator() => currentSkillIndicator.SetActive(true);
 
         protected void DeactivateSkillIndicator()
@@ -250,6 +275,8 @@ namespace Bosses
             if (IsDead)
                 return;
 
+            // The counter prompt takes the place of the danger icon: the player is being offered an answer to the skill
+            HideDangerIcon();
             isCounterWindowActive = true;
             colliderComponent.transform.tag = "Counterable";
             meshMaterial.SetColor("_Color", Color.green);
@@ -315,6 +342,7 @@ namespace Bosses
             IsDead = true;
             StopAllCoroutines();
             StopCounterWindow();
+            HideDangerIcon();
             if (currentSkillIndicator)
                 currentSkillIndicator.SetActive(false);
             if (currentSkillParticles)

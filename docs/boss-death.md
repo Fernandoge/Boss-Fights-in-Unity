@@ -34,6 +34,11 @@ EditorTools.HumanoidClipBaker.Bake(
 
 Run it through the Unity CLI `eval`. It overwrites an existing output clip in place, so states that use it keep their reference. Keys are reduced to a small tolerance (about 4 MB for a 3 s clip, like the other Maw clips); change `KeyTolerance` for a smaller or more exact clip.
 
+## Lessons from the two death clips
+
+- **Humanoid clip on a Humanoid boss (Vexara):** a death clip that falls to the floor needs **Root Transform Position (Y): Bake Into Pose** on in the clip's import settings. Her Animator has Apply Root Motion off, so without it the fall lives in the root's height, which is dropped, and she lies down about 2 m above the floor. Her clip now has it on (`lockRootHeightY`).
+- **Baked clip on a Generic boss (Gorath):** the baker must not write two keys a hair apart at the end of a clip; the last spline segment is almost zero wide and its slopes throw the pose off (his left leg lifted at the very end). `HumanoidClipBaker` now writes one key per frame and a single end key, and reads the last frame just before the clip's end, because sampling a Humanoid clip at exactly its length wraps to a wrong pose.
+
 ## Debug
 
 F7 in the debug harness sets the boss to 1 health, so the next hit kills it. `BossController.DebugSetHealthToOne` does the same from the CLI.

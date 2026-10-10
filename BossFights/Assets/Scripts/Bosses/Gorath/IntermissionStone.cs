@@ -26,7 +26,7 @@ namespace Bosses.Gorath
         private MaterialPropertyBlock propertyBlock;
         private Color originalColor;
         private Collider stoneCollider;
-        private CounterPrompt _counterPrompt;
+        private TargetMarker _counterPrompt;
         private string originalTag;
         private GorathBoss bossReference; // Reference to the boss
         private int stoneIndex; // This stone's index in the boss's array

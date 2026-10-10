@@ -12,6 +12,9 @@ namespace EditorTools
         private const float PositionTolerance = 0.0001f;
         private const float RotationToleranceDegrees = 0.01f;
         private const float KeyTolerance = 0.002f;
+        private const float EndSampleMargin = 0.001f;
+        private const float FrameRounding = 0.01f;
+        private const float EndKeyGap = 0.001f;
 
         private class BoneRecording
         {
@@ -88,11 +91,14 @@ namespace EditorTools
             // A Humanoid clip moves the character's root as well; the boss root belongs to its NavMeshAgent, so that movement is written into the bones that hang from the root, relative to where the root started
             Matrix4x4 worldToRoot = root.worldToLocalMatrix;
             List<float> times = new List<float>();
-            int frames = Mathf.CeilToInt(source.length * FrameRate);
-            for (int frame = 0; frame <= frames; frame++)
+            // One key per frame, never two keys a hair apart at the end: the last spline segment would be almost zero wide and its steep slopes throw the pose off
+            int frames = Mathf.FloorToInt(source.length * FrameRate + FrameRounding);
+            bool needsEndKey = frames / FrameRate < source.length - EndKeyGap;
+            for (int frame = 0; frame <= frames + (needsEndKey ? 1 : 0); frame++)
             {
-                float time = Mathf.Min(frame / FrameRate, source.length);
-                source.SampleAnimation(root.gameObject, time);
+                float time = frame > frames ? source.length : Mathf.Min(frame / FrameRate, source.length);
+                // Sampling a Humanoid clip at exactly its length wraps around to a wrong pose, so the last key is read a hair earlier
+                source.SampleAnimation(root.gameObject, Mathf.Min(time, source.length - EndSampleMargin));
                 times.Add(time);
 
                 foreach (BoneRecording recording in recordings)

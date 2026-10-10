@@ -15,7 +15,7 @@ namespace Bosses.Vexara
         [SerializeField] private float _circleRadius = 1.2f;
         [SerializeField] private float _castReleaseDelay = 0.28f;
         [SerializeField] private float _circleInterval = 0.42f;
-        [SerializeField] private float _circleTelegraphTime = 0.575f;
+        [SerializeField] private float _circleTelegraphTime = 0.6f;
         [SerializeField] private float _afterCastTime = 0.4f;
         [SerializeField] private int _circleDamage = 1;
         [SerializeField, Range(0f, 1f)] private float _leadPlayerChance = 0.5f;
@@ -832,6 +832,7 @@ namespace Bosses.Vexara
             isImmuneToDamage = true;
             yield return WaitFacingPlayer(_clockIntroTime);
 
+            ShowDangerIcon(_clockWaveDamage);
             for (int i = 0; i < _clockNumbers.Count; i++)
             {
                 // The camera squashes the depth axis by half, so the side spokes (which are wide along the depth) need twice the width to look as thick as the up/down ones
@@ -848,6 +849,7 @@ namespace Bosses.Vexara
                 yield return WaitFacingPlayer(Mathf.Max(0f, (isLastWave ? _clockWaveTelegraphTime + _clockEndTime : _clockWaveInterval) - castDelay));
             }
 
+            HideDangerIcon();
             _clockNumbers.Clear();
             _clockNumbersShown = 0;
             _clockActive = false;

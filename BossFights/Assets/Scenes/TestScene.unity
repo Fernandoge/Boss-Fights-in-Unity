@@ -67507,11 +67507,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: _swapSpeed
-      value: 0.3
+      value: 0.315
       objectReference: {fileID: 0}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: rockDamage
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6785184410919496223, guid: 3eddedb418865424898b105433228473, type: 3}
       propertyPath: _healthText

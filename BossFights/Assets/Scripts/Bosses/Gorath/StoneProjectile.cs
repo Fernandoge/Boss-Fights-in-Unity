@@ -10,6 +10,7 @@ namespace Bosses.Gorath
     {
         private float _spawnTime;
         private float _ignoreCollisionDuration = 0f;
+        private int _damage;
 
         private void Start()
         {
@@ -21,11 +22,13 @@ namespace Bosses.Gorath
             _ignoreCollisionDuration = duration;
         }
 
+        public void SetDamage(int damage) => _damage = damage;
+
         protected override void OnTriggerEnter(Collider col)
         {
             if (col.GetComponent<PlayerController>())
             {
-                GameManager.Instance.player.DamagePlayer(GameManager.Instance.gorath.rockDamage);
+                GameManager.Instance.player.DamagePlayer(_damage);
                 Destroy(transform.parent.gameObject);
             }
             

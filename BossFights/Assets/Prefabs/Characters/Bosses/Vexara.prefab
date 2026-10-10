@@ -477,6 +477,7 @@ MonoBehaviour:
   maxHealth: 200
   secondPhaseHealthShare: 0.5
   _healthText: {fileID: 0}
+  _victoryScreenDelay: 4
   _fastMoveSpeedFactor: 1.3
   _fastMoveReactionDelay: 0.8
   _spellCirclePrefab: {fileID: 2045114574471164713, guid: 428bf483f520a694791248faafb20295, type: 3}
@@ -484,7 +485,7 @@ MonoBehaviour:
   _circleRadius: 1.2
   _castReleaseDelay: 0.28
   _circleInterval: 0.42
-  _circleTelegraphTime: 0.575
+  _circleTelegraphTime: 0.6
   _afterCastTime: 0.2
   _circleDamage: 1
   _leadPlayerChance: 0.5
