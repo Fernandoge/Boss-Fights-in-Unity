@@ -2270,7 +2270,7 @@ MonoBehaviour:
   _basicAttackSpawnPoint: {fileID: 7334018175922234042}
   _basicAttackDamage: 2
   _basicAttackSpeed: 42
-  _dashDistance: 10
+  _dashDistance: 8.5
   _dashFreezeTime: 0.4
   _dashCD: 12
   _dashSpellIcon: {fileID: 0}

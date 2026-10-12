@@ -174,10 +174,10 @@ namespace Characters.Ninja
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private const KeyCode HealKey = KeyCode.Q;
         private const KeyCode ClonesKey = KeyCode.W;
-        private const KeyCode KickKey = KeyCode.E;
+        private const KeyCode KickKey = CounterKey;
         private const KeyCode HuumaKey = KeyCode.A;
         private const KeyCode DodgeKey = KeyCode.S;
-        private const KeyCode SonicBlowKey = KeyCode.F;
+        private const KeyCode SonicBlowKey = KeyCode.E;
         private const KeyCode LeapKey = KeyCode.R;
         private const float LeapHangDrift = 0.4f;
         private const float LeapClipLength = 2.15f;
@@ -1202,7 +1202,7 @@ namespace Characters.Ninja
             }
         }
 
-        // The kick icon is highlighted while the flying kick (pressing E again) is available, so players learn about it
+        // The kick icon is highlighted while the flying kick (pressing F again) is available, so players learn about it
         private void SetKickFlipAvailable(bool available)
         {
             _isAbleToKickFlip = available;

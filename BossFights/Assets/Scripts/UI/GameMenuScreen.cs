@@ -1,4 +1,5 @@
 using Bosses;
+using Characters;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -163,6 +164,7 @@ namespace UI
         private static void Restart()
         {
             BossSelection.Choose(BossSelection.LastIndex);
+            CharacterSelection.Choose(CharacterSelection.LastIndex);
             LoadScene(SceneManager.GetActiveScene().name);
         }
 

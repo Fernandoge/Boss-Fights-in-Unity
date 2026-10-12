@@ -1061,6 +1061,7 @@ namespace Bosses.Gorath
         {
             // Reset boss state to resume combat
             isImmuneToDamage = false;
+            EndSecondPhaseTransition();
             StopPerformingAction();
         }
     }

@@ -296,6 +296,7 @@ namespace Bosses.Vexara
             yield return new WaitUntil(() => !isPerformingAttack && !isPerformingAction);
             MarkBusy();
             yield return ColorIntermissionSequence();
+            EndSecondPhaseTransition();
         }
 
         /// *** Attack Selection *** ///

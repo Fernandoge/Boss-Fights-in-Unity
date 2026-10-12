@@ -1,10 +1,10 @@
 # Animation library (Mixamo)
 
-Check this file first when a skill or character needs an animation. Everything here is a Mixamo clip already inside the Unity project, so no download is needed. This catalog was generated from the project's clip data (177 clips).
+Check this file first when a skill or character needs an animation. Everything here is a Mixamo clip already inside the Unity project, so no download is needed. This catalog was generated from the project's clip data (224 clips).
 
 ## How the clips work
 
-- **Humanoid clips play on any character whose model FBX is set to Humanoid.** The ninja (`Kachujin G Rosales.fbx`), the Maw (Gorath) and the wizard (`Nightshade J Friedrich.fbx`) all are, so a library clip can drive any of them. Animals, slimes and other non-humanoid models cannot use them. A new Mixamo character becomes usable by setting its model's Rig tab to Humanoid.
+- **Humanoid clips play on any character whose model FBX is set to Humanoid.** The ninja (`Kachujin G Rosales.fbx`), the Maw (Gorath), the wizard (`Nightshade J Friedrich.fbx`) and the Axeman's Brute (`Axeman/Model/Brute.fbx`) all are, so a library clip can drive any of them. Animals, slimes and other non-humanoid models cannot use them. A new Mixamo character becomes usable by setting its model's Rig tab to Humanoid.
 - A clip's name is its file name. Names in the library are unique across the project, so an Animator state can be told apart by name alone.
 - **Looping:** the library sets idles, runs, walks, strafes and falls to loop and everything else to play once. The heuristic is in `Assets/Editor/MixamoAnimationImporter.cs`; fix a wrong guess by ticking or clearing *Loop Time* on the FBX's Animation tab.
 - Clips are read-only FBX sub-assets: animation events cannot be added to them. To use a clip with events, copy it (`AssetDatabase.CopyAsset` on a `.anim` extract) or time the skill in code, as the Dodge and Whirlwind do.
@@ -13,18 +13,32 @@ Check this file first when a skill or character needs an animation. Everything h
 ## Adding new clips
 
 1. Download from Mixamo: **FBX Binary, Without Skin, 30 fps**, *In Place* for walks and runs. Put the FBX files (unzipped, or tell Claude where the zips are) in a category folder under `Assets/Asset Packs/Mixamo/Animation Library/`.
-2. `MixamoAnimationImporter` configures every new FBX there on first import: Humanoid, avatar copied from the ninja (`Kachujin G Rosales.fbx`), clip named after the file, loop guessed from the name.
+2. `MixamoAnimationImporter` configures every new FBX there on first import: Humanoid, avatar copied from the ninja (`Kachujin G Rosales.fbx`), clip named after the file, loop guessed from the name. Clips named `Axe ...` or `Unarmed ...` (the Pro Melee Axe Pack) copy the Brute's avatar instead: that skeleton has eye bones the ninja's avatar names differently, and a copy from the wrong avatar fails with a *Rig Error* and imports no clip at all. Keep a loop word (`idle`, `run`, `walk`) out of the name of a clip that must not loop (`Axe Crouch Rise`, `Axe Leap Slam`).
 3. Give the file a short Title Case name before or after dropping it (`Sword Attack 2`, `Bow Aim Walk Left`), unique in the project. Mixamo's original names (`standing melee kick`) are renamed on the way in.
 4. Mixamo packs include a copy of the character FBX (about 18 MB each): do not import it, the ninja model already exists.
 
 ## Library: `Assets/Asset Packs/Mixamo/Animation Library/`
 
-### Locomotion (25)
+### Locomotion (50)
 
 idles, walks, runs, strafes, turns, falls: base movement for any humanoid.
 
 | Clip | Length | Plays | File |
 |---|---|---|---|
+| Axe Crouch Idle | 1.67 s | loop | `Locomotion/Axe Crouch Idle.fbx` |
+| Axe Crouch Rise | 0.60 s | once | `Locomotion/Axe Crouch Rise.fbx` |
+| Axe Idle | 1.80 s | loop | `Locomotion/Axe Idle.fbx` |
+| Axe Idle Looking 1 | 11.17 s | loop | `Locomotion/Axe Idle Looking 1.fbx` |
+| Axe Idle Looking 2 | 7.70 s | loop | `Locomotion/Axe Idle Looking 2.fbx` |
+| Axe Jump | 1.90 s | once | `Locomotion/Axe Jump.fbx` |
+| Axe Run Back | 0.80 s | loop | `Locomotion/Axe Run Back.fbx` |
+| Axe Run Forward | 0.73 s | loop | `Locomotion/Axe Run Forward.fbx` |
+| Axe Turn 90 Left | 1.77 s | once | `Locomotion/Axe Turn 90 Left.fbx` |
+| Axe Turn 90 Right | 1.63 s | once | `Locomotion/Axe Turn 90 Right.fbx` |
+| Axe Walk Back | 1.37 s | loop | `Locomotion/Axe Walk Back.fbx` |
+| Axe Walk Forward | 1.33 s | loop | `Locomotion/Axe Walk Forward.fbx` |
+| Axe Walk Left | 1.23 s | loop | `Locomotion/Axe Walk Left.fbx` |
+| Axe Walk Right | 1.27 s | loop | `Locomotion/Axe Walk Right.fbx` |
 | Fall Land To Idle | 0.70 s | once | `Locomotion/Fall Land To Idle.fbx` |
 | Fall Land To Run | 0.93 s | once | `Locomotion/Fall Land To Run.fbx` |
 | Fall Loop | 1.07 s | loop | `Locomotion/Fall Loop.fbx` |
@@ -46,17 +60,43 @@ idles, walks, runs, strafes, turns, falls: base movement for any humanoid.
 | Sword Turn 2 | 0.93 s | once | `Locomotion/Sword Turn 2.fbx` |
 | Turn 90 Left | 1.20 s | once | `Locomotion/Turn 90 Left.fbx` |
 | Turn 90 Right | 1.10 s | once | `Locomotion/Turn 90 Right.fbx` |
+| Unarmed Idle | 1.80 s | loop | `Locomotion/Unarmed Idle.fbx` |
+| Unarmed Idle Looking 1 | 10.97 s | loop | `Locomotion/Unarmed Idle Looking 1.fbx` |
+| Unarmed Idle Looking 2 | 6.70 s | loop | `Locomotion/Unarmed Idle Looking 2.fbx` |
+| Unarmed Jump | 2.33 s | once | `Locomotion/Unarmed Jump.fbx` |
+| Unarmed Jump Forward | 1.40 s | once | `Locomotion/Unarmed Jump Forward.fbx` |
+| Unarmed Run Back | 0.77 s | loop | `Locomotion/Unarmed Run Back.fbx` |
+| Unarmed Run Forward | 0.80 s | loop | `Locomotion/Unarmed Run Forward.fbx` |
+| Unarmed Turn 90 Left | 1.50 s | once | `Locomotion/Unarmed Turn 90 Left.fbx` |
+| Unarmed Turn 90 Right | 1.50 s | once | `Locomotion/Unarmed Turn 90 Right.fbx` |
+| Unarmed Walk Back | 1.30 s | loop | `Locomotion/Unarmed Walk Back.fbx` |
+| Unarmed Walk Forward | 1.37 s | loop | `Locomotion/Unarmed Walk Forward.fbx` |
 | Walk Back | 1.47 s | loop | `Locomotion/Walk Back.fbx` |
 | Walk Forward | 1.20 s | loop | `Locomotion/Walk Forward.fbx` |
 | Walk Left | 1.20 s | loop | `Locomotion/Walk Left.fbx` |
 | Walk Right | 1.20 s | loop | `Locomotion/Walk Right.fbx` |
 
-### Combat Melee (8)
+### Combat Melee (23)
 
 sword, punch and kick attacks; draw and sheath.
 
 | Clip | Length | Plays | File |
 |---|---|---|---|
+| Axe Combo 1 | 4.67 s | once | `Combat Melee/Axe Combo 1.fbx` |
+| Axe Combo 2 | 4.20 s | once | `Combat Melee/Axe Combo 2.fbx` |
+| Axe Combo 3 | 2.73 s | once | `Combat Melee/Axe Combo 3.fbx` |
+| Axe Disarm Over Shoulder | 1.63 s | once | `Combat Melee/Axe Disarm Over Shoulder.fbx` |
+| Axe Disarm Underarm | 1.63 s | once | `Combat Melee/Axe Disarm Underarm.fbx` |
+| Axe Equip Over Shoulder | 1.67 s | once | `Combat Melee/Axe Equip Over Shoulder.fbx` |
+| Axe Equip Underarm | 1.10 s | once | `Combat Melee/Axe Equip Underarm.fbx` |
+| Axe Kick 1 | 1.87 s | once | `Combat Melee/Axe Kick 1.fbx` |
+| Axe Kick 2 | 1.40 s | once | `Combat Melee/Axe Kick 2.fbx` |
+| Axe Leap Slam | 3.67 s | once | `Combat Melee/Axe Leap Slam.fbx` (carries about 3.3 m of root travel; the Axeman plays it in place and moves in code) |
+| Axe Slash Backhand | 3.17 s | once | `Combat Melee/Axe Slash Backhand.fbx` |
+| Axe Slash Downward | 2.27 s | once | `Combat Melee/Axe Slash Downward.fbx` |
+| Axe Slash Horizontal | 2.40 s | once | `Combat Melee/Axe Slash Horizontal.fbx` |
+| Axe Spin High | 3.17 s | once | `Combat Melee/Axe Spin High.fbx` |
+| Axe Spin Low | 2.43 s | once | `Combat Melee/Axe Spin Low.fbx` |
 | Melee Kick | 1.43 s | once | `Combat Melee/Melee Kick.fbx` |
 | Melee Punch | 1.00 s | once | `Combat Melee/Melee Punch.fbx` |
 | Sword Attack 1 | 2.33 s | once | `Combat Melee/Sword Attack 1.fbx` |
@@ -82,14 +122,19 @@ bow aim, draw, recoil, equip: a ready set for a bow skill or character.
 | Bow Draw Arrow | 1.00 s | once | `Combat Ranged/Bow Draw Arrow.fbx` |
 | Bow Equip | 0.90 s | once | `Combat Ranged/Bow Equip.fbx` |
 
-### Defense and Reactions (9)
+### Defense and Reactions (14)
 
 blocks, hit reactions, deaths.
 
 | Clip | Length | Plays | File |
 |---|---|---|---|
+| Axe Block Idle | 1.67 s | loop | `Defense and Reactions/Axe Block Idle.fbx` |
+| Axe Block React | 1.33 s | once | `Defense and Reactions/Axe Block React.fbx` |
+| Axe Hit React Gut | 1.50 s | once | `Defense and Reactions/Axe Hit React Gut.fbx` |
+| Axe Hit React Left | 1.00 s | once | `Defense and Reactions/Axe Hit React Left.fbx` |
+| Axe Hit React Right | 1.70 s | once | `Defense and Reactions/Axe Hit React Right.fbx` |
 | Block | 1.93 s | once | `Defense and Reactions/Block.fbx` |
-| Death Backward | 3.07 s | once | `Defense and Reactions/Death Backward.fbx` |
+| Death Backward | 3.07 s | once | `Defense and Reactions/Death Backward.fbx` (Root Transform Position Y is baked into the pose, for bosses without root motion, e.g. Ulvane) |
 | Death Forward | 3.17 s | once | `Defense and Reactions/Death Forward.fbx` |
 | Hit React Front | 1.27 s | once | `Defense and Reactions/Hit React Front.fbx` |
 | Hit React Headshot | 0.80 s | once | `Defense and Reactions/Hit React Headshot.fbx` |
@@ -110,12 +155,14 @@ dodges in four directions and a dive.
 | Dodge Left | 0.97 s | once | `Evade/Dodge Left.fbx` |
 | Dodge Right | 0.97 s | once | `Evade/Dodge Right.fbx` |
 
-### Gestures (15)
+### Gestures (17)
 
 head nods, shrugs, emotes: for intros, taunts, dialogue.
 
 | Clip | Length | Plays | File |
 |---|---|---|---|
+| Axe Taunt Battlecry | 2.83 s | once | `Gestures/Axe Taunt Battlecry.fbx` |
+| Axe Taunt Chest Thump | 2.53 s | once | `Gestures/Axe Taunt Chest Thump.fbx` |
 | Gesture Acknowledging | 1.57 s | once | `Gestures/Gesture Acknowledging.fbx` |
 | Gesture Angry | 2.17 s | once | `Gestures/Gesture Angry.fbx` |
 | Gesture Annoyed Head Shake | 2.23 s | once | `Gestures/Gesture Annoyed Head Shake.fbx` |

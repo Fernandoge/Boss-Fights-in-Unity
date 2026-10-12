@@ -32,6 +32,8 @@ namespace Characters
         protected static readonly int Casting = Animator.StringToHash("Casting");
         protected static readonly int Damaged = Animator.StringToHash("Damaged");
         protected const KeyCode DashKey = KeyCode.Space;
+        // The key that kicks or counters a boss, the same for every character; the counter prompt shows its letter
+        public const KeyCode CounterKey = KeyCode.F;
         private const KeyCode PauseKey = KeyCode.Escape;
 
         private NavMeshAgent _navMeshAgent;
@@ -47,6 +49,10 @@ namespace Characters
         private static readonly int Shooting = Animator.StringToHash("Shooting");
         private static readonly int Skill_Dash = Animator.StringToHash("Skill_Dash");
         private static readonly int Dead = Animator.StringToHash("Dead");
+
+        protected bool IsDashReady => _dashCD <= 0;
+        protected float DashDistance => _dashDistance;
+        protected GameObject DashSmokePrefab => _dashSmokePrefab;
 
         public bool DebugInvulnerable { get; set; }
         public bool IsDead { get; private set; }
@@ -69,6 +75,10 @@ namespace Characters
             _dashCD = 0;
             _damageImmuneCD = 0;
             _maxHealth = _health;
+            // A character that is picked at load has no scene reference to the hearts, so it finds them
+            if (!_playerHealthUI)
+                _playerHealthUI = FindFirstObjectByType<PlayerHealthUI>();
+
             _playerHealthUI.UpdateHearts(_health);
             _dashSpellIcon.SetKeyLabel(DashKey);
         }
@@ -238,13 +248,19 @@ namespace Characters
                 }
             }
             
-            if (Input.GetMouseButton(0))
-            {
-                LookAtMouse();
-                _navMeshAgent.isStopped = true;
-                anim.SetBool(Running, false);
-                anim.SetBool(Shooting, !anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
-            }
+            BasicAttackInput();
+        }
+
+        // Left click: the ninja throws kunai; a melee character replaces this with its own attack
+        protected virtual void BasicAttackInput()
+        {
+            if (!Input.GetMouseButton(0))
+                return;
+
+            LookAtMouse();
+            _navMeshAgent.isStopped = true;
+            anim.SetBool(Running, false);
+            anim.SetBool(Shooting, !anim.GetCurrentAnimatorStateInfo(0).IsName("Shoot"));
         }
         
         /// *** Health Logic *** ///
@@ -274,6 +290,12 @@ namespace Characters
 
             anim.SetTrigger(Damaged);
             isAnimationLocked = true;
+            OnDamaged();
+        }
+
+        // Called after a hit has landed and the hurt animation was triggered, for characters that time the hurt lock in code
+        protected virtual void OnDamaged()
+        {
         }
 
         protected void SetHealth(int healthToAdd)
@@ -305,7 +327,7 @@ namespace Characters
 
         /// *** Dash *** ///
         
-        private void SkillDash()
+        protected virtual void SkillDash()
         {
             if (_dashCD > 0)
                 return;
@@ -340,6 +362,12 @@ namespace Characters
             StartCoroutine(StartDashFreezeTime(_dashFreezeTime));
         }
         
+        protected void StartDashCooldown()
+        {
+            _dashCD = _originalDashCD;
+            _dashSpellIcon.StartCooldown(_dashCD);
+        }
+
         // Animation Lock triggered after dashing
         private IEnumerator StartDashFreezeTime(float dashFreezeTime)
         {

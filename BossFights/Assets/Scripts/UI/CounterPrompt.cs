@@ -5,7 +5,6 @@ namespace UI
     // The key cap above something the player can kick or counter, shown only while its counter window is open
     public static class CounterPrompt
     {
-        private const string KeyLabel = "E";
         private const float KeySize = 1.36f;
         private const float CapShare = 0.82f;
         private const float LetterFontSize = 8f;
@@ -30,7 +29,7 @@ namespace UI
             TargetMarker marker = TargetMarker.Create("Counter Prompt", target, HeightAboveTarget, BobHeight, BobSpeed, PulseAmount, PulseSpeedFactor);
             marker.AddShape("Rim", GetKeySprite(), RimColor, KeySize, 98);
             marker.AddShape("Cap", GetKeySprite(), CapColor, KeySize * CapShare, 99);
-            marker.AddLetter(KeyLabel, LetterFontSize, LetterColor, 100);
+            marker.AddLetter(Characters.PlayerController.CounterKey.ToString(), LetterFontSize, LetterColor, 100);
             return marker;
         }
 

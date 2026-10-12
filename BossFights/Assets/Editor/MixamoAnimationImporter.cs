@@ -9,6 +9,9 @@ namespace EditorTools
     {
         private const string LibraryFolder = "Assets/Asset Packs/Mixamo/Animation Library/";
         private const string AvatarSourcePath = "Assets/Asset Packs/Mixamo/Ninja Kachujin/Kachujin G Rosales.fbx";
+        // The Brute's skeleton has eye bones that the ninja's avatar names differently, so its clips cannot copy the ninja's avatar
+        private const string BruteAvatarSourcePath = "Assets/Asset Packs/Axeman/Model/Brute.fbx";
+        private static readonly string[] BruteClipPrefixes = { "Axe ", "Unarmed " };
         private static readonly string[] LoopWords = { "idle", "run", "walk", "strafe", "loop" };
         private static readonly string[] OneShotWords = { "stop", "turn", "land to", "to run" };
 
@@ -21,7 +24,7 @@ namespace EditorTools
             importer.animationType = ModelImporterAnimationType.Human;
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
 
-            Avatar avatar = AssetDatabase.LoadAssetAtPath<Avatar>(AvatarSourcePath);
+            Avatar avatar = AssetDatabase.LoadAssetAtPath<Avatar>(UsesBruteRig() ? BruteAvatarSourcePath : AvatarSourcePath);
             if (avatar != null)
             {
                 importer.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
@@ -47,6 +50,16 @@ namespace EditorTools
             clips[0].loopTime = repeats;
             clips[0].loopPose = repeats;
             importer.clipAnimations = clips;
+        }
+
+        private bool UsesBruteRig()
+        {
+            string fileName = System.IO.Path.GetFileName(assetPath);
+            foreach (string prefix in BruteClipPrefixes)
+                if (fileName.StartsWith(prefix))
+                    return true;
+
+            return false;
         }
 
         private bool IsNewLibraryFile() => assetPath.StartsWith(LibraryFolder) && assetImporter.importSettingsMissing;

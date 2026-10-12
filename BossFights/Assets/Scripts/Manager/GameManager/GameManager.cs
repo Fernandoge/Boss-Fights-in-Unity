@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace Manager.GameManager
 {
+    // Runs before the selectors, which hand it the character and the boss of the fight
+    [DefaultExecutionOrder(-300)]
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance;

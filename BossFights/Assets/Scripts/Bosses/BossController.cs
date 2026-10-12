@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Interfaces;
 using Manager.GameManager;
 using Shared;
@@ -74,22 +75,24 @@ namespace Bosses
         protected float auxTimeBetweenAttacks;
         protected bool isPerformingAction;
         
-        private Material meshMaterial;
+        private Material[] _bodyMaterials;
+        private Color[] _bodyOriginalColors;
         private Collider colliderComponent;
         private TargetMarker _counterPrompt;
         private TargetMarker _dangerIcon;
         private GameObject currentSkillIndicator;
         private GameObject currentSkillParticles;
         private Coroutine skillToCastCoroutine;
-        private Color meshMaterialOriginalColor;
         private string colliderOriginalTag;
         private int currentHealth;
         private Vector3 _lastPlayerPosition;
         private float _perceptionHoldTimer;
         protected bool hasEnteredSecondPhase;
         private bool isCounterWindowActive;
-        protected bool isImmuneToDamage; 
-        
+        protected bool isImmuneToDamage;
+        // From the hit that reaches the second phase line until the boss calls EndSecondPhaseTransition, so it cannot lose more health while it finishes its attack and goes through the intermission
+        private bool _isSecondPhaseTransition;
+
         // A skill that takes this many hearts or more shows the danger icon above the boss while it is cast
         protected const int HeavyHitDamage = 2;
 
@@ -107,11 +110,10 @@ namespace Bosses
             PerceivedPlayerPosition = player.position;
             _lastPlayerPosition = player.position;
             anim = GetComponent<Animator>();
-            meshMaterial = GetComponentInChildren<SkinnedMeshRenderer>().material;
+            CacheBodyMaterials();
             colliderComponent = GetComponentInChildren<Collider>();
             auxTimeBetweenAttacks = timeBetweenAttacks;
             navMeshOriginalSpeed = navMeshAgent.speed;
-            meshMaterialOriginalColor = meshMaterial.color;
             colliderOriginalTag = transform.tag;
             
             // Initialize health
@@ -169,6 +171,7 @@ namespace Bosses
         public void DebugSetHealthJustAboveHalf()
         {
             hasEnteredSecondPhase = false;
+            _isSecondPhaseTransition = false;
             currentHealth = SecondPhaseHealth + 1;
             _healthText.text = currentHealth.ToString();
         }
@@ -279,7 +282,7 @@ namespace Bosses
             HideDangerIcon();
             isCounterWindowActive = true;
             colliderComponent.transform.tag = "Counterable";
-            meshMaterial.SetColor("_Color", Color.green);
+            SetBodyColor(Color.green);
             if (!_counterPrompt)
                 _counterPrompt = CounterPrompt.Show(colliderComponent);
         }
@@ -288,7 +291,7 @@ namespace Bosses
         {
             isCounterWindowActive = false;
             colliderComponent.transform.tag = colliderOriginalTag;
-            meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
+            RestoreBodyColor();
             if (_counterPrompt)
             {
                 _counterPrompt.Hide();
@@ -310,7 +313,7 @@ namespace Bosses
         public void TakeDamage(int damage, bool isCrit)
         {
             // Don't take damage if immune (e.g., during phase transitions)
-            if (isImmuneToDamage || IsDead)
+            if (isImmuneToDamage || _isSecondPhaseTransition || IsDead)
                 return;
 
             currentHealth -= damage;
@@ -323,10 +326,13 @@ namespace Bosses
                 return;
             }
 
-            // Check if boss should enter second phase
-            if (!hasEnteredSecondPhase && currentHealth <= SecondPhaseHealth && !isPerformingAction)
+            // The boss is immune from this hit on; EnterSecondPhase waits for the running attack to end, so the fight is never in between phases
+            if (!hasEnteredSecondPhase && currentHealth <= SecondPhaseHealth)
+            {
+                _isSecondPhaseTransition = true;
                 StartCoroutine(EnterSecondPhase());
-            
+            }
+
             // Don't flash red if counter window is active (already flashing green)
             if (!isCounterWindowActive)
                 StartCoroutine(FlashOnHit());
@@ -359,6 +365,9 @@ namespace Bosses
                 GameMenuScreen.ShowVictory(_victoryScreenDelay);
         }
 
+        // Every boss calls this when its second phase intermission is over and it can be hurt again
+        protected void EndSecondPhaseTransition() => _isSecondPhaseTransition = false;
+
         // Override this method in specific boss implementations to define second phase behavior
         protected virtual IEnumerator EnterSecondPhase()
         {
@@ -379,11 +388,38 @@ namespace Bosses
         private IEnumerator FlashOnHit()
         {
             // Flash red
-            meshMaterial.SetColor("_Color", Color.red);
+            SetBodyColor(Color.red);
             yield return new WaitForSeconds(0.04f);
             
             // Return to original color
-            meshMaterial.SetColor("_Color", meshMaterialOriginalColor);
+            RestoreBodyColor();
+        }
+
+        // Every material of the model flashes, so a character built from several meshes (a body, clothes, a bow) changes as one
+        private void CacheBodyMaterials()
+        {
+            List<Material> materials = new List<Material>();
+            foreach (SkinnedMeshRenderer skinnedRenderer in GetComponentsInChildren<SkinnedMeshRenderer>())
+                foreach (Material material in skinnedRenderer.materials)
+                    if (material.HasProperty("_Color"))
+                        materials.Add(material);
+
+            _bodyMaterials = materials.ToArray();
+            _bodyOriginalColors = new Color[_bodyMaterials.Length];
+            for (int i = 0; i < _bodyMaterials.Length; i++)
+                _bodyOriginalColors[i] = _bodyMaterials[i].color;
+        }
+
+        private void SetBodyColor(Color color)
+        {
+            foreach (Material material in _bodyMaterials)
+                material.SetColor("_Color", color);
+        }
+
+        private void RestoreBodyColor()
+        {
+            for (int i = 0; i < _bodyMaterials.Length; i++)
+                _bodyMaterials[i].SetColor("_Color", _bodyOriginalColors[i]);
         }
 
         // The perceived position follows the player, except for a moment after a move much faster than running

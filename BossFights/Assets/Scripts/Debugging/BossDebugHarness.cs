@@ -2,6 +2,7 @@
 using System;
 using Bosses;
 using Bosses.Gorath;
+using Bosses.Ulvane;
 using Bosses.Vexara;
 using Manager.GameManager;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace Debugging
         [SerializeField] private bool _onlyUseAttack;
         [SerializeField] private GorathAttack _attackToUse = GorathAttack.BoulderRoll;
         [SerializeField] private VexaraAttack _vexaraAttackToUse = VexaraAttack.DiagonalLines;
+        [SerializeField] private UlvaneAttack _ulvaneAttackToUse = UlvaneAttack.TigerPounce;
 
         private static readonly KeyCode[] AttackKeys =
         {
@@ -24,6 +26,7 @@ namespace Debugging
             KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0
         };
         private static readonly GorathAttack[] Attacks = (GorathAttack[])Enum.GetValues(typeof(GorathAttack));
+        private static readonly UlvaneAttack[] UlvaneAttacks = (UlvaneAttack[])Enum.GetValues(typeof(UlvaneAttack));
 
         private GUIStyle _style;
         private string _helpText;
@@ -40,6 +43,8 @@ namespace Debugging
                 gorath.DebugOnlyAttack = _onlyUseAttack ? _attackToUse : (GorathAttack?)null;
             else if (boss is VexaraBoss vexara)
                 vexara.DebugOnlyAttack = _onlyUseAttack ? _vexaraAttackToUse : (VexaraAttack?)null;
+            else if (boss is UlvaneBoss ulvane)
+                ulvane.DebugOnlyAttack = _onlyUseAttack ? _ulvaneAttackToUse : (UlvaneAttack?)null;
         }
 
         private void Update()
@@ -49,6 +54,11 @@ namespace Debugging
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     if (Input.GetKeyDown(AttackKeys[i]))
                         ForceAttack(Attacks[i]);
+
+            if (activeBoss is UlvaneBoss)
+                for (int i = 0; i < UlvaneAttacks.Length && i < AttackKeys.Length; i++)
+                    if (Input.GetKeyDown(AttackKeys[i]))
+                        ForceUlvaneAttack(UlvaneAttacks[i]);
 
             if (activeBoss is VexaraBoss vexara)
             {
@@ -150,6 +160,25 @@ namespace Debugging
             Show("Forced " + attack);
         }
 
+        public void ForceUlvaneAttack(UlvaneAttack attack)
+        {
+            UlvaneBoss boss = GetBoss() as UlvaneBoss;
+            if (!boss)
+            {
+                Show("No Ulvane attacks for this boss");
+                return;
+            }
+
+            if (boss.DebugIsBusy)
+            {
+                Show("Boss is busy");
+                return;
+            }
+
+            boss.DebugForceAttack(attack);
+            Show("Forced " + attack);
+        }
+
         public void ToggleAutoAttacks()
         {
             BossController boss = GetBoss();
@@ -164,6 +193,13 @@ namespace Debugging
             {
                 vexara.DebugOnlyAttack = vexara.DebugOnlyAttack.HasValue ? (VexaraAttack?)null : _vexaraAttackToUse;
                 Show("Only use attack: " + (vexara.DebugOnlyAttack.HasValue ? vexara.DebugOnlyAttack.Value.ToString() : "OFF"));
+                return;
+            }
+
+            if (GetBoss() is UlvaneBoss ulvane)
+            {
+                ulvane.DebugOnlyAttack = ulvane.DebugOnlyAttack.HasValue ? (UlvaneAttack?)null : _ulvaneAttackToUse;
+                Show("Only use attack: " + (ulvane.DebugOnlyAttack.HasValue ? ulvane.DebugOnlyAttack.Value.ToString() : "OFF"));
                 return;
             }
 
@@ -227,6 +263,8 @@ namespace Debugging
                 onlyAttack = gorath.DebugOnlyAttack.HasValue ? gorath.DebugOnlyAttack.Value.ToString() : "OFF";
             else if (boss is VexaraBoss vexara)
                 onlyAttack = vexara.DebugOnlyAttack.HasValue ? vexara.DebugOnlyAttack.Value.ToString() : "OFF";
+            else if (boss is UlvaneBoss ulvane)
+                onlyAttack = ulvane.DebugOnlyAttack.HasValue ? ulvane.DebugOnlyAttack.Value.ToString() : "OFF";
 
             return "Boss: " + boss.name +
                    "\nAuto attacks: " + (boss.DebugAutoAttacksDisabled ? "OFF" : "ON") +
@@ -242,6 +280,9 @@ namespace Debugging
             if (boss is GorathBoss)
                 for (int i = 0; i < Attacks.Length && i < AttackKeys.Length; i++)
                     text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + Attacks[i] + "\n";
+            else if (boss is UlvaneBoss)
+                for (int i = 0; i < UlvaneAttacks.Length && i < AttackKeys.Length; i++)
+                    text += AttackKeys[i].ToString().Replace("Alpha", "") + "  " + UlvaneAttacks[i] + "\n";
             else if (boss is VexaraBoss)
                 text += "1  SpellCircles\n2  Teleport\n3  DiagonalLines\n4  Intermission\n5  OrbBarrage\n6  ClockStart\n7  Starfall\n8  TimedExplosions\n9  ColorIntermission\n";
             else
