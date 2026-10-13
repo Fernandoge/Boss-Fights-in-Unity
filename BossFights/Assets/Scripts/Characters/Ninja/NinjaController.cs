@@ -455,8 +455,8 @@ namespace Characters.Ninja
             if (Input.GetKeyDown(KickKey) && anim.GetCurrentAnimatorStateInfo(0).IsName("Kick"))
                 StartCoroutine(StartSkillFlipKick());
             
-            // The swap works as soon as the shuriken is thrown, even while it is still in the air or the throw animation is finishing; a QTE in progress comes first, since its keys can include the swap key
-            if (Input.GetKeyDown(HuumaKey) && _activeHuuma != null && !_hasSwappedWithHuuma && !anim.GetBool(Casting))
+            // The swap works as soon as the shuriken is thrown, even while it is still in the air or the throw animation is finishing; no swap during any QTE (the cast of Heal, Clones and Huuma, or the Leap's kunai QTE), since its keys can include the swap key
+            if (Input.GetKeyDown(HuumaKey) && _activeHuuma != null && !_hasSwappedWithHuuma && !anim.GetBool(Casting) && _leapPhase != LeapPhase.Hang)
             {
                 SwapWithHuuma();
                 return;
