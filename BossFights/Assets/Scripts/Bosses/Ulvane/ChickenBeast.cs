@@ -12,6 +12,7 @@ namespace Bosses.Ulvane
         [SerializeField] private int _eggCount = 5;
         [SerializeField] private float _eggInterval = 0.45f;
         [SerializeField] private float _orbitRadius = 5f;
+        [SerializeField] private float _approachSpeed = 11f;
         [SerializeField] private float _runSpeed = 9f;
         [SerializeField] private float _eggRadius = 1.5f;
         [SerializeField] private float _eggFuseTime = 1.3f;
@@ -19,6 +20,8 @@ namespace Bosses.Ulvane
         [SerializeField] private int _damage = 1;
 
         public override int HitDamage => _damage;
+
+        protected override IEnumerator Approach() => ApproachPlayer(_orbitRadius * 1.3f, _approachSpeed);
 
         protected override IEnumerator Perform()
         {

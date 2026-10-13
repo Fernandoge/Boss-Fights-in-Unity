@@ -8,15 +8,19 @@ namespace Bosses.Ulvane
     public class TigerBeast : UlvaneBeast
     {
         [Header("Pounce")]
+        [SerializeField] private float _approachRange = 18.2f;
+        [SerializeField] private float _approachSpeed = 12f;
         [SerializeField] private float _telegraphTime = 0.9f;
-        [SerializeField] private float _leapTime = 0.55f;
+        [SerializeField] private float _leapTime = 0.85f;
         [SerializeField] private float _leapHeight = 3f;
         [SerializeField] private float _blastRadius = 2.2f;
         [SerializeField] private float _leadTime = 0.5f;
         [SerializeField] private float _recoverTime = 0.6f;
-        [SerializeField] private int _damage = 2;
+        [SerializeField] private int _damage = 1;
 
         public override int HitDamage => _damage;
+
+        protected override IEnumerator Approach() => ApproachPlayer(_approachRange, _approachSpeed);
 
         protected override IEnumerator Perform()
         {

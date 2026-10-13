@@ -14,15 +14,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8881504610387854135, guid: 6b0b0b098177a3b439c80991ec9deacc, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2.6
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8881504610387854135, guid: 6b0b0b098177a3b439c80991ec9deacc, type: 3}
       propertyPath: m_LocalScale.y
-      value: 2.6
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8881504610387854135, guid: 6b0b0b098177a3b439c80991ec9deacc, type: 3}
       propertyPath: m_LocalScale.z
-      value: 2.6
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8881504610387854135, guid: 6b0b0b098177a3b439c80991ec9deacc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -92,13 +92,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cdad5aad2854684eacfa1851585b2be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.ChickenBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
+  _cooldown: 12
+  _firstUseDelay: 3
+  _patrolArea: 2
+  _patrolSpeed: 2.5
+  _returnSpeed: 7
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1.5, y: 4}
+  _patrolPointTimeout: 15
   _eggPrefab: {fileID: 2032859571096611218, guid: e4217293c6a716442b7c90bd7fcd3eed, type: 3}
   _eggCount: 5
   _eggInterval: 0.45
   _orbitRadius: 5
+  _approachSpeed: 11
   _runSpeed: 9
   _eggRadius: 1.5
   _eggFuseTime: 1.3

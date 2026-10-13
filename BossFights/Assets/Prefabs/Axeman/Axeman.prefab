@@ -20237,6 +20237,10 @@ MonoBehaviour:
   _basicAttackSpawnPoint: {fileID: 0}
   _basicAttackDamage: 0
   _basicAttackSpeed: 0
+  _petClip: {fileID: -203655887218126122, guid: be4e8ff280f46f346b03c82fccedfaf2, type: 3}
+  _petMeetDistance: 0.6
+  _petOpenHand: 1
+  _petLeanAngle: 35
   _dashDistance: 0
   _dashFreezeTime: 0
   _dashCD: 5

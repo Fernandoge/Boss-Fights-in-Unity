@@ -27,6 +27,7 @@ idles, walks, runs, strafes, turns, falls: base movement for any humanoid.
 |---|---|---|---|
 | Axe Crouch Idle | 1.67 s | loop | `Locomotion/Axe Crouch Idle.fbx` |
 | Axe Crouch Rise | 0.60 s | once | `Locomotion/Axe Crouch Rise.fbx` |
+| Crouch Hold | 1.37 s | once | `Locomotion/Crouch Hold.fbx` (a copy of Vexara's `Crouch Idle`, Humanoid with its own avatar because copying the ninja's avatar failed with a Rig Error: no eye bone; the pet pose of the ninja, held on its last frame) |
 | Axe Idle | 1.80 s | loop | `Locomotion/Axe Idle.fbx` |
 | Axe Idle Looking 1 | 11.17 s | loop | `Locomotion/Axe Idle Looking 1.fbx` |
 | Axe Idle Looking 2 | 7.70 s | loop | `Locomotion/Axe Idle Looking 2.fbx` |

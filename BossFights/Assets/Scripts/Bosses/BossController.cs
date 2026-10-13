@@ -322,6 +322,13 @@ namespace Bosses
 
             if (currentHealth <= 0)
             {
+                // A boss with a last stand stays up and calls Defeat itself when it is over
+                if (OnHealthDepleted())
+                {
+                    currentHealth = 0;
+                    return;
+                }
+
                 Defeat();
                 return;
             }
@@ -338,12 +345,16 @@ namespace Bosses
                 StartCoroutine(FlashOnHit());
         }
         
+        // Override and return true to keep the boss alive when its health runs out (a last stand); it must then make itself immune and call Defeat when the stand is over
+        protected virtual bool OnHealthDepleted() => false;
+
         // Override to remove what the boss left on the field when it dies
         protected virtual void OnDefeated()
         {
         }
 
-        private void Defeat()
+        // playDeathAnimation is false when the boss already lies on the floor from an earlier fall
+        protected void Defeat(bool playDeathAnimation = true)
         {
             IsDead = true;
             StopAllCoroutines();
@@ -357,7 +368,9 @@ namespace Bosses
             navMeshAgent.isStopped = true;
             anim.SetBool(Walking, false);
             anim.SetBool(PerformingAction, false);
-            anim.SetTrigger(Die);
+            if (playDeathAnimation)
+                anim.SetTrigger(Die);
+
             OnDefeated();
 
             // If the player died on the same hit, the game over screen is already on its way

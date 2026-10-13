@@ -14,15 +14,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3402305891407841116, guid: 15ca4494f24bf9741a48b37ec2c4c632, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.8
+      value: 1.4
       objectReference: {fileID: 0}
     - target: {fileID: 3402305891407841116, guid: 15ca4494f24bf9741a48b37ec2c4c632, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.8
+      value: 1.4
       objectReference: {fileID: 0}
     - target: {fileID: 3402305891407841116, guid: 15ca4494f24bf9741a48b37ec2c4c632, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.8
+      value: 1.4
       objectReference: {fileID: 0}
     - target: {fileID: 3402305891407841116, guid: 15ca4494f24bf9741a48b37ec2c4c632, type: 3}
       propertyPath: m_LocalPosition.x
@@ -92,9 +92,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e132476f202948f42a321b9f038dea17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.DogBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
+  _patrolArea: 2
+  _patrolSpeed: 2.5
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1.5, y: 4}
+  _patrolPointTimeout: 15
   _windUpTime: 0.7
   _chaseTime: 4.5
   _speed: 6.5

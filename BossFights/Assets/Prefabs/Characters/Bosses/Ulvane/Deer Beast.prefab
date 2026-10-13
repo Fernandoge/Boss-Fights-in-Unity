@@ -14,15 +14,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7922649801668778606, guid: 4ecab060b0afb5d4db61f7f1311b9e24, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.2
+      value: 1.6
       objectReference: {fileID: 0}
     - target: {fileID: 7922649801668778606, guid: 4ecab060b0afb5d4db61f7f1311b9e24, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.2
+      value: 1.6
       objectReference: {fileID: 0}
     - target: {fileID: 7922649801668778606, guid: 4ecab060b0afb5d4db61f7f1311b9e24, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.2
+      value: 1.6
       objectReference: {fileID: 0}
     - target: {fileID: 7922649801668778606, guid: 4ecab060b0afb5d4db61f7f1311b9e24, type: 3}
       propertyPath: m_LocalPosition.x
@@ -92,9 +92,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 243f89faabbd4ad44bf557454d861068, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.DeerBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
+  _cooldown: 10
+  _firstUseDelay: 3
+  _patrolArea: 1
+  _patrolSpeed: 2.5
+  _returnSpeed: 7
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1.5, y: 4}
+  _patrolPointTimeout: 15
   _stompCount: 2
   _approachSpeed: 9
   _approachDistance: 2.5

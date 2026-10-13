@@ -51,7 +51,6 @@ namespace Characters.Ninja
         [SerializeField] private SpellIcon _kickSpellIcon;
         [Header("Skill Dodge")]
         [SerializeField] private DodgeBubble _dodgeBubblePrefab;
-        [SerializeField] private int _castInputsDodge = 3;
         [SerializeField] private float _dodgeDuration = 1f;
         [SerializeField] private float _dodgeDistance = 3.5f;
         [SerializeField] private float _dodgeCD = 12f;
@@ -176,8 +175,8 @@ namespace Characters.Ninja
         private const KeyCode ClonesKey = KeyCode.W;
         private const KeyCode KickKey = CounterKey;
         private const KeyCode HuumaKey = KeyCode.A;
-        private const KeyCode DodgeKey = KeyCode.S;
-        private const KeyCode SonicBlowKey = KeyCode.E;
+        private const KeyCode DodgeKey = KeyCode.E;
+        private const KeyCode SonicBlowKey = KeyCode.D;
         private const KeyCode LeapKey = KeyCode.R;
         private const float LeapHangDrift = 0.4f;
         private const float LeapClipLength = 2.15f;
@@ -443,11 +442,6 @@ namespace Characters.Ninja
                 _huumaCD = _originalHuumaCD;
                 _huumaSpellIcon.StartCooldown(_originalHuumaCD);
             }
-            else if (_currentSkillBeingCast == Skill_Dodge)
-            {
-                _dodgeCD = _originalDodgeCD;
-                _dodgeSpellIcon.StartCooldown(_originalDodgeCD);
-            }
             
             _currentSkillBeingCast = 0;
         }
@@ -480,7 +474,7 @@ namespace Characters.Ninja
             else if (Input.GetKeyDown(HuumaKey) && _huumaCD <= 0 && _activeHuuma == null)
                 StartCoroutine(CastingSkill(Skill_Huuma, _castInputsHuuma, false, HuumaKey));
             else if (Input.GetKeyDown(DodgeKey) && _dodgeCD <= 0)
-                StartCoroutine(CastingSkill(Skill_Dodge, _castInputsDodge, false, DodgeKey));
+                StartDodge();
             else if (Input.GetKeyDown(SonicBlowKey) && _sonicBlowCD <= 0)
                 StartSonicBlow();
             else if (Input.GetKeyDown(LeapKey) && _leapCD <= 0)
@@ -585,9 +579,6 @@ namespace Characters.Ninja
             _QTEAlert.gameObject.SetActive(false);
             anim.SetBool(Casting, false);
             isAnimationLocked = false;
-
-            if (_currentSkillBeingCast == Skill_Dodge)
-                SkillDodge();
         }
         
         /// ***** Skills ***** ///
@@ -718,7 +709,14 @@ namespace Characters.Ninja
 
         /// *** Dodge *** ///
 
-        // It starts right after the last QTE key, so the immunity is there for the moment the player was reacting to
+        // The shield is instant: no QTE, the immunity starts on the key press
+        private void StartDodge()
+        {
+            ResetPlayerState(false);
+            anim.SetTrigger(Skill_Dodge);
+            SkillDodge();
+        }
+
         private void SkillDodge()
         {
             SetInvulnerable(_dodgeDuration);

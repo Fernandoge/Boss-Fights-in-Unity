@@ -4,11 +4,12 @@ namespace Bosses.Ulvane
     {
         ArrowShot,
         TigerPounce,
-        DogHunt,
+        DogWhirlwind,
         HorseTrample,
-        DeerStomp,
+        DeerGore,
         ChickenEggs,
         PenguinSnowballs,
-        KittyFlurry
+        KittyPetOrClaw,
+        SnowTornado
     }
 }

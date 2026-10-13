@@ -30,8 +30,6 @@ namespace Characters.Axeman
         [SerializeField] private float _impactEffectScale = 1f;
         [Header("Chain")]
         [SerializeField] private float _chainGraceTime = 0.4f;
-        [SerializeField] private float _chainDamageBonus = 0f;
-        [SerializeField] private int _chainMaxSteps = 5;
         [Header("Basic Attack (stands still)")]
         [SerializeField] private AxeMove _basicHit1 = new AxeMove { Name = "Basic 1 (horizontal sweep)", State = "Axe Slash Horizontal", ClipStart = 0.35f, Speed = 1.6f, HitTime = 1.01f, CancelTime = 1.2f, EndTime = 1.5f, YawToHit = -174f, Damage = 2, Radius = 3.2f, Arc = 160f, HitForwardOffset = 0.8f, NoImpactEffect = true, TrailStartTime = 0.78f, TrailEndTime = 1.2f };
         [SerializeField] private AxeMove _basicHit2 = new AxeMove { Name = "Basic 2 (backhand sweep)", State = "Axe Combo 3", ClipStart = 1.45f, Speed = 1.6f, HitTime = 1.75f, CancelTime = 1.95f, EndTime = 2.15f, YawToHit = 146f, Damage = 2, Radius = 3.2f, Arc = 160f, HitForwardOffset = 0.8f, NoImpactEffect = true, TrailStartTime = 1.58f, TrailEndTime = 1.95f };
@@ -130,6 +128,8 @@ namespace Characters.Axeman
         private float _rushCDLeft;
         private float _axeThrowCDLeft;
         private bool _isAxeAway;
+        private bool _wasAxeShown;
+        private bool _wasAxeLeftShown;
         private int _axesAway;
         private float _kickCDLeft;
         private float _shieldDashCDLeft;
@@ -255,6 +255,21 @@ namespace Characters.Axeman
                 _axesAway = 0;
                 _isAxeAway = false;
             }
+        }
+
+        // The axes are put away while the Axeman pets the cat, and come back as they were (an axe that is away stays away)
+        protected override void OnCutsceneBegan()
+        {
+            _wasAxeShown = _heldAxe.enabled;
+            _wasAxeLeftShown = _heldAxeLeft.enabled;
+            _heldAxe.enabled = false;
+            _heldAxeLeft.enabled = false;
+        }
+
+        protected override void OnCutsceneEnded()
+        {
+            _heldAxe.enabled = _wasAxeShown;
+            _heldAxeLeft.enabled = _wasAxeLeftShown;
         }
 
         public void PlayImpact(Collider hitCollider, Vector3 from)
@@ -767,7 +782,6 @@ namespace Characters.Axeman
         {
             Vector3 center = transform.position + _aimDirection * move.HitForwardOffset;
             int count = Physics.OverlapSphereNonAlloc(center, move.Radius, _hitBuffer, ~0, QueryTriggerInteraction.Collide);
-            float multiplier = 1f + _chainDamageBonus * Mathf.Min(_chain, _chainMaxSteps);
             int landed = 0;
             for (int i = 0; i < count; i++)
             {
@@ -786,7 +800,7 @@ namespace Characters.Axeman
                 if (target == null || !_hitTargets.Add(target))
                     continue;
 
-                int damage = DamageRoll.Roll(Mathf.Max(1, Mathf.RoundToInt(move.Damage * multiplier)), out bool isCrit);
+                int damage = DamageRoll.Roll(Mathf.Max(1, move.Damage), out bool isCrit);
                 target.TakeDamage(damage, isCrit);
                 if (!move.NoImpactEffect)
                     PlayImpact(hitCollider, transform.position + Vector3.up * 1.2f);

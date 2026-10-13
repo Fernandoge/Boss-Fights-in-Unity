@@ -21,7 +21,7 @@ namespace UI
 
         private static Sprite _keySprite;
 
-        public static TargetMarker Show(Collider target)
+        public static TargetMarker Show(Collider target, KeyCode key = Characters.PlayerController.CounterKey)
         {
             if (!target)
                 return null;
@@ -29,7 +29,7 @@ namespace UI
             TargetMarker marker = TargetMarker.Create("Counter Prompt", target, HeightAboveTarget, BobHeight, BobSpeed, PulseAmount, PulseSpeedFactor);
             marker.AddShape("Rim", GetKeySprite(), RimColor, KeySize, 98);
             marker.AddShape("Cap", GetKeySprite(), CapColor, KeySize * CapShare, 99);
-            marker.AddLetter(Characters.PlayerController.CounterKey.ToString(), LetterFontSize, LetterColor, 100);
+            marker.AddLetter(key.ToString(), LetterFontSize, LetterColor, 100);
             return marker;
         }
 

@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6020308598444310925, guid: 44a0de0f766c9634eb66f1d56b7edc9d, type: 3}
       propertyPath: m_LocalScale.x
-      value: 3.5
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 6020308598444310925, guid: 44a0de0f766c9634eb66f1d56b7edc9d, type: 3}
       propertyPath: m_LocalScale.y
-      value: 3.5
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 6020308598444310925, guid: 44a0de0f766c9634eb66f1d56b7edc9d, type: 3}
       propertyPath: m_LocalScale.z
-      value: 3.5
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 6020308598444310925, guid: 44a0de0f766c9634eb66f1d56b7edc9d, type: 3}
       propertyPath: m_LocalPosition.x
@@ -92,15 +92,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84a18895a7e4e80429716bac3a1ef67b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.KittyBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
-  _dashCount: 3
-  _flankDistance: 12
+  _cooldown: 12
+  _firstUseDelay: 3
+  _patrolArea: 2
+  _patrolSpeed: 2.5
+  _returnSpeed: 7
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1.5, y: 4}
+  _patrolPointTimeout: 15
+  _enragedCooldownScale: 0.28
+  _enragedAnimationSpeed: 1.3
+  _enragedTint: {r: 1, g: 0.2, b: 0.15, a: 1}
+  _enragedTintAmount: 0.5
+  _mournRunSpeed: 9
+  _petEffectPrefab: {fileID: 9070474633162843459, guid: 356cf4dca1465b54fabbb8cd9b1cd190, type: 3}
+  _approachRange: 5.5
+  _approachSpeed: 14
+  _flopTime: 0.35
+  _lieLift: 0.2
+  _petWindow: 3
+  _petRange: 7
+  _purrTime: 1.4
+  _petApproachSpeed: 12
+  _petHandHeight: 0.35
+  _petStrokeLength: 0.25
+  _petStrokeSpeed: 5
+  _petSlideTime: 0.4
+  _petMomentTime: 3.2
+  _petReachTimeout: 1.5
+  _petEffectStopEarly: 1
+  _petPoseBlendTime: 0.4
+  _petZoom: 2.2
+  _bigScale: 5
+  _getUpTime: 0.4
+  _growTime: 0.9
   _telegraphTime: 0.5
-  _dashSpeed: 22
-  _laneWidth: 1.2
-  _overshoot: 3
+  _clawCount: 3
+  _clawSpread: 24
+  _clawWidth: 1.7
+  _clawLength: 18
   _hitPadding: 0.5
-  _pauseTime: 0.3
+  _rearAngle: 22
+  _slamAngle: 9
+  _slamTime: 0.1
+  _recoverTime: 0.8
+  _shrinkTime: 0.8
+  _effectSpacing: 5
   _damage: 1

@@ -2270,6 +2270,7 @@ MonoBehaviour:
   _basicAttackSpawnPoint: {fileID: 7334018175922234042}
   _basicAttackDamage: 2
   _basicAttackSpeed: 42
+  _petClip: {fileID: -203655887218126122, guid: 90bfc6f3950ad274f851f921b84b4a0b, type: 3}
   _dashDistance: 8.5
   _dashFreezeTime: 0.4
   _dashCD: 12
@@ -2318,6 +2319,7 @@ MonoBehaviour:
   _sonicBlowFinisherReachScale: 1.4
   _sonicBlowFinisherSlashScale: 2.2
   _sonicBlowFinisherZoom: 1.3
+  _sonicBlowChargeZoom: 1.12
   _sonicBlowLength: 6
   _sonicBlowWidth: 3
   _sonicBlowTurnSpeed: 720

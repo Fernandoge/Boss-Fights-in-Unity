@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Shared;
 using UnityEngine;
@@ -14,13 +15,26 @@ namespace Bosses.Ulvane
         [SerializeField] private float _laneWidth = 0.8f;
         [SerializeField] private float _maxLaneLength = 30f;
         [SerializeField] private float _telegraphTime = 0.9f;
-        [SerializeField] private float _snowballSpeed = 14f;
+        [SerializeField] private float _snowballSpeed = 21.84f;
         [SerializeField] private float _snowballInterval = 0.07f;
         [SerializeField] private float _muzzleHeight = 0.8f;
         [SerializeField] private float _recoverTime = 0.5f;
         [SerializeField] private int _damage = 1;
 
+        [Header("Snow Tornado Combo")]
+        [SerializeField] private float _feedSpeed = 16f;
+        [SerializeField] private float _feedAimTime = 0.25f;
+        [SerializeField] private Vector3 _feedTargetOffset = new Vector3(0f, 1.2f, 0f);
+
         public override int HitDamage => _damage;
+
+        // Combo: turns to a partner and lobs one harmless snowball at it; onArrive gets the ball when it lands
+        public IEnumerator ComboFeed(Transform partner, Action<UlvaneProjectile> onArrive)
+        {
+            yield return FaceFor(FlatDirectionTo(partner.position), _feedAimTime);
+            UlvaneProjectile snowball = Instantiate(_snowballPrefab, transform.position + Vector3.up * _muzzleHeight, Quaternion.identity);
+            snowball.LaunchAtTarget(partner, _feedTargetOffset, _feedSpeed, onArrive);
+        }
 
         protected override IEnumerator Perform()
         {

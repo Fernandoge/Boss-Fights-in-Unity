@@ -7,8 +7,8 @@ Shader "Indicators/SkillIndicator"
         _EdgeColor ("Edge Color", Color) = (1, 0.55, 0.3, 0.9)
         _Fill ("Fill", Range(0, 1)) = 0
         _EdgeWidth ("Edge Width (world units)", Range(0, 0.5)) = 0.08
-        _Size ("Size (width, length)", Vector) = (1, 1, 0, 0)
-        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows, 2 = circle fill from the center)", Float) = 0
+        _Size ("Size (width, length, cone half angle in radians)", Vector) = (1, 1, 0, 0)
+        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows, 2 = circle fill from the center, 3 = cone fill from the tip)", Float) = 0
         _ArrowSpacing ("Arrow spacing (world units)", Float) = 6
         _ArrowSpeed ("Arrow scroll speed (world units / s)", Float) = 8
     }
@@ -59,6 +59,23 @@ Shader "Indicators/SkillIndicator"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col;
+                if (_Pattern > 2.5)
+                {
+                    // Cone with its tip at the middle of the bottom edge; _Size.y is the radius and _Size.z the half angle in radians. The fill grows from the tip to the arc
+                    float2 p = float2((i.uv.x - 0.5) * _Size.x, i.uv.y * _Size.y);
+                    float r = length(p);
+                    float angle = atan2(abs(p.x), p.y);
+                    clip(_Size.y - r);
+                    clip(_Size.z - angle);
+
+                    float fillRadius = _Fill * _Size.y;
+                    col = lerp(_BaseColor, _FillColor, step(r, fillRadius));
+                    col.rgb += step(abs(r - fillRadius), 0.15) * step(0.001, _Fill) * step(_Fill, 0.999) * 0.35;
+                    float edgeDistance = min(_Size.y - r, r * sin(_Size.z - angle));
+                    col = lerp(col, _EdgeColor, step(edgeDistance, _EdgeWidth));
+                    return col;
+                }
+
                 if (_Pattern > 1.5)
                 {
                     // Circle inscribed in the quad; the fill grows from the center to the rim. _Size.x is the diameter

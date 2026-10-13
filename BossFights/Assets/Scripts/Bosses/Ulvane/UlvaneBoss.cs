@@ -1,7 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using Manager.GameManager;
 using Shared;
+using UI;
 using UnityEngine;
+using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace Bosses.Ulvane
@@ -38,16 +42,29 @@ namespace Bosses.Ulvane
         [SerializeField] private float _arrowSpeed = 30f;
         [SerializeField] private float _arrowLaneWidth = 0.9f;
         [SerializeField] private float _arrowMaxRange = 45f;
-        [SerializeField] private float _arrowHeight = 1.3f;
+        [SerializeField] private float _arrowHeight = 2.6f;
+        [SerializeField] private float _arrowForwardOffset = 1.6f;
         [SerializeField] private float _arrowLeadTime = 0.3f;
-        [SerializeField] private int _arrowDamage = 2;
+        [SerializeField] private int _arrowDamage = 1;
 
         [Header("Beasts")]
         [SerializeField] private BeastEntry[] _beasts;
         [SerializeField] private float _commandDelay = 0.6f;
-        [SerializeField] private float _beastSideOffset = 2f;
+        [SerializeField] private float _minSpawnDistanceFromPlayer = 10f;
+        [SerializeField] private Vector3 _arenaCenter = Vector3.zero;
+        [SerializeField] private float _centerPatrolRadius = 14f;
+        [SerializeField] private float _outerPatrolMinRadius = 18f;
+        [SerializeField] private float _outerPatrolStep = 14f;
         [SerializeField] private float _afterBeastTime = 0.6f;
         [SerializeField] private float _beastTimeout = 20f;
+
+        [Header("Snow Tornado Combo")]
+        [SerializeField] private float _tornadoPartnerDistance = 5f;
+        [SerializeField] private float _tornadoFeedInterval = 0.6f;
+        [SerializeField] private float _tornadoTimeout = 25f;
+        [SerializeField] private float _tornadoScreamTime = 2f;
+        [SerializeField] private float _tornadoFirstDelay = 5f;
+        [SerializeField] private Vector2 _tornadoCooldown = new Vector2(16f, 24f);
 
         [Header("Phase 2")]
         [SerializeField] private float _roarTime = 2.2f;
@@ -55,10 +72,24 @@ namespace Bosses.Ulvane
         [SerializeField] private int _phaseTwoArrowCount = 3;
         [SerializeField] private float _phaseTwoArrowSpread = 14f;
 
-        private UlvaneAttack? _lastAttack;
+        [Header("Phase 3")]
+        [SerializeField] private float _phaseThreeDuration = 20f;
+        [SerializeField] private float _mournRadius = 4.5f;
+        [SerializeField] private float _mournArriveTimeout = 25f;
+        [SerializeField] private float _mournTime = 3f;
+
+        private bool _isRoaring;
+        private bool _isComboRunning;
+        private float _nextTornadoTime = float.MaxValue;
+        private bool _isLastStand;
+        private bool _isMourning;
         private float _strafeSign = 1f;
         private float _strafeTimer;
         private float _blockedTimer;
+        private NavMeshTriangulation _navMesh;
+        private float[] _cumulativeTriangleAreas;
+        private UlvanePatrolZone[] _patrolZones;
+        private readonly Dictionary<UlvaneAttack, UlvaneBeast> _activeBeasts = new Dictionary<UlvaneAttack, UlvaneBeast>();
 
         private static readonly int Draw = Animator.StringToHash("Draw");
         private static readonly int Release = Animator.StringToHash("Release");
@@ -66,6 +97,7 @@ namespace Bosses.Ulvane
         private static readonly int Move_X = Animator.StringToHash("MoveX");
         private static readonly int Move_Z = Animator.StringToHash("MoveZ");
         private static readonly int Roar = Animator.StringToHash("EnterSecondPhase");
+        private static readonly int Fall = Animator.StringToHash("Die");
 
         public UlvaneAttack? DebugOnlyAttack { get; set; }
 
@@ -78,12 +110,12 @@ namespace Bosses.Ulvane
 
         public Vector3 PlayerAimVelocity => PerceivedPlayerVelocity;
 
-        // Beside the boss, on a random side
-        public Vector3 BeastSpawnPoint => transform.position + transform.right * (_beastSideOffset * (Random.value < 0.5f ? -1f : 1f)) + transform.forward * 0.8f;
+        // The animals act on their own cooldowns, but hold back while the boss is dead, roaring into phase 2, or the player is dead (or the harness switched auto attacks off)
+        public bool CanBeastsAct => !IsDead && !_isRoaring && !_isMourning && !DebugAutoAttacksDisabled && !GameManager.Instance.player.IsDead;
 
         private int ArrowCount => hasEnteredSecondPhase ? _phaseTwoArrowCount : 1;
 
-        private Vector3 ArrowOrigin => transform.position + transform.forward * 0.8f + Vector3.up * _arrowHeight;
+        private Vector3 ArrowOrigin => transform.position + transform.forward * _arrowForwardOffset + Vector3.up * _arrowHeight;
 
         protected override void Start()
         {
@@ -93,6 +125,7 @@ namespace Bosses.Ulvane
             anim.applyRootMotion = false;
             _strafeSign = Random.value < 0.5f ? -1f : 1f;
             _strafeTimer = Random.Range(_strafeSwitchTime.x, _strafeSwitchTime.y);
+            SpawnBeasts();
         }
 
         /// *** Debug *** ///
@@ -156,10 +189,25 @@ namespace Bosses.Ulvane
             StartAttack(ChooseAttack());
         }
 
+        // He falls instead of dying: phase 3 starts, see LastStandSequence
+        protected override bool OnHealthDepleted()
+        {
+            if (_isLastStand)
+                return false;
+
+            _isLastStand = true;
+            isImmuneToDamage = true;
+            StopAllCoroutines();
+            StartCoroutine(LastStandSequence());
+            return true;
+        }
+
         protected override void OnDefeated()
         {
-            foreach (UlvaneBeast beast in FindObjectsByType<UlvaneBeast>(FindObjectsSortMode.None))
-                Destroy(beast.gameObject);
+            // The animals that mourned him stay on the field under the victory screen
+            if (!_isLastStand)
+                foreach (UlvaneBeast beast in FindObjectsByType<UlvaneBeast>(FindObjectsSortMode.None))
+                    Destroy(beast.gameObject);
 
             foreach (GroundBlast blast in FindObjectsByType<GroundBlast>(FindObjectsSortMode.None))
                 Destroy(blast.gameObject);
@@ -178,40 +226,97 @@ namespace Bosses.Ulvane
                 yield break;
 
             hasEnteredSecondPhase = true;
+            _isRoaring = true;
             yield return new WaitUntil(() => !isPerformingAttack && !isPerformingAction);
             base.PerformAttack();
             StandStill();
+            _nextTornadoTime = Time.time + _tornadoFirstDelay;
             auxTimeBetweenAttacks = _phaseTwoTimeBetweenAttacks;
             timeBetweenAttacks = auxTimeBetweenAttacks;
             anim.SetTrigger(Roar);
             yield return WaitFacingPlayer(_roarTime);
             FinishAttack();
+            _isRoaring = false;
             EndSecondPhaseTransition();
+        }
+
+        /// *** Phase 3 *** ///
+
+        // Ulvane falls and cannot be hurt, the animals go enraged and the player has to survive for a while; then the animals run to his body, circle it and howl, and only then does the fight end
+        private IEnumerator LastStandSequence()
+        {
+            // The attack loop stops for good: the boss is neither attacking nor walking, and no new attack can start
+            isPerformingAttack = true;
+            timeBetweenAttacks = float.MaxValue;
+            navMeshAgent.isStopped = true;
+            HideDangerIcon();
+            StandStill();
+            anim.SetTrigger(Fall);
+
+            UlvaneBeast[] beasts = FindObjectsByType<UlvaneBeast>(FindObjectsSortMode.None);
+            foreach (UlvaneBeast beast in beasts)
+                beast.Enrage();
+
+            SurviveBanner banner = SurviveBanner.Show();
+            for (float elapsed = 0f; elapsed < _phaseThreeDuration; elapsed += Time.deltaTime)
+            {
+                if (GameManager.Instance.player.IsDead)
+                {
+                    banner.Hide();
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            banner.Hide();
+
+            _isMourning = true;
+            Vector3 center = transform.position;
+            float startAngle = Random.Range(0f, 360f);
+            for (int i = 0; i < beasts.Length; i++)
+                beasts[i].Mourn(center, _mournRadius, startAngle + 360f * i / beasts.Length);
+
+            for (float elapsed = 0f; elapsed < _mournArriveTimeout && !AllArrivedAtMourning(beasts); elapsed += Time.deltaTime)
+                yield return null;
+
+            yield return new WaitForSeconds(_mournTime);
+            Defeat(false);
+        }
+
+        private bool AllArrivedAtMourning(UlvaneBeast[] beasts)
+        {
+            foreach (UlvaneBeast beast in beasts)
+                if (beast && !beast.HasArrivedAtMourning)
+                    return false;
+
+            return true;
         }
 
         /// *** Attack Selection *** ///
 
-        // A random attack, but never the same one twice in a row
-        private UlvaneAttack ChooseAttack()
+        // Ulvane only shoots on his own for now: the animals act by themselves, and his special calls will go here
+        // Phase 2 only: now and then he screams for a combined command instead of shooting
+        private UlvaneAttack ChooseAttack() => DebugOnlyAttack ?? (CanStartTornado() ? UlvaneAttack.SnowTornado : UlvaneAttack.ArrowShot);
+
+        private bool CanStartTornado() => hasEnteredSecondPhase && !_isLastStand && Time.time >= _nextTornadoTime && TryGetTornadoPartners(out DogBeast _, out PenguinBeast _);
+
+        private bool TryGetTornadoPartners(out DogBeast dog, out PenguinBeast penguin)
         {
-            if (DebugOnlyAttack.HasValue)
-                return DebugOnlyAttack.Value;
-
-            UlvaneAttack[] attacks = (UlvaneAttack[])Enum.GetValues(typeof(UlvaneAttack));
-            UlvaneAttack attack;
-            do
-                attack = attacks[Random.Range(0, attacks.Length)];
-            while (attacks.Length > 1 && _lastAttack.HasValue && attack == _lastAttack.Value);
-
-            return attack;
+            _activeBeasts.TryGetValue(UlvaneAttack.DogWhirlwind, out UlvaneBeast dogBeast);
+            _activeBeasts.TryGetValue(UlvaneAttack.PenguinSnowballs, out UlvaneBeast penguinBeast);
+            dog = dogBeast as DogBeast;
+            penguin = penguinBeast as PenguinBeast;
+            return !_isComboRunning && dog && penguin && dog.IsAvailable && penguin.IsAvailable;
         }
 
         private void StartAttack(UlvaneAttack attack)
         {
-            _lastAttack = attack;
             StandStill();
             if (attack == UlvaneAttack.ArrowShot)
                 StartCoroutine(ArrowShotSequence());
+            else if (attack == UlvaneAttack.SnowTornado)
+                StartCoroutine(SnowTornadoSequence());
             else
                 StartCoroutine(BeastSequence(attack));
         }
@@ -240,6 +345,8 @@ namespace Bosses.Ulvane
             baseDirection.y = 0f;
             baseDirection = baseDirection.sqrMagnitude > 0.0001f ? baseDirection.normalized : transform.forward;
 
+            // The boss stands slightly lower than the floor decoration, so the lanes start at the player's height to draw above the dirt patches
+            Vector3 laneOrigin = new Vector3(transform.position.x, GameManager.Instance.player.transform.position.y, transform.position.z);
             int count = ArrowCount;
             Vector3[] directions = new Vector3[count];
             float[] lengths = new float[count];
@@ -248,7 +355,7 @@ namespace Bosses.Ulvane
                 float angle = count > 1 ? Mathf.Lerp(-_phaseTwoArrowSpread, _phaseTwoArrowSpread, i / (float)(count - 1)) : 0f;
                 directions[i] = Quaternion.Euler(0f, angle, 0f) * baseDirection;
                 lengths[i] = NavMeshUtility.DistanceToEdge(transform.position, directions[i], _arrowMaxRange);
-                Instantiate(_indicatorPrefab).ShowLine(transform.position, directions[i], lengths[i], _arrowLaneWidth, _aimTime);
+                Instantiate(_indicatorPrefab).ShowLine(laneOrigin, directions[i], lengths[i], _arrowLaneWidth, _aimTime);
             }
 
             yield return WaitFacingDirection(baseDirection, _aimTime);
@@ -267,22 +374,20 @@ namespace Bosses.Ulvane
 
         /// *** Beasts *** ///
 
-        // Ulvane gestures, the animal appears beside him and does its skill, and he waits until it has left
+        // A special call: Ulvane gestures and the animal drops what it is doing and runs its skill, and he waits until it is done. Nothing picks this yet; the debug harness uses it.
         private IEnumerator BeastSequence(UlvaneAttack attack)
         {
-            UlvaneBeast prefab = FindBeastPrefab(attack);
-            if (!prefab)
+            if (!_activeBeasts.TryGetValue(attack, out UlvaneBeast beast) || !beast || !beast.IsAvailable)
             {
                 FinishAttack();
                 yield break;
             }
 
-            ShowDangerIcon(prefab.HitDamage);
+            ShowDangerIcon(beast.HitDamage);
             anim.SetTrigger(Command);
             yield return WaitFacingPlayer(_commandDelay);
 
-            UlvaneBeast beast = Instantiate(prefab);
-            beast.Summon(this);
+            beast.Command();
             for (float elapsed = 0f; beast && !beast.IsFinished && elapsed < _beastTimeout; elapsed += Time.deltaTime)
             {
                 FacePlayer(Time.deltaTime);
@@ -293,13 +398,177 @@ namespace Bosses.Ulvane
             FinishAttack();
         }
 
-        private UlvaneBeast FindBeastPrefab(UlvaneAttack attack)
+        // Combined command: Ulvane only screams (and goes back to shooting), the dog and the penguin do the rest by themselves, see SnowTornadoCombo
+        private IEnumerator SnowTornadoSequence()
         {
+            if (!TryGetTornadoPartners(out DogBeast dog, out PenguinBeast penguin))
+            {
+                FinishAttack();
+                yield break;
+            }
+
+            _isComboRunning = true;
+            StartCoroutine(SnowTornadoCombo(dog, penguin));
+            anim.SetTrigger(Roar);
+            yield return WaitFacingPlayer(_tornadoScreamTime);
+            FinishAttack();
+        }
+
+        // The dog runs to the penguin's left and spins up a still whirlwind, the penguin feeds it snowballs, and when the dog holds a full stack it fires them all at the player at more than twice a normal snowball's speed. Both animals wear the danger icon. It runs beside Ulvane's own attacks and the other animals' skills.
+        private IEnumerator SnowTornadoCombo(DogBeast dog, PenguinBeast penguin)
+        {
+            dog.BeginCombo();
+            penguin.BeginCombo();
+            dog.ShowDanger();
+            penguin.ShowDanger();
+
+            Vector3 penguinPosition = penguin.transform.position;
+            Vector3 toPlayer = PlayerAimPoint - penguinPosition;
+            toPlayer.y = 0f;
+            toPlayer = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : penguin.transform.forward;
+
+            // Left of the penguin as it looks at the player; the other side if that one is outside the arena
+            Vector3 left = Vector3.Cross(toPlayer, Vector3.up);
+            Vector3 dogSpot = NavMeshUtility.Snap(penguinPosition + left * _tornadoPartnerDistance);
+            if ((dogSpot - (penguinPosition + left * _tornadoPartnerDistance)).sqrMagnitude > 1f)
+                dogSpot = NavMeshUtility.Snap(penguinPosition - left * _tornadoPartnerDistance);
+
+            float deadline = Time.time + _tornadoTimeout;
+            yield return dog.StormStart(dogSpot);
+
+            for (int i = 0; i < dog.StackSize && Time.time < deadline; i++)
+            {
+                yield return penguin.ComboFeed(dog.transform, dog.AddSnowball);
+                yield return new WaitForSeconds(_tornadoFeedInterval);
+            }
+
+            while (dog.StackCount < dog.StackSize && Time.time < deadline)
+                yield return null;
+
+            yield return dog.ThrowStack();
+
+            dog.EndCombo();
+            penguin.EndCombo();
+            _nextTornadoTime = Time.time + Random.Range(_tornadoCooldown.x, _tornadoCooldown.y);
+            _isComboRunning = false;
+        }
+
+        // Every animal is in the arena from the start of the fight, patrolling
+        private void SpawnBeasts()
+        {
+            _navMesh = NavMesh.CalculateTriangulation();
+            CacheTriangleAreas();
+            _patrolZones = FindObjectsByType<UlvanePatrolZone>(FindObjectsSortMode.None);
             foreach (BeastEntry entry in _beasts)
-                if (entry.attack == attack)
-                    return entry.prefab;
+            {
+                if (!entry.prefab)
+                    continue;
+
+                UlvanePatrolZone zone = FindZone(entry.attack);
+                Vector3 point = GetPatrolPoint(zone, entry.prefab.PatrolArea, _minSpawnDistanceFromPlayer);
+                UlvaneBeast beast = Instantiate(entry.prefab);
+                beast.Spawn(this, point, zone);
+                _activeBeasts[entry.attack] = beast;
+            }
+        }
+
+        private UlvanePatrolZone FindZone(UlvaneAttack attack)
+        {
+            foreach (UlvanePatrolZone zone in _patrolZones)
+                if (zone.Beast == attack)
+                    return zone;
 
             return null;
+        }
+
+        // Where a patrolling animal walks next: inside its own zone if it has one, otherwise anywhere on the floor except the other animals' zones
+        public Vector3 GetPatrolPoint(UlvanePatrolZone zone, UlvanePatrolArea area, float minPlayerDistance = 0f, Vector3? from = null)
+        {
+            if (zone)
+                return NavMeshUtility.Snap(zone.RandomPoint());
+
+            Vector3 point = Vector3.zero;
+            for (int i = 0; i < 60; i++)
+            {
+                point = RandomNavMeshPoint();
+                Vector3 fromPlayer = point - player.position;
+                fromPlayer.y = 0f;
+                if (!IsInsideAnyZone(point) && IsInPatrolArea(point, area) && fromPlayer.sqrMagnitude >= minPlayerDistance * minPlayerDistance && IsWithinOuterStep(point, area, from, i))
+                    return point;
+            }
+
+            return point;
+        }
+
+        // Outer animals stroll in short steps instead of cutting across the middle; they give up the limit when no such point turns up
+        private bool IsWithinOuterStep(Vector3 point, UlvanePatrolArea area, Vector3? from, int attempt)
+        {
+            if (area != UlvanePatrolArea.NearWalls || !from.HasValue || attempt >= 40)
+                return true;
+
+            Vector3 step = point - from.Value;
+            step.y = 0f;
+            return step.sqrMagnitude <= _outerPatrolStep * _outerPatrolStep;
+        }
+
+        private bool IsInPatrolArea(Vector3 point, UlvanePatrolArea area)
+        {
+            if (area == UlvanePatrolArea.Anywhere)
+                return true;
+
+            Vector3 offset = point - _arenaCenter;
+            offset.y = 0f;
+            float sqrDistance = offset.sqrMagnitude;
+            return area == UlvanePatrolArea.NearWalls
+                ? sqrDistance >= _outerPatrolMinRadius * _outerPatrolMinRadius
+                : sqrDistance <= _centerPatrolRadius * _centerPatrolRadius;
+        }
+
+        private bool IsInsideAnyZone(Vector3 point)
+        {
+            foreach (UlvanePatrolZone zone in _patrolZones)
+                if (zone.Contains(point, 1f))
+                    return true;
+
+            return false;
+        }
+
+        // Triangles are picked by area, so the points spread evenly over the floor
+        private void CacheTriangleAreas()
+        {
+            int count = _navMesh.indices.Length / 3;
+            _cumulativeTriangleAreas = new float[count];
+            float total = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 a = _navMesh.vertices[_navMesh.indices[i * 3]];
+                Vector3 b = _navMesh.vertices[_navMesh.indices[i * 3 + 1]];
+                Vector3 c = _navMesh.vertices[_navMesh.indices[i * 3 + 2]];
+                total += Vector3.Cross(b - a, c - a).magnitude * 0.5f;
+                _cumulativeTriangleAreas[i] = total;
+            }
+        }
+
+        private Vector3 RandomNavMeshPoint()
+        {
+            float pick = Random.value * _cumulativeTriangleAreas[_cumulativeTriangleAreas.Length - 1];
+            int triangle = Array.BinarySearch(_cumulativeTriangleAreas, pick);
+            if (triangle < 0)
+                triangle = ~triangle;
+
+            triangle = Mathf.Min(triangle, _cumulativeTriangleAreas.Length - 1) * 3;
+            Vector3 a = _navMesh.vertices[_navMesh.indices[triangle]];
+            Vector3 b = _navMesh.vertices[_navMesh.indices[triangle + 1]];
+            Vector3 c = _navMesh.vertices[_navMesh.indices[triangle + 2]];
+            float u = Random.value;
+            float v = Random.value;
+            if (u + v > 1f)
+            {
+                u = 1f - u;
+                v = 1f - v;
+            }
+
+            return a + (b - a) * u + (c - a) * v;
         }
 
         // A walkable point about this far from the player, in a random direction, for animals that charge in from the edge of the fight
@@ -317,12 +586,6 @@ namespace Bosses.Ulvane
             }
 
             return point;
-        }
-
-        public void SpawnPuff(Vector3 position)
-        {
-            if (_impactEffectPrefab)
-                Destroy(Instantiate(_impactEffectPrefab, position, Quaternion.identity), 3f);
         }
 
         /// *** Facing *** ///

@@ -20,6 +20,11 @@ namespace Characters
         [SerializeField] private Transform _basicAttackSpawnPoint;
         [SerializeField] private int _basicAttackDamage;
         [SerializeField] private float _basicAttackSpeed;
+        [Header("Pet")]
+        [SerializeField] private AnimationClip _petClip;
+        [SerializeField] private float _petMeetDistance = 1f;
+        [SerializeField] private bool _petOpenHand;
+        [SerializeField] private float _petLeanAngle;
         [Header("Skill Dash")]
         [SerializeField] private float _dashDistance;
         [SerializeField] private float _dashFreezeTime;
@@ -44,6 +49,8 @@ namespace Characters
         private float _invulnerableTime;
         private Vector3 _lastDestination;
         private GameMenuScreen _pauseScreen;
+        private PosePlayer _cutscenePose;
+        private PetStroker _cutsceneStroker;
         private NavMeshPath _reusablePath; // Reuse path object to avoid allocations
         private static readonly int Running = Animator.StringToHash("Running");
         private static readonly int Shooting = Animator.StringToHash("Shooting");
@@ -56,6 +63,15 @@ namespace Characters
 
         public bool DebugInvulnerable { get; set; }
         public bool IsDead { get; private set; }
+
+        // How far from the middle of a petted animal the character crouches: a taller crouch has to stand closer to reach it
+        public float PetMeetDistance => _petMeetDistance;
+
+        // True while the game is frozen for a moment the player only watches (petting the cat): no input, no pause
+        public bool IsInCutscene { get; private set; }
+
+        // The hand of a petting character is on the animal (true at once for a character that has no hand to move)
+        public bool IsPetHandReady => !_cutsceneStroker || _cutsceneStroker.HasReached;
 
         /// *** Unity Events *** ///
         
@@ -92,6 +108,9 @@ namespace Characters
             if (GameMenuScreen.IsOpen && !_pauseScreen)
                 return;
 
+            if (IsInCutscene)
+                return;
+
             if (Input.GetKeyDown(PauseKey))
                 TogglePause();
 
@@ -117,6 +136,59 @@ namespace Characters
                 StopAllCoroutines();
         } 
         
+        // Stops whatever the character was doing, turns to the point, crouches (when the character has a pet clip) and strokes the target with the right hand; the caller freezes the game
+        public void BeginCutscene(Vector3 lookAt, float poseBlendTime, Transform strokeTarget = null, float strokeHeight = 0f, float strokeLength = 0f, float strokeSpeed = 0f)
+        {
+            ResetPlayerState(true);
+            isAnimationLocked = true;
+            IsInCutscene = true;
+            OnCutsceneBegan();
+
+            Vector3 direction = lookAt - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0.0001f)
+                transform.rotation = Quaternion.LookRotation(direction);
+
+            if (_petClip && !_cutscenePose)
+                _cutscenePose = PosePlayer.Begin(anim, _petClip, poseBlendTime);
+
+            if (strokeTarget && !_cutsceneStroker)
+                _cutsceneStroker = PetStroker.Begin(anim, strokeTarget, strokeHeight, strokeLength, strokeSpeed, poseBlendTime, _petOpenHand, _petLeanAngle);
+        }
+
+        // Moves the character during a cutscene, keeping the agent on the NavMesh
+        public void SetCutscenePosition(Vector3 position)
+        {
+            if (_navMeshAgent.enabled)
+                _navMeshAgent.Warp(position);
+            else
+                transform.position = position;
+        }
+
+        public void EndCutscene()
+        {
+            if (_cutscenePose)
+                _cutscenePose.End();
+
+            if (_cutsceneStroker)
+                _cutsceneStroker.End();
+
+            isAnimationLocked = false;
+            if (IsInCutscene)
+                OnCutsceneEnded();
+
+            IsInCutscene = false;
+        }
+
+        // For characters that carry something that is in the way of a cutscene pose (the Axeman's axes)
+        protected virtual void OnCutsceneBegan()
+        {
+        }
+
+        protected virtual void OnCutsceneEnded()
+        {
+        }
+
         protected bool GetMouseWorldPoint(out Vector3 worldPoint)
         {
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);

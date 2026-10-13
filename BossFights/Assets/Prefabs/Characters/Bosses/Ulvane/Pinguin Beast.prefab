@@ -14,15 +14,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2197702747431416007, guid: 66f01a8db88f9644baed659d1f91cdca, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2197702747431416007, guid: 66f01a8db88f9644baed659d1f91cdca, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2197702747431416007, guid: 66f01a8db88f9644baed659d1f91cdca, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2197702747431416007, guid: 66f01a8db88f9644baed659d1f91cdca, type: 3}
       propertyPath: m_LocalPosition.x
@@ -92,17 +92,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65a4684f920966c479fb525de792c102, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.PenguinBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
+  _cooldown: 8
+  _firstUseDelay: 3
+  _patrolArea: 0
+  _patrolSpeed: 1.4
+  _returnSpeed: 7
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1, y: 3}
+  _patrolPointTimeout: 15
   _snowballPrefab: {fileID: 3420746164234564116, guid: 78b482c518aa24a44b063fedd3f7394a, type: 3}
   _laneCount: 5
   _fanAngle: 50
   _laneWidth: 0.8
   _maxLaneLength: 30
   _telegraphTime: 0.9
-  _snowballSpeed: 14
+  _snowballSpeed: 21.84
   _snowballInterval: 0.07
-  _muzzleHeight: 0.8
+  _muzzleHeight: 0.7
   _recoverTime: 0.5
   _damage: 1

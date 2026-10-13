@@ -92,13 +92,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc4f1c3a6700bc34da33ce4db2ab4c99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.TigerBeast
-  _appearTime: 0.3
-  _leaveTime: 0.35
   _turnSpeed: 720
+  _cooldown: 9
+  _firstUseDelay: 3
+  _patrolArea: 1
+  _patrolSpeed: 2.5
+  _returnSpeed: 7
+  _patrolTurnSpeed: 180
+  _patrolPauseTime: {x: 1.5, y: 4}
+  _patrolPointTimeout: 15
+  _approachRange: 18.2
+  _approachSpeed: 12
   _telegraphTime: 0.9
-  _leapTime: 0.55
+  _leapTime: 0.85
   _leapHeight: 3
   _blastRadius: 2.2
   _leadTime: 0.5
   _recoverTime: 0.6
-  _damage: 2
+  _damage: 1

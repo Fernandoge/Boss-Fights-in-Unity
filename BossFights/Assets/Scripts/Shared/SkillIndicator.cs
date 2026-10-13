@@ -71,6 +71,20 @@ namespace Shared
             ApplyFill(0f);
         }
 
+        // A cone with its tip at the origin, opening along the direction; the fill grows from the tip to the arc
+        public void ShowCone(Vector3 origin, Vector3 direction, float radius, float angle, float duration, bool hideWhenFilled = true)
+        {
+            _duration = Mathf.Max(duration, 0.01f);
+            _isArrowLane = false;
+            _hideWhenFilled = hideWhenFilled;
+            float halfAngle = Mathf.Clamp(angle, 1f, 180f) * 0.5f * Mathf.Deg2Rad;
+            float width = halfAngle >= Mathf.PI * 0.5f ? radius * 2f : radius * 2f * Mathf.Sin(halfAngle);
+            Place(origin, direction, radius, width);
+            _propertyBlock.SetVector(Indicator_Size, new Vector4(width, radius, halfAngle, 0f));
+            _propertyBlock.SetFloat(Pattern_Mode, 3f);
+            ApplyFill(0f);
+        }
+
         // A lane of scrolling arrows pointing along the direction that stays until Hide() is called
         public void ShowArrowLane(Vector3 origin, Vector3 direction, float length, float width)
         {
@@ -79,6 +93,10 @@ namespace Shared
             _propertyBlock.SetFloat(Pattern_Mode, 1f);
             ApplyFill(0f);
         }
+
+        // Moves a circle shown with ShowCircle so it follows whatever it warns about
+        public void MoveCircle(Vector3 center) =>
+            transform.position = new Vector3(center.x, center.y + _groundOffset, center.z - transform.localScale.z * 0.5f);
 
         public void Hide() => Destroy(gameObject);
 

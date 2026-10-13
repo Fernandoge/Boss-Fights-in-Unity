@@ -40,7 +40,7 @@ Animation cancel and feel:
 
 1. **Cancel window:** after `CancelTime` any attack, skill, the dash, or a move click cuts the animation. The dash can cancel at any time.
 2. **Input buffer:** a key pressed up to 0.35 s early is remembered and fires the moment the cancel window opens (`_inputBuffer`). Holding left click keeps asking for the next hit.
-3. **Chain bonus (hidden):** a move started by cancelling the previous one (or within 0.4 s of it ending) adds +10% damage per step, up to 5 steps (`_chainDamageBonus`; set it to 0 to remove it). There is no counter on screen any more. Getting hit resets it.
+3. **No chain bonus:** the hidden +10% per chained move was removed on 2026-10-12, so every hit of a move always deals its listed damage (only crits change it).
 4. **Skills prime the finisher:** after any skill, the next basic attack is the overhead chop (`_skillsPrimeFinisher`).
 5. **Skills keep the Rushing Cleave alive:** E and R refresh its window, so W can be woven between them.
 6. **Hit stop:** 0.05 s freeze of the animation on a landed hit; the chop, the spin and the jump also punch the camera zoom. A purple star spark appears on the target at the point of contact.
