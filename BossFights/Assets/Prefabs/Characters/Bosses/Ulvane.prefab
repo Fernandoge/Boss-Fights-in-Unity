@@ -507,13 +507,39 @@ MonoBehaviour:
     prefab: {fileID: 9216360934390940300, guid: bbf5943ac2db612479e75ff98e6fef01, type: 3}
   _commandDelay: 0.6
   _minSpawnDistanceFromPlayer: 10
-  _wallBandDistance: 8
-  _centerMinWallDistance: 10
-  _minWallClearance: 1.5
-  _wallPatrolStep: 14
+  _arenaCenter: {x: 0, y: 0, z: 0}
+  _centerPatrolRadius: 14
+  _outerPatrolMinRadius: 18
+  _outerPatrolStep: 14
   _afterBeastTime: 0.6
   _beastTimeout: 20
+  _maxBeastsAtOnce: 2
+  _phaseTwoMaxBeastsAtOnce: 2
+  _firstBeastDelay: 2
+  _timeBetweenBeastStarts: 1.5
+  _lastStandTimeBetweenBeastStarts: 0.9
+  _tornadoScreamTime: 2
+  _comboFirstDelay: 5
+  _comboCooldown: {x: 16, y: 24}
+  _tornadoPartnerDistance: 5
+  _tornadoFeedInterval: 0.6
+  _tornadoTimeout: 25
+  _skyFallRunSpeed: 12
+  _skyFallDeerDistance: 9
+  _skyFallPartnerSpacing: 1.8
+  _skyFallFlyHeight: 45
+  _skyFallFlyTime: 0.7
+  _skyFallSpin: 540
+  _skyFallSkyPause: 0.4
+  _hairballPrefab: {fileID: 3420746164234564116, guid: 90af747335e0aab43b8d78f34611149b, type: 3}
+  _hairballPartnerDistance: 5
+  _hairballRunSpeed: 11
+  _hairballLandDistance: 1.8
   _roarTime: 2.2
   _phaseTwoTimeBetweenAttacks: 3
   _phaseTwoArrowCount: 3
   _phaseTwoArrowSpread: 14
+  _phaseThreeDuration: 20
+  _mournRadius: 4.5
+  _mournArriveTimeout: 25
+  _mournTime: 3

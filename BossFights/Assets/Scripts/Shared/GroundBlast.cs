@@ -12,6 +12,7 @@ namespace Shared
         private GameObject _impactEffectPrefab;
         private GameObject _visual;
         private float _radius;
+        private float _visualFallHeight;
         private float _telegraphTime;
         private float _elapsed;
         private int _damage;
@@ -21,6 +22,13 @@ namespace Shared
         {
             _elapsed += Time.deltaTime;
 
+            // A visual that comes from the sky speeds up as it falls and lands exactly when the blast goes off
+            if (_visual && _visualFallHeight > 0f)
+            {
+                float progress = Mathf.Clamp01(_elapsed / _telegraphTime);
+                _visual.transform.position = transform.position + Vector3.up * (_visualFallHeight * (1f - progress * progress));
+            }
+
             if (!_hasImpacted && _elapsed >= _telegraphTime)
                 Impact();
 
@@ -29,7 +37,7 @@ namespace Shared
         }
 
         // The visual (an egg, for example) is a prefab kept at the center until the blast goes off
-        public static GroundBlast Create(SkillIndicator indicatorPrefab, Vector3 center, float radius, float telegraphTime, int damage, GameObject impactEffectPrefab = null, GameObject visualPrefab = null)
+        public static GroundBlast Create(SkillIndicator indicatorPrefab, Vector3 center, float radius, float telegraphTime, int damage, GameObject impactEffectPrefab = null, GameObject visualPrefab = null, float visualFallHeight = 0f)
         {
             GameObject blastObject = new GameObject("Ground Blast");
             blastObject.transform.position = center;
@@ -38,8 +46,9 @@ namespace Shared
             blast._telegraphTime = telegraphTime;
             blast._damage = damage;
             blast._impactEffectPrefab = impactEffectPrefab;
+            blast._visualFallHeight = visualFallHeight;
             if (visualPrefab)
-                blast._visual = Instantiate(visualPrefab, center, Quaternion.identity, blastObject.transform);
+                blast._visual = Instantiate(visualPrefab, center + Vector3.up * visualFallHeight, Quaternion.identity, blastObject.transform);
 
             Instantiate(indicatorPrefab).ShowCircle(center, radius, telegraphTime);
             return blast;

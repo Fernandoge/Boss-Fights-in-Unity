@@ -16,6 +16,9 @@ namespace Bosses.Ulvane
         private float _timeLeft;
         private float _groundY;
         private int _damage;
+        private bool _isPiercing;
+        private bool _fliesToScenery;
+        private bool _hasHitPlayer;
         private Transform _followTarget;
         private Vector3 _followOffset;
         private Action<UlvaneProjectile> _onArrive;
@@ -32,20 +35,23 @@ namespace Bosses.Ulvane
             Vector3 start = transform.position;
             Vector3 step = _direction * (_speed * deltaTime);
 
-            // The floor under the projectile is the NavMesh, so trees and the arena edge stop it
-            Vector3 groundStart = new Vector3(start.x, _groundY, start.z);
-            if (NavMesh.Raycast(groundStart, groundStart + step, out NavMeshHit _, NavMesh.AllAreas))
+            // The floor under the projectile is the NavMesh, so trees and the arena edge stop it; a ball that flies to the scenery is only stopped by the trees and rocks themselves
+            if (_fliesToScenery ? Physics.Raycast(start, _direction, step.magnitude + _hitRadius * 0.5f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) : IsBlockedByNavMesh(start, step))
             {
                 Destroy(gameObject);
                 return;
             }
 
             transform.position = start + step;
-            if (IsPlayerHit(start, start + step))
+            if (!_hasHitPlayer && IsPlayerHit(start, start + step))
             {
                 GameManager.Instance.player.DamagePlayer(_damage);
-                Destroy(gameObject);
-                return;
+                _hasHitPlayer = true;
+                if (!_isPiercing)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
             }
 
             _timeLeft -= deltaTime;
@@ -79,6 +85,14 @@ namespace Bosses.Ulvane
         // Stops the ball from moving and hurting, so it can be carried as a prop until Launch is called again
         public void Hold() => enabled = false;
 
+        public void SetHitRadius(float radius) => _hitRadius = radius;
+
+        // A piercing ball hurts the player once and keeps flying
+        public void SetPiercing(bool isPiercing) => _isPiercing = isPiercing;
+
+        // Flies on past the end of the walkable floor until it meets a tree or a rock
+        public void SetFliesToScenery(bool fliesToScenery) => _fliesToScenery = fliesToScenery;
+
         private void FlyToTarget(float deltaTime)
         {
             Vector3 destination = _followTarget.position + _followOffset;
@@ -89,6 +103,12 @@ namespace Bosses.Ulvane
             _followTarget = null;
             enabled = false;
             _onArrive?.Invoke(this);
+        }
+
+        private bool IsBlockedByNavMesh(Vector3 start, Vector3 step)
+        {
+            Vector3 groundStart = new Vector3(start.x, _groundY, start.z);
+            return NavMesh.Raycast(groundStart, groundStart + step, out NavMeshHit _, NavMesh.AllAreas);
         }
 
         private bool IsPlayerHit(Vector3 from, Vector3 to)

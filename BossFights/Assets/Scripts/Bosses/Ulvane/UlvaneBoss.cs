@@ -6,6 +6,7 @@ using Shared;
 using UI;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Bosses.Ulvane
@@ -61,17 +62,34 @@ namespace Bosses.Ulvane
         [Header("Beast Limits")]
         [SerializeField] private int _maxBeastsAtOnce = 2;
         [SerializeField] private int _phaseTwoMaxBeastsAtOnce = 2;
-        [SerializeField] private float _firstBeastDelay = 2f;
-        [SerializeField] private float _timeBetweenBeastStarts = 1.5f;
+        [SerializeField] private float _firstBeastDelay = 2.5f;
+        [SerializeField] private float _timeBetweenBeastStarts = 1.875f;
         [SerializeField] private float _lastStandTimeBetweenBeastStarts = 0.9f;
+
+        [Header("Combos")]
+        [SerializeField] private float _tornadoScreamTime = 2f;
+        [FormerlySerializedAs("_tornadoFirstDelay")] [SerializeField] private float _comboFirstDelay = 5f;
+        [FormerlySerializedAs("_tornadoCooldown")] [SerializeField] private Vector2 _comboCooldown = new Vector2(16f, 24f);
 
         [Header("Snow Tornado Combo")]
         [SerializeField] private float _tornadoPartnerDistance = 5f;
         [SerializeField] private float _tornadoFeedInterval = 0.6f;
         [SerializeField] private float _tornadoTimeout = 25f;
-        [SerializeField] private float _tornadoScreamTime = 2f;
-        [SerializeField] private float _tornadoFirstDelay = 5f;
-        [SerializeField] private Vector2 _tornadoCooldown = new Vector2(16f, 24f);
+
+        [Header("Sky Fall Combo")]
+        [SerializeField] private float _skyFallRunSpeed = 12f;
+        [SerializeField] private float _skyFallDeerDistance = 9f;
+        [SerializeField] private float _skyFallPartnerSpacing = 1.8f;
+        [SerializeField] private float _skyFallFlyHeight = 45f;
+        [SerializeField] private float _skyFallFlyTime = 0.7f;
+        [SerializeField] private float _skyFallSpin = 540f;
+        [SerializeField] private float _skyFallSkyPause = 0.4f;
+
+        [Header("Hairball Combo")]
+        [SerializeField] private UlvaneProjectile _hairballPrefab;
+        [SerializeField] private float _hairballPartnerDistance = 5f;
+        [SerializeField] private float _hairballRunSpeed = 11f;
+        [SerializeField] private float _hairballLandDistance = 1.8f;
 
         [Header("Phase 2")]
         [SerializeField] private float _roarTime = 2.2f;
@@ -89,7 +107,10 @@ namespace Bosses.Ulvane
         private readonly List<UlvaneAttack> _turnOrder = new List<UlvaneAttack>();
         private UlvaneAttack? _lastBeastAttack;
         private bool _isComboRunning;
-        private float _nextTornadoTime = float.MaxValue;
+        private float _nextComboTime = float.MaxValue;
+        private UlvaneAttack? _lastCombo;
+        private UlvaneProjectile _heldHairball;
+        private readonly List<UlvaneAttack> _comboCandidates = new List<UlvaneAttack>();
         private bool _isLastStand;
         private bool _isMourning;
         private float _strafeSign = 1f;
@@ -113,6 +134,8 @@ namespace Bosses.Ulvane
         public SkillIndicator IndicatorPrefab => _indicatorPrefab;
 
         public GameObject ImpactEffectPrefab => _impactEffectPrefab;
+
+        public Vector3 ArenaCenter => _arenaCenter;
 
         // Where the animals aim: the player as the boss last saw them, never the live position
         public Vector3 PlayerAimPoint => PerceivedPlayerPosition;
@@ -210,6 +233,9 @@ namespace Bosses.Ulvane
             _isLastStand = true;
             isImmuneToDamage = true;
             StopAllCoroutines();
+            if (_heldHairball)
+                Destroy(_heldHairball.gameObject);
+
             StartCoroutine(LastStandSequence());
             return true;
         }
@@ -242,7 +268,7 @@ namespace Bosses.Ulvane
             yield return new WaitUntil(() => !isPerformingAttack && !isPerformingAction);
             base.PerformAttack();
             StandStill();
-            _nextTornadoTime = Time.time + _tornadoFirstDelay;
+            _nextComboTime = Time.time + _comboFirstDelay;
             auxTimeBetweenAttacks = _phaseTwoTimeBetweenAttacks;
             timeBetweenAttacks = auxTimeBetweenAttacks;
             anim.SetTrigger(Roar);
@@ -309,19 +335,66 @@ namespace Bosses.Ulvane
 
         /// *** Attack Selection *** ///
 
-        // Ulvane only shoots on his own for now: the animals act by themselves, and his special calls will go here
-        // Phase 2 only: now and then he screams for a combined command instead of shooting
-        private UlvaneAttack ChooseAttack() => DebugOnlyAttack ?? (CanStartTornado() ? UlvaneAttack.SnowTornado : UlvaneAttack.ArrowShot);
+        // Ulvane only shoots on his own: the animals act by themselves, and in phase 2 now and then he screams for a combined command instead
+        private UlvaneAttack ChooseAttack() => DebugOnlyAttack ?? (TryChooseCombo(out UlvaneAttack combo) ? combo : UlvaneAttack.ArrowShot);
 
-        private bool CanStartTornado() => hasEnteredSecondPhase && !_isLastStand && Time.time >= _nextTornadoTime && TryGetTornadoPartners(out DogBeast _, out PenguinBeast _);
+        // A random combo whose animals are all free, never the same one twice in a row when another is possible
+        private bool TryChooseCombo(out UlvaneAttack combo)
+        {
+            combo = UlvaneAttack.ArrowShot;
+            if (!hasEnteredSecondPhase || _isLastStand || _isComboRunning || Time.time < _nextComboTime)
+                return false;
+
+            _comboCandidates.Clear();
+            if (TryGetTornadoPartners(out DogBeast _, out PenguinBeast _))
+                _comboCandidates.Add(UlvaneAttack.SnowTornado);
+
+            if (TryGetSkyFallPartners(out DeerBeast _, out TigerBeast _, out ChickenBeast _))
+                _comboCandidates.Add(UlvaneAttack.SkyFall);
+
+            if (_hairballPrefab && TryGetHairballPartners(out KittyBeast _, out PenguinBeast _))
+                _comboCandidates.Add(UlvaneAttack.HairballToss);
+
+            if (_comboCandidates.Count > 1 && _lastCombo.HasValue)
+                _comboCandidates.Remove(_lastCombo.Value);
+
+            if (_comboCandidates.Count == 0)
+                return false;
+
+            combo = _comboCandidates[Random.Range(0, _comboCandidates.Count)];
+            return true;
+        }
+
+        private bool TryGetFreeBeast<T>(UlvaneAttack key, out T beast) where T : UlvaneBeast
+        {
+            beast = null;
+            if (!_activeBeasts.TryGetValue(key, out UlvaneBeast found) || !found || !found.IsAvailable)
+                return false;
+
+            beast = found as T;
+            return beast != null;
+        }
 
         private bool TryGetTornadoPartners(out DogBeast dog, out PenguinBeast penguin)
         {
-            _activeBeasts.TryGetValue(UlvaneAttack.DogWhirlwind, out UlvaneBeast dogBeast);
-            _activeBeasts.TryGetValue(UlvaneAttack.PenguinSnowballs, out UlvaneBeast penguinBeast);
-            dog = dogBeast as DogBeast;
-            penguin = penguinBeast as PenguinBeast;
-            return !_isComboRunning && dog && penguin && dog.IsAvailable && penguin.IsAvailable;
+            dog = null;
+            penguin = null;
+            return !_isComboRunning && TryGetFreeBeast(UlvaneAttack.DogWhirlwind, out dog) && TryGetFreeBeast(UlvaneAttack.PenguinSnowballs, out penguin);
+        }
+
+        private bool TryGetSkyFallPartners(out DeerBeast deer, out TigerBeast tiger, out ChickenBeast chicken)
+        {
+            deer = null;
+            tiger = null;
+            chicken = null;
+            return !_isComboRunning && TryGetFreeBeast(UlvaneAttack.DeerGore, out deer) && TryGetFreeBeast(UlvaneAttack.TigerPounce, out tiger) && TryGetFreeBeast(UlvaneAttack.ChickenEggs, out chicken);
+        }
+
+        private bool TryGetHairballPartners(out KittyBeast kitty, out PenguinBeast penguin)
+        {
+            kitty = null;
+            penguin = null;
+            return !_isComboRunning && TryGetFreeBeast(UlvaneAttack.KittyPetOrClaw, out kitty) && TryGetFreeBeast(UlvaneAttack.PenguinSnowballs, out penguin);
         }
 
         private void StartAttack(UlvaneAttack attack)
@@ -331,6 +404,10 @@ namespace Bosses.Ulvane
                 StartCoroutine(ArrowShotSequence());
             else if (attack == UlvaneAttack.SnowTornado)
                 StartCoroutine(SnowTornadoSequence());
+            else if (attack == UlvaneAttack.SkyFall)
+                StartCoroutine(SkyFallSequence());
+            else if (attack == UlvaneAttack.HairballToss)
+                StartCoroutine(HairballSequence());
             else
                 StartCoroutine(BeastSequence(attack));
         }
@@ -470,7 +547,7 @@ namespace Bosses.Ulvane
             FinishAttack();
         }
 
-        // Combined command: Ulvane only screams (and goes back to shooting), the dog and the penguin do the rest by themselves, see SnowTornadoCombo
+        // Combined commands: Ulvane only screams (and goes back to shooting), the animals do the rest by themselves, see the combo coroutines below
         private IEnumerator SnowTornadoSequence()
         {
             if (!TryGetTornadoPartners(out DogBeast dog, out PenguinBeast penguin))
@@ -479,11 +556,78 @@ namespace Bosses.Ulvane
                 yield break;
             }
 
+            yield return Scream(UlvaneAttack.SnowTornado, SnowTornadoCombo(dog, penguin));
+        }
+
+        private IEnumerator SkyFallSequence()
+        {
+            if (!TryGetSkyFallPartners(out DeerBeast deer, out TigerBeast tiger, out ChickenBeast chicken))
+            {
+                FinishAttack();
+                yield break;
+            }
+
+            yield return Scream(UlvaneAttack.SkyFall, SkyFallCombo(deer, tiger, chicken));
+        }
+
+        private IEnumerator HairballSequence()
+        {
+            if (!_hairballPrefab || !TryGetHairballPartners(out KittyBeast kitty, out PenguinBeast penguin))
+            {
+                FinishAttack();
+                yield break;
+            }
+
+            yield return Scream(UlvaneAttack.HairballToss, HairballCombo(kitty, penguin));
+        }
+
+        private IEnumerator Scream(UlvaneAttack combo, IEnumerator comboRoutine)
+        {
             _isComboRunning = true;
-            StartCoroutine(SnowTornadoCombo(dog, penguin));
+            _lastCombo = combo;
+            StartCoroutine(comboRoutine);
             anim.SetTrigger(Roar);
             yield return WaitFacingPlayer(_tornadoScreamTime);
             FinishAttack();
+        }
+
+        private void FinishCombo(params UlvaneBeast[] beasts)
+        {
+            foreach (UlvaneBeast beast in beasts)
+                beast.EndCombo();
+
+            _nextComboTime = Time.time + Random.Range(_comboCooldown.x, _comboCooldown.y);
+            _isComboRunning = false;
+        }
+
+        // A free spot the distance away from the anchor, on the left of it as it looks at the player; the other side if that one is outside the arena
+        private Vector3 FindPartnerSpot(Vector3 anchor, float distance, Vector3 fallbackForward)
+        {
+            Vector3 toPlayer = PlayerAimPoint - anchor;
+            toPlayer.y = 0f;
+            toPlayer = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : fallbackForward;
+            Vector3 left = Vector3.Cross(toPlayer, Vector3.up);
+            Vector3 spot = NavMeshUtility.Snap(anchor + left * distance);
+            if ((spot - (anchor + left * distance)).sqrMagnitude > 1f)
+                spot = NavMeshUtility.Snap(anchor - left * distance);
+
+            return spot;
+        }
+
+        // A spot the distance away from the anchor, trying the preferred direction first and then turning round it
+        private static Vector3 FindOpenSpot(Vector3 anchor, Vector3 preferredDirection, float distance)
+        {
+            preferredDirection.y = 0f;
+            preferredDirection = preferredDirection.sqrMagnitude > 0.0001f ? preferredDirection.normalized : Vector3.forward;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 candidate = anchor + Quaternion.Euler(0f, 45f * i, 0f) * preferredDirection * distance;
+                Vector3 snapped = NavMeshUtility.Snap(candidate, 1f);
+                if ((snapped - candidate).sqrMagnitude < 1f)
+                    return snapped;
+            }
+
+            return NavMeshUtility.Snap(anchor);
         }
 
         // The dog runs to the penguin's left and spins up a still whirlwind, the penguin feeds it snowballs, and when the dog holds a full stack it fires them all at the player at more than twice a normal snowball's speed. Both animals wear the danger icon. It runs beside Ulvane's own attacks and the other animals' skills.
@@ -494,16 +638,7 @@ namespace Bosses.Ulvane
             dog.ShowDanger();
             penguin.ShowDanger();
 
-            Vector3 penguinPosition = penguin.transform.position;
-            Vector3 toPlayer = PlayerAimPoint - penguinPosition;
-            toPlayer.y = 0f;
-            toPlayer = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : penguin.transform.forward;
-
-            // Left of the penguin as it looks at the player; the other side if that one is outside the arena
-            Vector3 left = Vector3.Cross(toPlayer, Vector3.up);
-            Vector3 dogSpot = NavMeshUtility.Snap(penguinPosition + left * _tornadoPartnerDistance);
-            if ((dogSpot - (penguinPosition + left * _tornadoPartnerDistance)).sqrMagnitude > 1f)
-                dogSpot = NavMeshUtility.Snap(penguinPosition - left * _tornadoPartnerDistance);
+            Vector3 dogSpot = FindPartnerSpot(penguin.transform.position, _tornadoPartnerDistance, penguin.transform.forward);
 
             float deadline = Time.time + _tornadoTimeout;
             yield return dog.StormStart(dogSpot);
@@ -519,10 +654,83 @@ namespace Bosses.Ulvane
 
             yield return dog.ThrowStack();
 
-            dog.EndCombo();
-            penguin.EndCombo();
-            _nextTornadoTime = Time.time + Random.Range(_tornadoCooldown.x, _tornadoCooldown.y);
-            _isComboRunning = false;
+            FinishCombo(dog, penguin);
+        }
+
+        // The deer gores the tiger and the chicken, who fly up out of sight. The chicken rains eggs on the player, then glides back down; as it does, the tiger drops on the player in a big circle with a safe wedge behind it. The player cannot counter any of it.
+        private IEnumerator SkyFallCombo(DeerBeast deer, TigerBeast tiger, ChickenBeast chicken)
+        {
+            deer.BeginCombo();
+            tiger.BeginCombo();
+            chicken.BeginCombo();
+            deer.ShowDanger();
+            tiger.ShowDanger();
+            chicken.ShowDanger();
+
+            // The tiger waits where it is, the chicken runs up beside it and the deer lines up facing the pair
+            Vector3 gather = tiger.transform.position;
+            Vector3 deerSpot = FindOpenSpot(gather, _arenaCenter - gather, _skyFallDeerDistance);
+            Vector3 toPair = gather - deerSpot;
+            toPair.y = 0f;
+            toPair = toPair.sqrMagnitude > 0.0001f ? toPair.normalized : Vector3.forward;
+            Vector3 chickenSpot = NavMeshUtility.Snap(gather + Vector3.Cross(toPair, Vector3.up) * _skyFallPartnerSpacing);
+            Coroutine chickenRun = StartCoroutine(chicken.ComboRunTo(chickenSpot, _skyFallRunSpeed));
+            yield return deer.ComboRunTo(deerSpot, _skyFallRunSpeed);
+            yield return chickenRun;
+
+            StartCoroutine(tiger.ComboFaceFor(-toPair, 1.5f));
+            StartCoroutine(chicken.ComboFaceFor(-toPair, 1.5f));
+            yield return deer.ComboGore(toPair, () =>
+            {
+                StartCoroutine(tiger.ComboFlyUp(_skyFallFlyHeight, _skyFallFlyTime, _skyFallSpin));
+                StartCoroutine(chicken.ComboFlyUp(_skyFallFlyHeight, _skyFallFlyTime, _skyFallSpin));
+            });
+
+            deer.EndCombo();
+            yield return new WaitForSeconds(_skyFallFlyTime + _skyFallSkyPause);
+
+            yield return chicken.ComboEggRain();
+
+            // The warning sign goes away once they start to fall
+            tiger.HideDanger();
+            chicken.HideDanger();
+            Coroutine glide = StartCoroutine(chicken.ComboGlideDown(chickenSpot, -toPair));
+            yield return tiger.ComboSlam();
+            yield return glide;
+
+            FinishCombo(deer, tiger, chicken);
+        }
+
+        // The kitty runs to the penguin's ice and pukes a hairball onto it. The penguin does not understand (a question mark), picks it up and throws it at the player: it is big and slow, and halfway it bursts into small hairballs flying out in a star
+        private IEnumerator HairballCombo(KittyBeast kitty, PenguinBeast penguin)
+        {
+            kitty.BeginCombo();
+            penguin.BeginCombo();
+            kitty.ShowDanger();
+            penguin.ShowDanger();
+
+            Vector3 penguinPosition = penguin.transform.position;
+            Vector3 kittySpot = FindPartnerSpot(penguinPosition, _hairballPartnerDistance, penguin.transform.forward);
+            yield return kitty.ComboRunTo(kittySpot, _hairballRunSpeed);
+
+            Vector3 toKitty = kitty.transform.position - penguinPosition;
+            toKitty.y = 0f;
+            toKitty = toKitty.sqrMagnitude > 0.0001f ? toKitty.normalized : Vector3.forward;
+            Vector3 landing = NavMeshUtility.Snap(penguinPosition + toKitty * _hairballLandDistance);
+            StartCoroutine(penguin.ComboFaceFor(toKitty, 0.6f));
+
+            UlvaneProjectile hairball = null;
+            yield return kitty.ComboPuke(landing, _hairballPrefab, ball => hairball = ball);
+            if (hairball)
+            {
+                _heldHairball = hairball;
+                yield return penguin.ComboWonder(hairball.transform);
+                yield return penguin.ComboTakeBall(hairball);
+                yield return penguin.ComboHairballThrow(hairball, _hairballPrefab);
+                _heldHairball = null;
+            }
+
+            FinishCombo(kitty, penguin);
         }
 
         // Every animal is in the arena from the start of the fight, patrolling

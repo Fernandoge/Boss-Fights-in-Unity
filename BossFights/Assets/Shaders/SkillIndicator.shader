@@ -8,7 +8,7 @@ Shader "Indicators/SkillIndicator"
         _Fill ("Fill", Range(0, 1)) = 0
         _EdgeWidth ("Edge Width (world units)", Range(0, 0.5)) = 0.08
         _Size ("Size (width, length, cone half angle in radians)", Vector) = (1, 1, 0, 0)
-        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows, 2 = circle fill from the center, 3 = cone fill from the tip)", Float) = 0
+        _Pattern ("Pattern (0 = fill sweep, 1 = scrolling arrows, 2 = circle fill from the center, 3 = cone fill from the tip, 4 = circle fill with a safe wedge)", Float) = 0
         _ArrowSpacing ("Arrow spacing (world units)", Float) = 6
         _ArrowSpeed ("Arrow scroll speed (world units / s)", Float) = 8
     }
@@ -59,6 +59,25 @@ Shader "Indicators/SkillIndicator"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col;
+                if (_Pattern > 3.5)
+                {
+                    // Circle inscribed in the quad with an empty safe wedge behind the quad's forward axis (-y of the quad); _Size.x is the diameter and _Size.z the wedge half angle in radians. The danger area fills from the center to the rim
+                    float radius = _Size.x * 0.5;
+                    float2 q = (i.uv - 0.5) * 2.0;
+                    float r = length(q);
+                    clip(1.0 - r);
+
+                    // The safe wedge is left empty: the player has to see for themselves that nothing fills it
+                    float backAngle = atan2(abs(q.x), -q.y);
+                    clip(backAngle - _Size.z);
+
+                    col = lerp(_BaseColor, _FillColor, step(r, _Fill));
+                    col.rgb += step(abs(r - _Fill) * radius, 0.1) * step(0.001, _Fill) * step(_Fill, 0.999) * 0.35;
+                    float wedgeDistance = r * radius * sin(min(backAngle - _Size.z, 1.5));
+                    col = lerp(col, _EdgeColor, step(min((1.0 - r) * radius, wedgeDistance), _EdgeWidth));
+                    return col;
+                }
+
                 if (_Pattern > 2.5)
                 {
                     // Cone with its tip at the middle of the bottom edge; _Size.y is the radius and _Size.z the half angle in radians. The fill grows from the tip to the arc

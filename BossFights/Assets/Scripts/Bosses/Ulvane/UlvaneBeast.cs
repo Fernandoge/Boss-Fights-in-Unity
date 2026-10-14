@@ -56,6 +56,8 @@ namespace Bosses.Ulvane
 
         public bool IsFinished { get; private set; } = true;
 
+        public float GroundY => _groundY;
+
         // Free to start a skill: not on its way to one and not in the middle of one
         public bool IsAvailable => !_isCommanded;
 
@@ -106,6 +108,47 @@ namespace Bosses.Ulvane
         public IEnumerator ComboRunTo(Vector3 point, float speed) => RunTo(point, speed);
 
         public IEnumerator ComboFaceFor(Vector3 direction, float duration) => FaceFor(direction, duration);
+
+        // A combo can hide the animal in the sky or leave it posed, so the beast is put back on the floor when the combo is released
+        public void SetVisible(bool isVisible)
+        {
+            foreach (Renderer meshRenderer in GetComponentsInChildren<Renderer>())
+                meshRenderer.enabled = isVisible;
+        }
+
+        // Flung up and out of the screen, tumbling; it is hidden when it gets there
+        public IEnumerator ComboFlyUp(float height, float duration, float spinSpeed)
+        {
+            Idle();
+            Vector3 start = transform.position;
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+            {
+                float progress = elapsed / duration;
+                transform.position = new Vector3(start.x, _groundY + height * progress * progress, start.z);
+                transform.Rotate(spinSpeed * Time.deltaTime, 0f, 0f, Space.Self);
+                yield return null;
+            }
+
+            SetVisible(false);
+        }
+
+        // Comes down from the sky onto the landing point facing a direction: exponent 1 is a steady glide, 2 or more speeds up like a fall; sway rolls it from side to side, pitch tilts the nose down
+        public IEnumerator ComboFallDown(Vector3 landing, Vector3 facing, float startHeight, float duration, float exponent, float sway, float pitch)
+        {
+            facing.y = 0f;
+            Quaternion yaw = Quaternion.LookRotation(facing.sqrMagnitude > 0.0001f ? facing.normalized : transform.forward);
+            SetVisible(true);
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+            {
+                float progress = elapsed / duration;
+                float height = startHeight * (1f - Mathf.Pow(progress, exponent));
+                float roll = Mathf.Sin(elapsed * 14f) * sway * (1f - progress);
+                transform.SetPositionAndRotation(new Vector3(landing.x, _groundY + height, landing.z), yaw * Quaternion.Euler(pitch * (1f - progress), 0f, roll));
+                yield return null;
+            }
+
+            transform.SetPositionAndRotation(new Vector3(landing.x, _groundY, landing.z), yaw);
+        }
 
         // The last stand: the animal plays faster and turns red
         public void Enrage()
@@ -271,8 +314,8 @@ namespace Bosses.Ulvane
             return indicator;
         }
 
-        protected GroundBlast SpawnBlast(Vector3 center, float radius, float telegraphTime, int damage, GameObject visualPrefab = null) =>
-            GroundBlast.Create(owner.IndicatorPrefab, center, radius, telegraphTime, damage, owner.ImpactEffectPrefab, visualPrefab);
+        protected GroundBlast SpawnBlast(Vector3 center, float radius, float telegraphTime, int damage, GameObject visualPrefab = null, float visualFallHeight = 0f) =>
+            GroundBlast.Create(owner.IndicatorPrefab, center, radius, telegraphTime, damage, owner.ImpactEffectPrefab, visualPrefab, visualFallHeight);
 
         /// *** Life *** ///
 
@@ -289,6 +332,7 @@ namespace Bosses.Ulvane
 
                         HideDanger();
                         OnComboReleased();
+                        PutBackOnFloor();
                     }
                     else
                     {
@@ -348,7 +392,7 @@ namespace Bosses.Ulvane
         }
 
         // A trigger on the Ignore Raycast layer just as tall as the animal, for the sad face and the danger icon to float above
-        private SphereCollider GetHeightTarget()
+        protected SphereCollider GetHeightTarget()
         {
             if (_heightTarget)
                 return _heightTarget;
@@ -377,13 +421,22 @@ namespace Bosses.Ulvane
                 _dangerIcon = DangerIcon.Show(GetHeightTarget());
         }
 
-        private void HideDanger()
+        // Also used while a combo step needs the sign gone for a moment (the penguin's question mark)
+        public void HideDanger()
         {
             if (!_dangerIcon)
                 return;
 
             _dangerIcon.Hide();
             _dangerIcon = null;
+        }
+
+        // A combo that was cut short (the last stand) can leave the animal in the sky, tilted or invisible
+        private void PutBackOnFloor()
+        {
+            SetVisible(true);
+            Vector3 position = NavMeshUtility.Snap(new Vector3(transform.position.x, _groundY, transform.position.z));
+            transform.SetPositionAndRotation(new Vector3(position.x, _groundY, position.z), Quaternion.Euler(0f, transform.eulerAngles.y, 0f));
         }
 
         // The same green the first boss turns while its counter window is open

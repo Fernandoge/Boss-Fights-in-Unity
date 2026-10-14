@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Cameras;
 using Characters;
@@ -53,6 +54,22 @@ namespace Bosses.Ulvane
         [SerializeField] private float _effectSpacing = 5f;
         [SerializeField] private int _damage = 1;
 
+        [Header("Hairball Combo")]
+        [SerializeField] private int _heaveCount = 3;
+        [SerializeField] private float _heaveBowTime = 0.3f;
+        [SerializeField] private float _heaveJerkTime = 0.16f;
+        [SerializeField] private float _heaveBowAngle = 16f;
+        [SerializeField] private float _heaveJerkAngle = -14f;
+        [SerializeField] private float _heavePuffScale = 1.18f;
+        [SerializeField] private float _spitJerkScale = 1.5f;
+        [SerializeField] private float _spitFlightTime = 0.6f;
+        [SerializeField] private float _spitArcHeight = 2.5f;
+        [SerializeField] private float _hairballScale = 2.2f;
+        [SerializeField] private float _hairballRestHeight = 0.55f;
+        [SerializeField] private float _mouthForward = 0.45f;
+        [SerializeField] private float _mouthHeight = 0.4f;
+        [SerializeField] private float _splatTime = 0.12f;
+
         private float _yaw;
         private float _roll;
         private float _pitch;
@@ -80,6 +97,46 @@ namespace Bosses.Ulvane
         public void DebugPet() => _debugPetRequested = true;
 
         protected override IEnumerator Approach() => ApproachPlayer(_approachRange, _approachSpeed);
+
+        protected override void OnComboReleased()
+        {
+            if (_baseScale != Vector3.zero)
+                ApplyPose(0f, 0f, 0f, 1f);
+        }
+
+        // Combo: the cat turns towards the landing point and retches a few times (bowing with puffed cheeks, then jerking up); on the last one it spits a big hairball that lands there. onLanded gets the ball, held still
+        public IEnumerator ComboPuke(Vector3 landing, UlvaneProjectile hairballPrefab, Action<UlvaneProjectile> onLanded)
+        {
+            _baseScale = transform.localScale;
+            _groundLevel = transform.position.y;
+            _roll = 0f;
+            _pitch = 0f;
+            _lift = 0f;
+            _scaleFactor = 1f;
+
+            Idle();
+            yield return FaceFor(FlatDirectionTo(landing), 0.3f);
+            _yaw = transform.eulerAngles.y;
+
+            Coroutine spit = null;
+            for (int i = 0; i < _heaveCount; i++)
+            {
+                bool isLast = i == _heaveCount - 1;
+                yield return MoveToPose(_heaveBowTime, 0f, _heaveBowAngle, 0f, _heavePuffScale);
+                if (isLast)
+                {
+                    UlvaneProjectile hairball = Instantiate(hairballPrefab, GetMouthPosition(), Quaternion.identity);
+                    hairball.Hold();
+                    spit = StartCoroutine(Spit(hairball, landing, onLanded));
+                }
+
+                yield return MoveToPose(_heaveJerkTime, 0f, _heaveJerkAngle * (isLast ? _spitJerkScale : 1f), 0f, 1f);
+            }
+
+            yield return MoveToPose(0.3f, 0f, 0f, 0f, 1f);
+            if (spit != null)
+                yield return spit;
+        }
 
         protected override IEnumerator Perform()
         {
@@ -238,6 +295,33 @@ namespace Bosses.Ulvane
 
             for (float distance = _effectSpacing; distance <= length; distance += _effectSpacing)
                 Destroy(Instantiate(owner.ImpactEffectPrefab, origin + direction * distance, Quaternion.identity), 3f);
+        }
+
+        private Vector3 GetMouthPosition() => transform.position + transform.forward * (_mouthForward * _scaleFactor) + Vector3.up * _mouthHeight;
+
+        // The hairball grows as it leaves the mouth, flies in an arc and lands with a squash
+        private IEnumerator Spit(UlvaneProjectile hairball, Vector3 landing, Action<UlvaneProjectile> onLanded)
+        {
+            Vector3 start = hairball.transform.position;
+            Vector3 end = new Vector3(landing.x, GroundY + _hairballRestHeight, landing.z);
+            for (float elapsed = 0f; elapsed < _spitFlightTime; elapsed += Time.deltaTime)
+            {
+                float progress = elapsed / _spitFlightTime;
+                hairball.transform.position = Vector3.Lerp(start, end, progress) + Vector3.up * (_spitArcHeight * 4f * progress * (1f - progress));
+                hairball.transform.localScale = Vector3.one * (_hairballScale * Mathf.Lerp(0.3f, 1f, progress));
+                yield return null;
+            }
+
+            hairball.transform.position = end;
+            for (float elapsed = 0f; elapsed < _splatTime; elapsed += Time.deltaTime)
+            {
+                float squash = Mathf.Sin(elapsed / _splatTime * Mathf.PI) * 0.25f;
+                hairball.transform.localScale = new Vector3(1f + squash, 1f - squash, 1f + squash) * _hairballScale;
+                yield return null;
+            }
+
+            hairball.transform.localScale = Vector3.one * _hairballScale;
+            onLanded?.Invoke(hairball);
         }
 
         // A small trigger on the Ignore Raycast layer for the prompt to float above; it is not part of the cat so it never gets in the way of clicks

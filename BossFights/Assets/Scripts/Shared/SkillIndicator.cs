@@ -85,6 +85,22 @@ namespace Shared
             ApplyFill(0f);
         }
 
+        // A circle whose danger area fills from the center to the rim, except a safe wedge of safeAngle degrees centered on safeDirection (left empty; it never hurts)
+        public void ShowCircleWithSafeWedge(Vector3 center, Vector3 safeDirection, float radius, float safeAngle, float duration, bool hideWhenFilled = true)
+        {
+            _duration = Mathf.Max(duration, 0.01f);
+            _isArrowLane = false;
+            _hideWhenFilled = hideWhenFilled;
+            safeDirection.y = 0f;
+            safeDirection.Normalize();
+
+            // The quad's forward axis points away from the safe wedge, so the wedge sits behind it
+            Place(center + safeDirection * radius, -safeDirection, radius * 2f, radius * 2f);
+            _propertyBlock.SetVector(Indicator_Size, new Vector4(radius * 2f, radius * 2f, Mathf.Clamp(safeAngle, 1f, 359f) * 0.5f * Mathf.Deg2Rad, 0f));
+            _propertyBlock.SetFloat(Pattern_Mode, 4f);
+            ApplyFill(0f);
+        }
+
         // A lane of scrolling arrows pointing along the direction that stays until Hide() is called
         public void ShowArrowLane(Vector3 origin, Vector3 direction, float length, float width)
         {

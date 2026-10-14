@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Interfaces;
 using Manager.GameManager;
@@ -48,6 +49,10 @@ namespace Bosses.Ulvane
         [SerializeField] private Color _sandColor = new Color(0.62f, 0.5f, 0.34f, 1f);
         [SerializeField] private string[] _neckBoneNames = { "spine.006", "spine.007", "spine.008", "scull" };
 
+        [Header("Sky Fall Combo")]
+        [SerializeField] private float _comboWindUpTime = 0.8f;
+        [SerializeField] private float _comboLungeDistance = 2.5f;
+
         private bool _isCountered;
         private bool _isCounterWindowOpen;
         private Transform[] _neckBones;
@@ -79,6 +84,31 @@ namespace Bosses.Ulvane
         {
             if (_isCounterWindowOpen)
                 _isCountered = true;
+        }
+
+        // Combo: the deer lowers its head, charges the two animals in front of it and scoops them up; onHit runs at the moment the antlers lift them
+        public IEnumerator ComboGore(Vector3 direction, Action onHit)
+        {
+            Idle();
+            FindNeckBones();
+            yield return FaceFor(direction, _aimTurnTime);
+            MoveHead(1f, _comboWindUpTime);
+            yield return FaceFor(direction, _comboWindUpTime);
+
+            MoveHead(-1f, _lungeTime);
+            StartCoroutine(SandWave(transform.position, direction));
+            Gallop();
+            float speed = _comboLungeDistance / Mathf.Max(_lungeTime, 0.01f);
+            for (float elapsed = 0f; elapsed < _lungeTime; elapsed += Time.deltaTime)
+            {
+                MoveFlat(direction * (speed * Time.deltaTime));
+                yield return null;
+            }
+
+            Idle();
+            onHit?.Invoke();
+            yield return new WaitForSeconds(_recoverTime);
+            MoveHead(0f, _headUpTime);
         }
 
         protected override IEnumerator Perform()
@@ -252,10 +282,11 @@ namespace Bosses.Ulvane
                 Destroy(target);
         }
 
-        // The deer shakes its head dizzily where it stands
+        // The deer shakes its head dizzily where it stands, with stars circling above it
         private IEnumerator Stun()
         {
             Idle();
+            TargetMarker stars = StunStars.Show(GetHeightTarget());
             if (owner.ImpactEffectPrefab)
                 Destroy(Instantiate(owner.ImpactEffectPrefab, transform.position + Vector3.up * _counterTargetHeight, Quaternion.identity), 3f);
 
@@ -268,6 +299,8 @@ namespace Bosses.Ulvane
             }
 
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            if (stars)
+                stars.Hide();
         }
     }
 }

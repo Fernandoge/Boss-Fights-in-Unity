@@ -24,5 +24,13 @@ namespace Shared
             end.y = from.y;
             return Vector3.Distance(from, end);
         }
+
+        // How far a ball flying at the given height above the point can go before it meets a tree or a rock. The walkable floor ends earlier than the trees (where the camera stops seeing the player), so this reads the scenery itself; triggers and the Ignore Raycast layer are not scenery
+        public static float DistanceToScenery(Vector3 from, Vector3 direction, float height, float maxLength)
+        {
+            direction.y = 0f;
+            Vector3 start = new Vector3(from.x, from.y + height, from.z);
+            return Physics.Raycast(start, direction.normalized, out RaycastHit hit, maxLength, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ? hit.distance : maxLength;
+        }
     }
 }

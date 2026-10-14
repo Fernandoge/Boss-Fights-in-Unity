@@ -10,6 +10,8 @@ namespace Bosses.Ulvane
         ChickenEggs,
         PenguinSnowballs,
         KittyPetOrClaw,
-        SnowTornado
+        SnowTornado,
+        SkyFall,
+        HairballToss
     }
 }
