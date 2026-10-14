@@ -27,11 +27,11 @@ namespace Bosses.Ulvane
         [SerializeField] private float _petApproachSpeed = 12f;
         [SerializeField] private float _petHandHeight = 0.35f;
         [SerializeField] private float _petStrokeLength = 0.25f;
-        [SerializeField] private float _petStrokeSpeed = 5f;
+        [SerializeField] private float _petStrokeSpeed = 6.283f;
         [SerializeField] private float _petSlideTime = 0.4f;
-        [SerializeField] private float _petMomentTime = 3.2f;
+        [SerializeField] private float _petMomentTime = 1.7f;
         [SerializeField] private float _petReachTimeout = 1.5f;
-        [SerializeField] private float _petEffectStopEarly = 1f;
+        [SerializeField] private float _petEffectStopEarly = 0.6f;
         [SerializeField] private float _petPoseBlendTime = 0.4f;
         [SerializeField] private float _petZoom = 2.2f;
 

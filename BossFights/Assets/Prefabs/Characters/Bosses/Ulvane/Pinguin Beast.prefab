@@ -93,8 +93,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.PenguinBeast
   _turnSpeed: 720
-  _cooldown: 8
-  _firstUseDelay: 3
   _patrolArea: 0
   _patrolSpeed: 1.4
   _returnSpeed: 7

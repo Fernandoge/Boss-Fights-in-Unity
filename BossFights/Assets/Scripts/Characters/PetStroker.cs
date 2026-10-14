@@ -23,6 +23,7 @@ namespace Characters
         private float _strokeSpeed;
         private float _startDelay;
         private float _elapsed;
+        private float _strokeTime;
         private float _weight;
         private bool _isEnding;
 
@@ -46,7 +47,11 @@ namespace Characters
             Vector3 along = _target.forward;
             along.y = 0f;
             along.Normalize();
-            float stroke = Mathf.Sin((_elapsed - _startDelay) * _strokeSpeed) * _strokeLength;
+            // The hand stops stroking while it is lowered, so it never starts another stroke at the end
+            if (!_isEnding)
+                _strokeTime += Time.unscaledDeltaTime;
+
+            float stroke = Mathf.Sin(_strokeTime * _strokeSpeed) * _strokeLength;
             float eased = Mathf.SmoothStep(0f, 1f, _weight);
             Lean(eased);
             SolveArm(_target.position + Vector3.up * _height + along * stroke, eased);

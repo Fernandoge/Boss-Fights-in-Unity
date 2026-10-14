@@ -93,15 +93,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.KittyBeast
   _turnSpeed: 720
-  _cooldown: 12
-  _firstUseDelay: 3
   _patrolArea: 2
   _patrolSpeed: 2.5
   _returnSpeed: 7
   _patrolTurnSpeed: 180
   _patrolPauseTime: {x: 1.5, y: 4}
   _patrolPointTimeout: 15
-  _enragedCooldownScale: 0.28
   _enragedAnimationSpeed: 1.3
   _enragedTint: {r: 1, g: 0.2, b: 0.15, a: 1}
   _enragedTintAmount: 0.5
@@ -113,15 +110,15 @@ MonoBehaviour:
   _lieLift: 0.2
   _petWindow: 3
   _petRange: 7
-  _purrTime: 1.4
+  _purrTime: 0.8
   _petApproachSpeed: 12
   _petHandHeight: 0.35
   _petStrokeLength: 0.25
-  _petStrokeSpeed: 5
+  _petStrokeSpeed: 6.283
   _petSlideTime: 0.4
-  _petMomentTime: 3.2
+  _petMomentTime: 1.7
   _petReachTimeout: 1.5
-  _petEffectStopEarly: 1
+  _petEffectStopEarly: 0.6
   _petPoseBlendTime: 0.4
   _petZoom: 2.2
   _bigScale: 5

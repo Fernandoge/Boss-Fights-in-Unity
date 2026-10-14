@@ -93,8 +93,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.ChickenBeast
   _turnSpeed: 720
-  _cooldown: 12
-  _firstUseDelay: 3
   _patrolArea: 2
   _patrolSpeed: 2.5
   _returnSpeed: 7

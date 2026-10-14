@@ -9,15 +9,11 @@ using Random = UnityEngine.Random;
 
 namespace Bosses.Ulvane
 {
-    // An animal that patrols the arena for the whole fight and acts on its own: when its cooldown is over it runs its one skill, then goes back to patrolling. Ulvane can also command it (for his special calls), which skips the cooldown wait but never interrupts a skill that is already running.
+    // An animal that patrols the arena for the whole fight and runs its one skill when Ulvane's turn order sends it (Command), then goes back to patrolling. A command never interrupts a skill that is already running.
     public abstract class UlvaneBeast : MonoBehaviour
     {
         [Header("Beast")]
         [SerializeField] private float _turnSpeed = 720f;
-
-        [Header("Cooldown")]
-        [SerializeField] private float _cooldown = 12f;
-        [SerializeField] private float _firstUseDelay = 3f;
 
         [Header("Patrol")]
         [SerializeField] private UlvanePatrolArea _patrolArea = UlvanePatrolArea.Anywhere;
@@ -28,7 +24,6 @@ namespace Bosses.Ulvane
         [SerializeField] private float _patrolPointTimeout = 15f;
 
         [Header("Enraged")]
-        [SerializeField] private float _enragedCooldownScale = 0.28f;
         [SerializeField] private float _enragedAnimationSpeed = 1.3f;
         [SerializeField] private Color _enragedTint = new Color(1f, 0.2f, 0.15f);
         [SerializeField, Range(0f, 1f)] private float _enragedTintAmount = 0.5f;
@@ -52,7 +47,6 @@ namespace Bosses.Ulvane
         private Vector3 _mournCenter;
         private float _mournRadius;
         private float _mournAngle;
-        private float _cooldownTimer;
         private float _groundY;
         private float _targetVert;
         private float _targetState;
@@ -78,10 +72,6 @@ namespace Bosses.Ulvane
             if (!_anim)
                 return;
 
-            // The cooldown runs while the animal patrols; it restarts when a skill ends
-            if (!_isCommanded)
-                _cooldownTimer -= Time.deltaTime;
-
             _anim.SetFloat(Vert, _targetVert, 0.1f, Time.deltaTime);
             _anim.SetFloat(State, _targetState, 0.1f, Time.deltaTime);
         }
@@ -93,7 +83,6 @@ namespace Bosses.Ulvane
             _anim = GetComponent<Animator>();
             Vector3 spawnPosition = NavMeshUtility.Snap(position);
             _groundY = spawnPosition.y;
-            _cooldownTimer = _firstUseDelay + Random.Range(0f, _cooldown);
             transform.SetPositionAndRotation(spawnPosition, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
             StartCoroutine(Life());
         }
@@ -118,7 +107,7 @@ namespace Bosses.Ulvane
 
         public IEnumerator ComboFaceFor(Vector3 direction, float duration) => FaceFor(direction, duration);
 
-        // The last stand: the animal acts much more often, plays faster and turns red
+        // The last stand: the animal plays faster and turns red
         public void Enrage()
         {
             if (_isEnraged)
@@ -126,7 +115,6 @@ namespace Bosses.Ulvane
 
             _isEnraged = true;
             _isComboHeld = false;
-            _cooldownTimer = Mathf.Min(_cooldownTimer, Random.Range(0.5f, 2f));
             if (_anim)
                 _anim.speed = _enragedAnimationSpeed;
 
@@ -141,8 +129,6 @@ namespace Bosses.Ulvane
             _mournAngle = angleDegrees * Mathf.Deg2Rad;
             _isMourningRequested = true;
         }
-
-        private bool IsReadyToAct => _cooldownTimer <= 0f && owner.CanBeastsAct;
 
         protected abstract IEnumerator Perform();
 
@@ -311,14 +297,11 @@ namespace Bosses.Ulvane
                     }
 
                     Idle();
-                    _cooldownTimer = _isEnraged ? _cooldown * _enragedCooldownScale : _cooldown;
                     _isCommanded = false;
                     IsFinished = true;
                 }
                 else if (_isMourningRequested)
                     yield return MournRoutine();
-                else if (IsReadyToAct)
-                    Command();
                 else
                     yield return PatrolStep();
             }
@@ -449,7 +432,7 @@ namespace Bosses.Ulvane
 
             Vector3 target = owner.GetPatrolPoint(_zone, _patrolArea);
             Gallop();
-            for (float elapsed = 0f; !_isCommanded && !IsReadyToAct && elapsed < _patrolPointTimeout && !_zone.Contains(transform.position, -1f); elapsed += Time.deltaTime)
+            for (float elapsed = 0f; !_isCommanded && elapsed < _patrolPointTimeout && !_zone.Contains(transform.position, -1f); elapsed += Time.deltaTime)
             {
                 Vector3 direction = FlatDirectionTo(target);
                 FaceDirection(direction, Time.deltaTime);
@@ -466,7 +449,7 @@ namespace Bosses.Ulvane
             yield return ReturnToZone();
             Vector3 point = owner.GetPatrolPoint(_zone, _patrolArea, 0f, transform.position);
             Walk();
-            for (float elapsed = 0f; !_isCommanded && !IsReadyToAct && elapsed < _patrolPointTimeout && FlatDistanceTo(point) > 0.8f; elapsed += Time.deltaTime)
+            for (float elapsed = 0f; !_isCommanded && elapsed < _patrolPointTimeout && FlatDistanceTo(point) > 0.8f; elapsed += Time.deltaTime)
             {
                 Vector3 direction = FlatDirectionTo(point);
                 TurnTowards(_patrolTurnSpeed, direction, Time.deltaTime);
@@ -477,7 +460,7 @@ namespace Bosses.Ulvane
 
             Idle();
             float pause = Random.Range(_patrolPauseTime.x, _patrolPauseTime.y);
-            for (float elapsed = 0f; !_isCommanded && !IsReadyToAct && elapsed < pause; elapsed += Time.deltaTime)
+            for (float elapsed = 0f; !_isCommanded && elapsed < pause; elapsed += Time.deltaTime)
                 yield return null;
         }
 

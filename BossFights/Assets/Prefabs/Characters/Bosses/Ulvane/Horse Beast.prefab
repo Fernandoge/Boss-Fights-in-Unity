@@ -93,8 +93,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.HorseBeast
   _turnSpeed: 720
-  _cooldown: 15
-  _firstUseDelay: 3
   _patrolArea: 1
   _patrolSpeed: 2.5
   _returnSpeed: 7
@@ -105,8 +103,9 @@ MonoBehaviour:
   _approachSpeed: 16
   _laneWidth: 3.2
   _maxLaneLength: 45
+  _overshootDistance: 10
   _telegraphTime: 1.2
   _speed: 24
-  _hitPadding: 0.5
+  _hitPadding: 0.2
   _recoverTime: 0.4
   _damage: 1

@@ -93,8 +93,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.TigerBeast
   _turnSpeed: 720
-  _cooldown: 9
-  _firstUseDelay: 3
   _patrolArea: 1
   _patrolSpeed: 2.5
   _returnSpeed: 7
@@ -102,11 +100,11 @@ MonoBehaviour:
   _patrolPauseTime: {x: 1.5, y: 4}
   _patrolPointTimeout: 15
   _approachRange: 18.2
-  _approachSpeed: 12
-  _telegraphTime: 0.9
-  _leapTime: 0.85
+  _approachSpeed: 24
+  _telegraphTime: 0.375
+  _leapTime: 0.425
   _leapHeight: 3
   _blastRadius: 2.2
-  _leadTime: 0.5
+  _leadTime: 0.8
   _recoverTime: 0.6
   _damage: 1

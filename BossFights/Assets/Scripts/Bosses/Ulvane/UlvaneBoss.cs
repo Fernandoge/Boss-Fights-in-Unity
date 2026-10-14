@@ -58,6 +58,13 @@ namespace Bosses.Ulvane
         [SerializeField] private float _afterBeastTime = 0.6f;
         [SerializeField] private float _beastTimeout = 20f;
 
+        [Header("Beast Limits")]
+        [SerializeField] private int _maxBeastsAtOnce = 2;
+        [SerializeField] private int _phaseTwoMaxBeastsAtOnce = 2;
+        [SerializeField] private float _firstBeastDelay = 2f;
+        [SerializeField] private float _timeBetweenBeastStarts = 1.5f;
+        [SerializeField] private float _lastStandTimeBetweenBeastStarts = 0.9f;
+
         [Header("Snow Tornado Combo")]
         [SerializeField] private float _tornadoPartnerDistance = 5f;
         [SerializeField] private float _tornadoFeedInterval = 0.6f;
@@ -79,6 +86,8 @@ namespace Bosses.Ulvane
         [SerializeField] private float _mournTime = 3f;
 
         private bool _isRoaring;
+        private readonly List<UlvaneAttack> _turnOrder = new List<UlvaneAttack>();
+        private UlvaneAttack? _lastBeastAttack;
         private bool _isComboRunning;
         private float _nextTornadoTime = float.MaxValue;
         private bool _isLastStand;
@@ -110,8 +119,10 @@ namespace Bosses.Ulvane
 
         public Vector3 PlayerAimVelocity => PerceivedPlayerVelocity;
 
-        // The animals act on their own cooldowns, but hold back while the boss is dead, roaring into phase 2, or the player is dead (or the harness switched auto attacks off)
+        // The animals hold back while the boss is dead, roaring into phase 2, or the player is dead (or the harness switched auto attacks off)
         public bool CanBeastsAct => !IsDead && !_isRoaring && !_isMourning && !DebugAutoAttacksDisabled && !GameManager.Instance.player.IsDead;
+
+        private int MaxBeastsAtOnce => _isLastStand ? int.MaxValue : hasEnteredSecondPhase ? _phaseTwoMaxBeastsAtOnce : _maxBeastsAtOnce;
 
         private int ArrowCount => hasEnteredSecondPhase ? _phaseTwoArrowCount : 1;
 
@@ -126,6 +137,7 @@ namespace Bosses.Ulvane
             _strafeSign = Random.value < 0.5f ? -1f : 1f;
             _strafeTimer = Random.Range(_strafeSwitchTime.x, _strafeSwitchTime.y);
             SpawnBeasts();
+            StartCoroutine(BeastTurns(_firstBeastDelay));
         }
 
         /// *** Debug *** ///
@@ -257,6 +269,8 @@ namespace Bosses.Ulvane
             foreach (UlvaneBeast beast in beasts)
                 beast.Enrage();
 
+            StartCoroutine(BeastTurns(0.5f));
+
             SurviveBanner banner = SurviveBanner.Show();
             for (float elapsed = 0f; elapsed < _phaseThreeDuration; elapsed += Time.deltaTime)
             {
@@ -373,6 +387,64 @@ namespace Bosses.Ulvane
         }
 
         /// *** Beasts *** ///
+
+        // The animals take turns: every time fewer than the allowed number are working and enough time passed since the last one started, the next animal in a shuffled order is sent. Each animal gets one turn before any gets a second. In the last stand all of them may work together, one new start every fraction of a second.
+        private IEnumerator BeastTurns(float firstDelay)
+        {
+            yield return new WaitForSeconds(firstDelay);
+            float nextStartTime = Time.time;
+            while (true)
+            {
+                if (CanBeastsAct && Time.time >= nextStartTime && CountWorkingBeasts() < MaxBeastsAtOnce && TrySendNextBeast())
+                    nextStartTime = Time.time + (_isLastStand ? _lastStandTimeBetweenBeastStarts : _timeBetweenBeastStarts);
+
+                yield return null;
+            }
+        }
+
+        private int CountWorkingBeasts()
+        {
+            int count = 0;
+            foreach (UlvaneBeast beast in _activeBeasts.Values)
+                if (beast && !beast.IsFinished)
+                    count++;
+
+            return count;
+        }
+
+        private bool TrySendNextBeast()
+        {
+            if (_turnOrder.Count == 0)
+                RefillTurnOrder();
+
+            for (int i = 0; i < _turnOrder.Count; i++)
+            {
+                UlvaneBeast beast = _activeBeasts[_turnOrder[i]];
+                if (!beast || !beast.IsAvailable)
+                    continue;
+
+                _lastBeastAttack = _turnOrder[i];
+                _turnOrder.RemoveAt(i);
+                beast.Command();
+                return true;
+            }
+
+            return false;
+        }
+
+        private void RefillTurnOrder()
+        {
+            _turnOrder.AddRange(_activeBeasts.Keys);
+            for (int i = _turnOrder.Count - 1; i > 0; i--)
+            {
+                int swap = Random.Range(0, i + 1);
+                (_turnOrder[i], _turnOrder[swap]) = (_turnOrder[swap], _turnOrder[i]);
+            }
+
+            // The animal that just went does not go first again
+            if (_turnOrder.Count > 1 && _turnOrder[0] == _lastBeastAttack)
+                (_turnOrder[0], _turnOrder[_turnOrder.Count - 1]) = (_turnOrder[_turnOrder.Count - 1], _turnOrder[0]);
+        }
 
         // A special call: Ulvane gestures and the animal drops what it is doing and runs its skill, and he waits until it is done. Nothing picks this yet; the debug harness uses it.
         private IEnumerator BeastSequence(UlvaneAttack attack)

@@ -93,19 +93,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bosses.Ulvane.DeerBeast
   _turnSpeed: 720
-  _cooldown: 10
-  _firstUseDelay: 3
   _patrolArea: 1
   _patrolSpeed: 2.5
   _returnSpeed: 7
   _patrolTurnSpeed: 180
   _patrolPauseTime: {x: 1.5, y: 4}
   _patrolPointTimeout: 15
-  _stompCount: 2
+  _enragedAnimationSpeed: 1.3
+  _enragedTint: {r: 1, g: 0.2, b: 0.15, a: 1}
+  _enragedTintAmount: 0.5
+  _mournRunSpeed: 9
+  _goreCount: 4
+  _approachRange: 12
   _approachSpeed: 9
-  _approachDistance: 2.5
-  _approachTimeout: 2.5
-  _stompRadius: 3.4
-  _stompTelegraphTime: 0.8
-  _afterStompTime: 0.25
+  _coneRadius: 15
+  _coneAngle: 50
+  _telegraphTime: 1.5
+  _aimTurnTime: 0.2
+  _lungeTime: 0.3
+  _lungeDistance: 1.5
+  _playerHitPadding: 0.3
+  _recoverTime: 0.3
   _damage: 1
+  _counterTargetRadius: 1.4
+  _counterTargetHeight: 1.5
+  _stunTime: 3
+  _stunWobbleAngle: 8
+  _stunWobbleSpeed: 14
+  _headDownAngle: 88
+  _headUpAngle: 35
+  _headUpTime: 0.3
+  _neckBoneNames:
+  - spine.006
+  - spine.007
+  - spine.008
+  - scull
