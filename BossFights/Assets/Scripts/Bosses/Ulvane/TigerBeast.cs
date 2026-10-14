@@ -24,10 +24,10 @@ namespace Bosses.Ulvane
         [SerializeField] private float _slamRadius = 14f;
         [SerializeField] private float _slamSafeAngle = 60f;
         [SerializeField] private float _slamLandDistance = 4.5f;
-        [SerializeField] private float _slamTelegraphTime = 2f;
+        [SerializeField] private float _slamTelegraphTime = 1.2f;
         [SerializeField] private float _slamWedgeCheckNear = 3f;
         [SerializeField] private float _slamWedgeCheckFar = 6f;
-        [SerializeField] private float _slamFallTime = 0.1f;
+        [SerializeField] private float _slamFallTime = 0.12f;
         [SerializeField] private float _slamFallHeight = 40f;
         [SerializeField] private float _slamHitPadding = 0.2f;
         [SerializeField] private float _slamRecoverTime = 0.8f;
@@ -39,7 +39,7 @@ namespace Bosses.Ulvane
 
         public override int HitDamage => _damage;
 
-        // Combo: the tiger drops from the sky a few metres from the player, facing them, and the whole circle around it hurts except a wedge behind it. The circle is shown from the start and fills until the tiger lands
+        // Combo: the tiger drops from the sky a few metres from the player, facing them, and the whole circle around it hurts except a wedge behind it. The circle is shown from the start and fills; when it is full it disappears and the tiger drops
         public IEnumerator ComboSlam()
         {
             Vector3 playerPoint = owner.PlayerAimPoint;
@@ -53,17 +53,14 @@ namespace Bosses.Ulvane
             indicator.ShowCircleWithSafeWedge(landing, safeDirection, _slamRadius, _slamSafeAngle, _slamTelegraphTime, false);
 
             float startTime = Time.time;
-            while (Time.time - startTime < _slamTelegraphTime - _slamFallTime)
-                yield return null;
-
-            yield return ComboFallDown(landing, facing, _slamFallHeight, _slamFallTime, 2f, 0f, 0f);
-
-            // The fall can end a frame before the circle is full: the hit waits for it
             while (Time.time - startTime < _slamTelegraphTime)
                 yield return null;
 
-            Impact(landing, safeDirection);
+            // The circle is gone before the tiger drops
             indicator.Hide();
+            yield return ComboFallDown(landing, facing, _slamFallHeight, _slamFallTime, 2f, 0f, 0f);
+
+            Impact(landing, safeDirection);
             yield return new WaitForSeconds(_slamRecoverTime);
         }
 

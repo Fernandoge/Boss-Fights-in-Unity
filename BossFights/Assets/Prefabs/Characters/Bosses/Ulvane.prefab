@@ -463,8 +463,8 @@ MonoBehaviour:
   rotationSpeed: 6
   stopBetweenPlayer: 0
   timeBetweenAttacks: 3.5
-  maxHealth: 300
-  secondPhaseHealthShare: 0.5
+  maxHealth: 400
+  secondPhaseHealthShare: 0.66
   _healthText: {fileID: 0}
   _victoryScreenDelay: 4
   _fastMoveSpeedFactor: 1.3
@@ -519,8 +519,8 @@ MonoBehaviour:
   _timeBetweenBeastStarts: 1.5
   _lastStandTimeBetweenBeastStarts: 0.9
   _tornadoScreamTime: 2
-  _comboFirstDelay: 5
-  _comboCooldown: {x: 16, y: 24}
+  _comboFirstDelay: 3
+  _comboCooldown: {x: 8, y: 12}
   _tornadoPartnerDistance: 5
   _tornadoFeedInterval: 0.6
   _tornadoTimeout: 25

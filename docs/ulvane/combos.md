@@ -8,7 +8,7 @@ Two animals work together and one skill feeds the other. Combos are the only Ulv
 
 ## Snow Tornado (dog + penguin)
 
-Phase 2 only. In phase 2 Ulvane's attack picker chooses it once the cooldown is over (first 5 s after the phase starts, then every 16 to 24 s, `Snow Tornado Combo` fields on the boss) and both animals are free; otherwise he shoots. The harness key 9 forces it in any phase.
+Phase 2 only. In phase 2 Ulvane's attack picker chooses it once the cooldown is over (first 3 s after the phase starts, then every 8 to 12 s, `Snow Tornado Combo` fields on the boss) and both animals are free; otherwise he shoots. The harness key 9 forces it in any phase.
 
 1. Ulvane only screams (the roar clip) and goes back to his own attacks. The combo runs beside him as its own coroutine (`SnowTornadoCombo`), and the other animals keep using their own skills. A danger icon shows above the dog and the penguin, not above Ulvane.
 2. The dog runs to 5 units left of the penguin (as it looks at the player; the other side if that is outside the arena), spins up a whirlwind and stays there spinning. The whirlwind circle hurts for 2 every 0.7 s.
