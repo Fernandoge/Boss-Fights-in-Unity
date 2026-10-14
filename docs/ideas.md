@@ -29,7 +29,7 @@ Format: `- #N Idea name [size]: what it is and why. (needs: assets, decisions or
 
 ## In progress
 
-(empty)
+- #5 Make the first boss (Gorath) easier by showing more information: built, waiting for the user's review (bars above Gorath's head and skulls on the intermission slimes), on the branch `feature/gorath-more-information`, see `docs/gorath/information.md`. Move it to done once approved.
 
 
 ## Done or dropped

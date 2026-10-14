@@ -69,7 +69,7 @@ namespace UI
             return marker;
         }
 
-        public void AddShape(string shapeName, Sprite sprite, Color color, float size, int sortingOrder, Vector3 localPosition = default)
+        public SpriteRenderer AddShape(string shapeName, Sprite sprite, Color color, float size, int sortingOrder, Vector3 localPosition = default)
         {
             GameObject shapeObject = new GameObject(shapeName);
             shapeObject.transform.SetParent(transform, false);
@@ -80,6 +80,7 @@ namespace UI
             shape.sprite = sprite;
             shape.color = color;
             shape.sortingOrder = sortingOrder;
+            return shape;
         }
 
         public void AddLetter(string content, float fontSize, Color color, int sortingOrder, Vector3 localPosition = default)

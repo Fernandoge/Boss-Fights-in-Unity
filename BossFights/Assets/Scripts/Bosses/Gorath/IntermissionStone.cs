@@ -27,6 +27,7 @@ namespace Bosses.Gorath
         private Color originalColor;
         private Collider stoneCollider;
         private TargetMarker _counterPrompt;
+        private TargetMarker _infoIcon; // A skull on a stone that hides a slime, a safe mark on the empty one
         private string originalTag;
         private GorathBoss bossReference; // Reference to the boss
         private int stoneIndex; // This stone's index in the boss's array
@@ -34,6 +35,7 @@ namespace Bosses.Gorath
         
         private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
         private static readonly int Deactivate = Animator.StringToHash("Deactivate");
+        private const float InfoIconHeight = 2.9f;
         
         // Gets whether a slime is hidden under this stone
         public bool HasSlime => slimeTransform != null;
@@ -94,6 +96,24 @@ namespace Bosses.Gorath
             moveDuration = duration;
         }
         
+        // The icon follows the stone through the shuffle; it floats higher than the counter prompt so the two never overlap
+        public void ShowInfoIcon()
+        {
+            if (_infoIcon)
+                return;
+
+            _infoIcon = HasSlime ? SlimeWarning.Show(stoneCollider, InfoIconHeight) : SafeIcon.Show(stoneCollider, InfoIconHeight);
+        }
+
+        public void HideInfoIcon()
+        {
+            if (!_infoIcon)
+                return;
+
+            _infoIcon.Hide();
+            _infoIcon = null;
+        }
+
         // Make stone counterable (green highlight) - called after shuffle completes
         public void MakeCounterable()
         {

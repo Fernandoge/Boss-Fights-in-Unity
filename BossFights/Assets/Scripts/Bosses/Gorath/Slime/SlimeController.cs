@@ -33,6 +33,7 @@ namespace Bosses.Gorath.Slime
         private bool isIntermissionActive; // Disable roaming when moving to intermission position
         private bool isImmuneToDamage; // Disable damage during intermission
         private Vector3 spawnPosition; // Original spawn position to return to after intermission
+        private TargetMarker _warningIcon; // The skull shown while the slime is in plain view during the intermission
         private static readonly int Dizzy = Animator.StringToHash("Dizzy");
         private static readonly int Dizzy_Loop = Animator.StringToHash("DizzyLoop");
         private static readonly int Explode = Animator.StringToHash("Explode");
@@ -161,9 +162,26 @@ namespace Bosses.Gorath.Slime
 
         public void StartExplosion() => animator.SetTrigger(Explode);
 
+        // Called by the boss and the stones while the slime can be seen during the intermission
+        public void ShowWarning()
+        {
+            if (!_warningIcon)
+                _warningIcon = SlimeWarning.Show(GetComponentInChildren<Collider>());
+        }
+
+        public void HideWarning()
+        {
+            if (!_warningIcon)
+                return;
+
+            _warningIcon.Hide();
+            _warningIcon = null;
+        }
+
         // Called in explosion animation event to hide slime and spawn explosion effect
         private void ExplodeSlime()
         {
+            HideWarning();
             meshRenderer.enabled = false; // Hide the slime mesh
             Vector3 explosionPosition = transform.position + Vector3.up * 1.5f;
             Instantiate(explosionEffectPrefab, explosionPosition, Quaternion.identity);
@@ -173,6 +191,8 @@ namespace Bosses.Gorath.Slime
         // Move slime back to its spawn position after intermission
         public IEnumerator MoveBackToSpawn(float speed)
         {
+            HideWarning();
+
             // Store initial base offset (current levitation height) and original nav speed
             float initialBaseOffset = navMeshAgent.baseOffset;
             float originalNavSpeed = navMeshAgent.speed;
@@ -359,6 +379,7 @@ namespace Bosses.Gorath.Slime
         public void Resurrect()
         {
             isDead = false;
+            HideWarning();
             
             // Restore health to full
             currentHealth = maxHealth;

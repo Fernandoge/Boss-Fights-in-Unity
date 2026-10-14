@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bosses.Gorath.Slime;
 using Shared;
+using UI;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -115,6 +116,7 @@ namespace Bosses.Gorath
         [SerializeField] private int _shellGameSwapCount; // Number of swaps to perform
         [SerializeField] private float _swapSpeed; // Duration of each swap animation (lower = faster)
         [SerializeField] [Range(0, 100)] private int _singleSwapChance; // % chance for single swap
+        [SerializeField] private float _stoneIconPreviewTime = 2.5f; // How long the stones show their skull and safe icons before the shuffle starts
         [SerializeField] [Range(0, 100)] private int _parallelSwapChance; // % chance for parallel swap (remainder = chain rotation)
         
         private int _tripleSmashCount;
@@ -126,6 +128,12 @@ namespace Bosses.Gorath
         private int _lastAttackIndex = -1;
         private RockShowerPattern _selectedRockShowerPattern;
         private int _consecutiveNormalAttacks;
+        private CataclysmBars _cataclysmBars;
+        private int _shownBarsFilled;
+        private float _barsIdleTime;
+        private int _barsLastIdleFrame;
+        private bool _hasCastSkill;
+        private bool _isIntermission;
         private readonly List<SkillIndicator> _activeFissureIndicators = new();
         private Vector3[] _fissureDirections;
         private Vector3 _fissureOrigin;
@@ -151,6 +159,9 @@ namespace Bosses.Gorath
         private static readonly int RevealSlimeStones = Animator.StringToHash("RevealSlimeStones");
         private const float FissureTelegraphAnimationTime = 0.08f; // Time of the FissureLinesTelegraph event in the Fissure Stomp clip
         private const float FissureImpactAnimationTime = 0.72f; // Time of the FissureLinesErupt event in the Fissure Stomp clip
+        private const int NormalAttacksBeforeCataclysm = 3;
+        private const float CataclysmBarsShowShare = 0.5f; // The share of the wait between skills that the bars stay up
+        private const float CataclysmBarsIdleDelay = 0.3f; // How long the boss must be free before the bars show, so a gap between two rock throws does not flash them
 
         public GorathAttack? DebugOnlyAttack { get; set; }
 
@@ -166,6 +177,11 @@ namespace Bosses.Gorath
         
         protected override IEnumerator EnterSecondPhase()
         {
+            // The bars stay hidden through the intermission, and the first skill after it has to finish before they show again
+            _isIntermission = true;
+            _hasCastSkill = false;
+            HideCataclysmBars();
+
             // Boss enters "Agony" animation
             yield return base.EnterSecondPhase();
             
@@ -174,7 +190,8 @@ namespace Bosses.Gorath
             
             // Reset consecutive attack counter when entering phase 2
             _consecutiveNormalAttacks = 0;
-            
+            _shownBarsFilled = 0;
+
             // Halve the time between attacks for more aggressive second phase (2x faster attacks)
             timeBetweenAttacks /= 2f;
             auxTimeBetweenAttacks /= 2f;
@@ -201,6 +218,8 @@ namespace Bosses.Gorath
 
         protected override void OnDefeated()
         {
+            HideCataclysmBars();
+
             foreach (StoneProjectile rock in FindObjectsByType<StoneProjectile>(FindObjectsSortMode.None))
                 Destroy(rock.transform.parent.gameObject);
 
@@ -235,7 +254,7 @@ namespace Bosses.Gorath
             }
 
             // Check if it's time to trigger Cataclysm
-            if (_consecutiveNormalAttacks >= 3)
+            if (_consecutiveNormalAttacks >= NormalAttacksBeforeCataclysm)
                 StartAttack(GorathAttack.Cataclysm);
             else
             {
@@ -261,6 +280,48 @@ namespace Bosses.Gorath
                 // Increment counter after a normal attack
                 _consecutiveNormalAttacks++;
             }
+        }
+
+        // Runs only on the frames the boss is free: the bars show once a skill is done and he has been free for a moment, and hide when the next skill starts
+        protected override void IdleMovement()
+        {
+            base.IdleMovement();
+
+            if (Time.frameCount != _barsLastIdleFrame + 1)
+                _barsIdleTime = 0f;
+            _barsLastIdleFrame = Time.frameCount;
+            _barsIdleTime += Time.deltaTime;
+
+            // They show for a share of the wait for the next skill, then go away until the next skill is done
+            float showDuration = (auxTimeBetweenAttacks - CataclysmBarsIdleDelay) * CataclysmBarsShowShare;
+            bool isInShowWindow = _barsIdleTime >= CataclysmBarsIdleDelay && _barsIdleTime < CataclysmBarsIdleDelay + showDuration;
+            if (_hasCastSkill && !_isIntermission && isInShowWindow)
+                ShowCataclysmBars();
+            else
+                HideCataclysmBars();
+        }
+
+        // The newest bar turns red as they appear: they are created with the count shown last time, then set to the real count
+        private void ShowCataclysmBars()
+        {
+            if (_cataclysmBars)
+                return;
+
+            _cataclysmBars = CataclysmBars.Show(GetComponentInChildren<Collider>(), NormalAttacksBeforeCataclysm, _shownBarsFilled);
+            if (!_cataclysmBars)
+                return;
+
+            _cataclysmBars.SetFilled(_consecutiveNormalAttacks);
+            _shownBarsFilled = _consecutiveNormalAttacks;
+        }
+
+        private void HideCataclysmBars()
+        {
+            if (!_cataclysmBars)
+                return;
+
+            _cataclysmBars.Hide();
+            _cataclysmBars = null;
         }
 
         private int GetAttackDamage(GorathAttack attack)
@@ -290,6 +351,8 @@ namespace Bosses.Gorath
 
         private void StartAttack(GorathAttack attack)
         {
+            HideCataclysmBars();
+            _hasCastSkill = true;
             ShowDangerIcon(GetAttackDamage(attack));
             switch (attack)
             {
@@ -425,7 +488,7 @@ namespace Bosses.Gorath
         {
             // Reset the attack counter after triggering Cataclysm
             _consecutiveNormalAttacks = 0;
-            
+
             // Speed up Cataclysm animation in phase 2 (1.5x faster)
             if (IsInSecondPhase)
                 anim.speed = 1.5f;
@@ -459,8 +522,9 @@ namespace Bosses.Gorath
                 directions[i] = new Vector3(Mathf.Cos(angleInRadians), 0, Mathf.Sin(angleInRadians)).normalized;
             }
             
-            // Shoot 3 waves of rocks with 0.5s delay between waves
-            for (int j = 0; j < 3; j++)
+            // Shoot 3 waves of rocks (4 in phase 2) with 0.5s delay between waves
+            int waves = IsInSecondPhase ? 4 : 3;
+            for (int j = 0; j < waves; j++)
             {
                 // Shoot all rocks in circle pattern using pre-calculated directions
                 for (int i = 0; i < _cataclysmProjectileCount; i++)
@@ -469,7 +533,7 @@ namespace Bosses.Gorath
                 }
                 
                 // Wait 0.5s before next wave (except after the last wave)
-                if (j < 2)
+                if (j < waves - 1)
                     yield return new WaitForSeconds(0.5f);
             }
             
@@ -808,6 +872,10 @@ namespace Bosses.Gorath
             foreach (var coroutine in levitationCoroutines)
                 yield return coroutine;
             
+            // The slimes are in plain view now: mark them as deadly until the stones cover them
+            foreach (SlimeController slime in _slimes)
+                slime.ShowWarning();
+
             // Trigger BackFlip animation on the boss
             anim.SetTrigger(BackFlip);
         }
@@ -816,7 +884,11 @@ namespace Bosses.Gorath
         public void ConvertSlimesToRocks()
         {
             _intermissionStones = new IntermissionStone[4];
-            
+
+            // The stones hide the slimes from here on, so the warnings move onto the stones (a skull on each slime stone, a safe mark on the empty one)
+            foreach (SlimeController slime in _slimes)
+                slime.HideWarning();
+
             // Track the Y position from slimes for consistency
             float slimeYPosition = _slimes[0].transform.position.y;
             
@@ -875,6 +947,7 @@ namespace Bosses.Gorath
                 stone.SetBossReference(this, i); // Set boss reference for player interaction
                 stone.SetSwapSpeed(_swapSpeed); // Set the swap animation speed
                 _intermissionStones[i] = stone;
+                stone.ShowInfoIcon();
             }
         }
         
@@ -883,6 +956,12 @@ namespace Bosses.Gorath
         // Start the shell game from dance animation
         private IEnumerator StartShellGame()
         {
+            // The stones wait a moment with their icons so the player can read them, then the icons go: from here on the player has to follow the stones
+            yield return new WaitForSeconds(_stoneIconPreviewTime);
+            foreach (IntermissionStone stone in _intermissionStones)
+                if (stone != null)
+                    stone.HideInfoIcon();
+
             yield return ShuffleStones();
             
             // After shuffle completes, make all stones counterable (green)
@@ -1060,6 +1139,7 @@ namespace Bosses.Gorath
         private void EndIntermission()
         {
             // Reset boss state to resume combat
+            _isIntermission = false;
             isImmuneToDamage = false;
             EndSecondPhaseTransition();
             StopPerformingAction();
